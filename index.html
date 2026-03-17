@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旺仔工具百宝箱 | 149 个开箱即用的小工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        .tool-card {
+            transition: all 0.2s ease;
+        }
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .category-icon {
+            width: 48px;
+            height: 48px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Hero -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div class="container mx-auto px-4 py-12 max-w-7xl">
+            <div class="text-center">
+                <h1 class="text-5xl font-bold mb-4">🥛 旺仔工具百宝箱</h1>
+                <p class="text-xl opacity-90 mb-6">每 4 小时构建一个小工具，持续改善工作流</p>
+                <div class="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-2">
+                    <span class="text-lg">✅ 共计 <strong class="text-2xl">149</strong> 个工具</span>
+                </div>
+                <div class="mt-8">
+                    <a href="https://github.com/silvere/wangzai_tools" target="_blank" class="inline-flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.005.404 2.291-1.548 3.297-1.23 3.297-1.23.633 1.653.242 2.874.118 3.176.77 .84 2.767.306 5.167 1.335 5.464 4.598 0 4.598-3.003 5.624-5.473 5.921-.46.396-.908 1.42-.908 3.016 0 2.144-.089 3.878-.089 7.017 0-6.146 5.373-12 12-12z"/></svg>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <div class="mb-8">
+            <div class="max-w-xl mx-auto">
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-2">🔍 搜索工具</label>
+                <input type="text" id="search" placeholder="输入关键词搜索..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="mb-8 flex flex-wrap gap-2 justify-center" id="category-filters">
+            <button class="category-btn px-4 py-2 bg-blue-600 text-white rounded-full font-medium" data-category="all">全部</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="开发工具">开发工具</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="评测AI">评测/AI</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="CSS">CSS/前端</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="文本内容">文本/内容</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="设计可视化">设计/可视化</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="游戏娱乐">游戏/娱乐</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="生活健康">生活/健康</button>
+        </div>
+
+        <!-- Tool Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="tool-grid">
+            <!-- Tools will be populated by JS -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="container mx-auto px-4 py-8 text-center text-gray-500 text-sm">
+        <p>Built with ❤️ by 旺仔 (Clawdbot) · Every 4 hours one new tool · Since 2026</p>
+    </footer>
+
+    <script>
+        const tools = [
+            { name: "CSS Backdrop-Filter 毛玻璃生成器", path: "builds/build-149-css-backdrop-filter-generator/index.html", category: "CSS/前端", description: "可视化调节毛玻璃模糊效果，支持多种滤镜组合" },
+            { name: "CSS Transform 变换生成器", path: "builds/build-148-css-transform-generator/index.html", category: "CSS/前端", description: "平移/旋转/缩放/倾斜可视化调节，变换原点自由选择" },
+            { name: "CSS Border-Radius 生成器", path: "builds/build-147-css-border-radius-generator/index.html", category: "CSS/前端", description: "四个圆角独立调节，支持椭圆圆角，多种预设" },
+            { name: "CSS Box Shadow 生成器", path: "builds/build-146-css-box-shadow-generator/index.html", category: "CSS/前端", description: "多层阴影叠加，参数实时调节，一键复制代码" },
+            { name: "CSS Grid 可视化生成器", path: "builds/build-145-css-grid-generator/index.html", category: "CSS/前端", description: "栅格布局可视化配置，多种对齐方式，内置预设" },
+            { name: "CSS Flexbox 可视化生成器", path: "builds/build-144-flexbox-generator/index.html", category: "CSS/前端", description: "Flexbox 容器属性可视化点击配置，速查表内置" },
+            { name: "CSS 渐变生成器", path: "builds/build-143-css-gradient-generator/index.html", category: "CSS/前端", description: "线性/径向/锥形渐变，可视化色标调整" },
+            { name: "YAML 格式化验证工具", path: "builds/build-142-yaml-validator/index.html", category: "开发工具", description: "YAML格式化验证，JSON双向转换，语法错误定位" },
+            { name: "XML 格式化美化工具", path: "builds/build-141-xml-formatter/index.html", category: "开发工具", description: "XML格式化压缩，树形结构展示，支持文件上传" },
+            { name: "User-Agent 解析器", path: "builds/build-140-user-agent-parser/index.html", category: "开发工具", description: "解析UA识别浏览器/系统/设备，批量解析支持导出" },
+            { name: "URL 解析与参数修改器", path: "builds/build-139-url-parser/index.html", category: "开发工具", description: "URL结构拆解，参数可视化编辑，URL编解码" },
+            { name: "JSON 格式化美化工具", path: "builds/build-138-json-prettifier/index.html", category: "开发工具", description: "JSON格式化压缩，语法验证，树形浏览器" },
+            { name: "Crontab 可视化解析器", path: "builds/build-137-crontab-visualizer/index.html", category: "开发工具", description: "Cron表达式解析，自然语言描述，预览执行时间" },
+            { name: "Markdown 目录生成器", path: "builds/build-136-markdown-toc-generator/index.html", category: "文本内容", description: "一键生成Markdown目录，多种风格锚点格式可选" },
+            { name: "剪贴板历史管理器", path: "builds/build-135-clipboard-history/index.html", category: "开发工具", description: "本地保存剪贴板历史，搜索筛选，一键复制" },
+            { name: "Linux 权限计算器", path: "builds/build-134-chmod-calculator/index.html", category: "开发工具", description: "可视化点击计算chmod权限，一键复制命令" },
+            { name: "Unix 时间戳转换工具", path: "builds/build-133-timestamp-converter/index.html", category: "开发工具", description: "时间戳转日期，多时区展示，时间差计算" },
+            { name: "JSON 转 TypeScript 接口工具", path: "builds/build-132-json-to-typescript/index.html", category: "开发工具", description: "JSON结构自动转换TS接口，支持多种命名风格" },
+            { name: "Markdown Mermaid 实时编辑器", path: "builds/build-131-markdown-mermaid-editor/index.html", category: "文本内容", description: "Mermaid图表实时渲染，模板丰富，支持导出" },
+            { name: "HTTP 状态码查询工具", path: "builds/build-130-http-status-codes/index.html", category: "开发工具", description: "查询所有HTTP状态码定义，中文说明" },
+            { name: "SQL 格式化美化工具", path: "builds/build-129-sql-formatter/index.html", category: "开发工具", description: "SQL格式化，支持多种方言，语法提示" },
+            { name: "正则表达式可视化调试器", path: "builds/build-128-regex-visualizer/index.html", category: "开发工具", description: "正则铁路图可视化，匹配高亮，常用模板" },
+            { name: "全网热搜聚合器", path: "builds/build-127-hot-search-aggregator/index.html", category: "开发工具", description: "抖音/小红书/B站/微博/知乎热搜一站式查看" },
+            { name: "Markdown 思维导图生成器", path: "builds/build-126-markdown-mindmap/index.html", category: "文本内容", description: "Markdown标题生成思维导图，支持导出PNG/SVG" },
+            { name: "全能单位换算工具", path: "builds/build-125-unit-converter/index.html", category: "生活工具", description: "18大类300+单位互相换算，日常必备" },
+            { name: "网络速度测试工具", path: "builds/build-124-network-speed-test/index.html", category: "开发工具", description: "浏览器本地测速，延迟抖动丢包率测试" },
+            { name: "端口扫描工具", path: "builds/build-123-port-scanner/index.html", category: "开发工具", description: "浏览器端端口扫描，自动识别服务" },
+            { name: "JSON YAML 转换器", path: "builds/build-122-json-yaml-converter/index.html", category: "开发工具", description: "JSON YAML双向转换，语法校验" },
+            { name: "SRT字幕编辑器", path: "builds/build-121-srt-subtitle-editor/index.html", category: "开发工具", description: "字幕时间偏移，查找替换，简繁体转换" },
+            { name: "Markdown Excel 转换器", path: "builds/build-120-markdown-excel-converter/index.html", category: "文本内容", description: "Markdown表格Excel双向转换，本地完成" },
+            { name: "图片批量压缩调整工具", path: "builds/build-119-image-resizer/index.html", category: "开发工具", description: "批量调整图片尺寸，格式转换，压缩" },
+            { name: "离线密码管理器", path: "builds/build-118-password-manager/index.html", category: "生活工具", description: "AES-256加密本地存储，密码生成器" },
+            { name: "Markdown幻灯片生成器", path: "builds/build-117-markdown-slides-generator/index.html", category: "文本内容", description: "Markdown写PPT，演讲者模式，支持导出PDF" },
+            { name: "JSON Schema 验证器", path: "builds/build-116-json-schema-validator/index.html", category: "开发工具", description: "JSON Schema验证，示例数据生成" },
+            { name: "Mermaid 流程图生成器", path: "builds/build-115-mermaid-diagram-generator/index.html", category: "设计可视化", description: "Mermaid实时渲染，模板丰富，导出PNG/SVG" },
+            { name: "智能Cron表达式生成器", path: "builds/build-114-crontab-scheduler/index.html", category: "开发工具", description: "可视化点选生成，自然语言解析" },
+            { name: "正则表达式测试工具", path: "builds/build-113-regular-expression-tester/index.html", category: "开发工具", description: "实时测试正则，匹配高亮，捕获分组展示" },
+            { name: "文本统计分析工具箱", path: "builds/build-112-text-statistics/index.html", category: "文本内容", description:"字数统计，词频分析，可视化，文本处理工具"},
+            { name: "Markdown表格排序工具", path: "builds/build-111-markdown-table-sorter/index.html", category: "文本内容", description:"点击表头排序，支持多列排序"},
+            { name: "JSON Path 提取器", path: "builds/build-110-json-path-extractor/index.html", category: "开发工具", description:"JSONPath查询，点击复制路径"},
+            { name: "Base64编码解码工具", path: "builds/build-107-base64-converter/index.html", category: "开发工具", description:"文本/图片/文件Base64转换"},
+            { name: "配色方案生成器", path: "builds/build-108-color-palette-generator/index.html", category: "设计可视化", description:"多种配色模式，WCAG对比度检测，导出CSS"},
+            { name: "二维码全能工具箱", path: "builds/build-109-qrcode-reader/index.html", category: "开发工具", description:"生成/识别二维码，摄像头扫描，本地完成"},
+            { name: "JSON树形浏览器", path: "builds/build-105-json-viewer/index.html", category: "开发工具", description:"折叠展开，搜索高亮，路径导航"},
+            { name: "Markdown笔记速记工具", path: "builds/build-104-markdown-note/index.html", category: "文本内容", description:"本地存储，实时预览，导出MD/HTML"},
+            { name: "密码生成器", path: "builds/build-103-password-generator/index.html", category: "生活工具", description:"安全离线生成，强度评估，破解时间估算"},
+            { name: "短链接生成器", path: "builds/build-102-link-shortener/index.html", category: "开发工具", description:"本地离线短链接，自定义短码，统计访问"},
+            { name: "大模型评测报告生成器", path: "builds/eval-report-generator/index.html", category: "评测AI", description:"输入模型分数，一键生成可视化评测报告"},
+            { name: "项目灵感粉碎机", path: "builds/idea-generator/index.html", category: "评测AI", description:"生成AI创业开源项目灵感，完整方案"},
+            { name: "评测数据集浏览器", path: "builds/benchmark-browser/index.html", category: "评测AI", description:"浏览主流大模型评测基准，查看详情"},
+            { name: "论文速览工具", path: "builds/paper-summary/index.html", category: "评测AI", description:"arXiv论文速读，提取核心信息"},
+            { name: "小红书爆款文案生成器", path: "builds/xiaohongshu-copywriter/index.html", category: "文本内容", description:"10大类型7种风格，一键生成小红书文案"},
+            { name: "项目灵感生成器", path: "builds/project-idea-generator/index.html", category: "评测AI", description:"AI创业开源项目灵感工厂"},
+            { name: "会议纪要生成器", path: "builds/meeting-minutes-generator/index.html", category: "文本内容", description:"3分钟生成专业会议纪要"},
+            { name: "爆款标题生成器", path: "builds/viral-title-generator/index.html", category: "文本内容", description:"爆款标题生成，支持四大平台六种风格"},
+            { name: "API响应格式化工具", path: "builds/api-formatter/index.html", category: "开发工具", description:"美化JSON/XML响应，快速调试API"},
+            { name: "Token计数器成本估算器", path: "builds/token-calculator/index.html", category: "评测AI", description:"统计Token数量，估算调用成本"}
+        ];
+
+        // Category mapping for grouping
+        const categoryMap = {
+            "CSS/前端": "CSS/前端",
+            "开发工具": "开发工具",
+            "评测AI": "评测/AI",
+            "文本内容": "文本内容",
+            "设计可视化": "设计/可视化",
+            "游戏娱乐": "游戏/娱乐",
+            "生活工具": "生活/健康"
+        };
+
+        function renderTools(filterCategory = 'all', searchText = '') {
+            const grid = document.getElementById('tool-grid');
+            grid.innerHTML = '';
+
+            const filtered = tools.filter(tool => {
+                const matchCategory = filterCategory === 'all' ||
+                    (filterCategory === 'CSS' && tool.category.startsWith('CSS')) ||
+                    (filterCategory === '开发工具' && tool.category === '开发工具') ||
+                    (filterCategory === '评测AI' && tool.category === '评测AI') ||
+                    (filterCategory === '文本内容' && tool.category === '文本内容') ||
+                    (filterCategory === '设计可视化' && tool.category === '设计可视化') ||
+                    (filterCategory === '游戏娱乐' && tool.category === '游戏娱乐') ||
+                    (filterCategory === '生活健康' && tool.category === '生活工具');
+                const matchSearch = !searchText ||
+                    tool.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                    tool.description.toLowerCase().includes(searchText.toLowerCase());
+                return matchCategory && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">未找到匹配的工具 😕</div>';
+                return;
+            }
+
+            filtered.forEach(tool => {
+                const card = document.createElement('a');
+                card.href = tool.path;
+                card.target = '_blank';
+                card.className = 'tool-card block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:border-blue-500';
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-semibold text-gray-900 text-lg leading-tight">${tool.name}</h3>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">${tool.description}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">${tool.category}</span>
+                            <span class="text-blue-600 text-sm font-medium">打开 →</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Category filter
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                btn.classList.remove('bg-gray-200', 'text-gray-700');
+                btn.classList.add('bg-blue-600', 'text-white');
+                const category = btn.dataset.category;
+                const search = document.getElementById('search').value;
+                renderTools(category, search);
+            });
+        });
+
+        // Search
+        document.getElementById('search').addEventListener('input', (e) => {
+            const searchText = e.target.value;
+            const activeBtn = document.querySelector('.category-btn.bg-blue-600');
+            const category = activeBtn.dataset.category;
+            renderTools(category, searchText);
+        });
+
+        // Initial render
+        renderTools();
+    </script>
+</body>
+</html>
