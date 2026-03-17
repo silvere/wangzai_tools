@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Animation 关键帧动画可视化生成器 | 旺仔工具库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+        .code-block {
+            font-family: 'Fira Code', 'Courier New', monospace;
+        }
+        .animated-box {
+            position: relative;
+        }
+        </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🎬 CSS Animation 关键帧动画可视化生成器</h1>
+            <p class="text-gray-600">可视化配置CSS关键帧动画，实时预览，一键生成完整@keyframes代码</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Control Panel -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Animation Properties -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">动画配置</h2>
+
+                    <!-- Animation Name -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">动画名称</label>
+                        <input type="text" id="animName" value="floating" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Duration -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>持续时间 Duration (s)</span>
+                            <span id="duration-value">1s</span>
+                        </div>
+                        <input type="range" id="duration" min="0.1" max="5" value="1" step="0.1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Timing Function -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">缓动函数 Timing Function</label>
+                        <select id="timing" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="ease">ease</option>
+                            <option value="linear">linear</option>
+                            <option value="ease-in">ease-in</option>
+                            <option value="ease-out" selected>ease-out</option>
+                            <option value="ease-in-out">ease-in-out</option>
+                            <option value="cubic-bezier(0.4,0,0.2,1)">cubic-bezier(0.4,0,0.2,1)</option>
+                            <option value="cubic-bezier(0.68,-0.55,0.265,1.55)">cubic-bezier (bounce)</option>
+                        </select>
+                    </div>
+
+                    <!-- Iteration Count -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">重复次数</label>
+                        <div class="flex items-center">
+                            <input type="number" id="iteration" min="1" value="infinite" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <label class="flex items-center ml-3">
+                                <input type="checkbox" id="infinite" checked class="mr-2">
+                                无限循环
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Direction -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">播放方向 Direction</label>
+                        <select id="direction" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="normal" selected>normal</option>
+                            <option value="alternate">alternate</option>
+                            <option value="reverse">reverse</option>
+                            <option value="alternate-reverse">alternate-reverse</option>
+                        </select>
+                    </div>
+
+                    <!-- Fill Mode -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">填充模式 Fill Mode</label>
+                        <select id="fillMode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="none">none</option>
+                            <option value="forwards" selected>forwards</option>
+                            <option value="backwards">backwards</option>
+                            <option value="both">both</option>
+                        </select>
+                    </div>
+
+                    <!-- Delay -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>延迟 Delay (s)</span>
+                            <span id="delay-value">0s</span>
+                        </div>
+                        <input type="range" id="delay" min="0" max="3" value="0" step="0.1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Keyframes -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">关键帧 Keyframes</h2>
+                    <div class="mb-4 space-y-4" id="keyframes-container">
+                        <div class="keyframe-row" data-keyframe="0">
+                            <div class="flex gap-2 items-center mb-2">
+                                <label class="text-sm font-medium text-gray-700 w-16">0%</label>
+                                <div class="flex-1"></div>
+                                <button class="add-keyframe px-2 py-1 bg-green-100 text-green-700 rounded text-sm">+</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-500">Translate X (px)</label>
+                                    <input type="number" data-prop="translateX" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Translate Y (px)</label>
+                                    <input type="number" data-prop="translateY" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Rotate (deg)</label>
+                                    <input type="number" data-prop="rotate" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Scale</label>
+                                    <input type="number" step="0.1" data-prop="scale" value="1" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Opacity</label>
+                                    <input type="number" step="0.1" min="0" max="1" data-prop="opacity" value="1" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="keyframe-row" data-keyframe="100">
+                            <div class="flex gap-2 items-center mb-2">
+                                <label class="text-sm font-medium text-gray-700 w-16">100%</label>
+                                <div class="flex-1"></div>
+                                <button class="remove-keyframe px-2 py-1 bg-red-100 text-red-700 rounded text-sm">-</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-500">Translate X (px)</label>
+                                    <input type="number" data-prop="translateX" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Translate Y (px)</label>
+                                    <input type="number" data-prop="translateY" value="-20" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Rotate (deg)</label>
+                                    <input type="number" data-prop="rotate" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Scale</label>
+                                    <input type="number" step="0.1" data-prop="scale" value="1.05" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">Opacity</label>
+                                    <input type="number" step="0.1" min="0" max="1" data-prop="opacity" value="1" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="add-keyframe" class="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition">+ 添加关键帧</button>
+                </div>
+
+                <!-- Preview Box Style -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">预览框样式</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">背景颜色</label>
+                            <input type="color" id="boxBg" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">圆角 (px)</label>
+                            <input type="range" id="boxRadius" min="0" max="32" value="16" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>0</span>
+                                <span id="boxRadius-value">16</span>
+                                <span>32</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">盒子大小 (px)</label>
+                            <input type="range" id="boxSize" min="64" max="200" value="128" step="8" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>64</span>
+                                <span id="boxSize-value">128</span>
+                                <span>200</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">常用预设</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm font-medium" data-preset="float">悬浮呼吸</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="fade">淡入淡出</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="bounce">弹跳</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="shake">左右晃动</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="spin">旋转</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="pulse">脉冲</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="slide-up">滑入</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-preset="zoom">缩放呼吸</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview and Code -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Preview -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+                    <div class="bg-gray-100 rounded-lg p-16 min-h-[300px] flex items-center justify-center">
+                        <div id="animated-box" class="animated-box" style="width: 128px; height: 128px; background: #3b82f6; border-radius: 16px;"></div>
+                    </div>
+                </div>
+
+                <!-- Generated Code -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">生成的 CSS 代码</h2>
+                        <button id="copy-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium">
+                            📋 复制代码
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <pre class="code-block bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code id="css-code"></code></pre>
+                    </div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">CSS Animation 语法速查表</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border px-3 py-2 text-left">属性</th>
+                                    <th class="border px-3 py-2 text-left">说明</th>
+                                    <th class="border px-3 py-2 text-left">常用值</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">@keyframes</td>
+                                    <td class="border px-3 py-2">定义关键帧</td>
+                                    <td class="border px-3 py-2 font-mono">@keyframes name { ... }</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">animation-name</td>
+                                    <td class="border px-3 py-2">动画名称</td>
+                                    <td class="border px-3 py-2 font-mono">any-name</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">animation-duration</td>
+                                    <td class="border px-3 py-2">动画持续时间</td>
+                                    <td class="border px-3 py-2 font-mono">0s ~ 10s+</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">animation-timing-function</td>
+                                    <td class="border px-3 py-2">缓动函数</td>
+                                    <td class="border px-3 py-2 font-mono">ease | linear | ease-in | ease-out | cubic-bezier()</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">animation-iteration-count</td>
+                                    <td class="border px-3 py-2">重复次数</td>
+                                    <td class="border px-3 py-2 font-mono">1 | 3 | infinite</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">animation-direction</td>
+                                    <td class="border px-3 py-2">播放方向</td>
+                                    <td class="border px-3 py-2 font-mono">normal | reverse | alternate | alternate-reverse</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">animation-fill-mode</td>
+                                    <td class="border px-3 py-2">动画结束后样式</td>
+                                    <td class="border px-3 py-2 font-mono">none | forwards | backwards | both</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">transform</td>
+                                    <td class="border px-3 py-2">变换（在关键帧中使用）</td>
+                                    <td class="border px-3-py-2 font-mono">translate() rotate() scale()</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
+                        <strong class="block mb-1">💡 使用提示：</strong>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>添加多个关键帧实现复杂动画效果</li>
+                            <li>可以同时给一个元素添加多个动画，用逗号分隔</li>
+                            <li>现代浏览器都支持，不需要前缀</li>
+                            <li>forwards 模式会保留动画最后一帧的样式</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>Built with ❤️ by 旺仔 | 纯前端实现，所有计算在浏览器本地完成</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM elements
+        const animName = document.getElementById('animName');
+        const duration = document.getElementById('duration');
+        const durationValue = document.getElementById('duration-value');
+        const timing = document.getElementById('timing');
+        const iteration = document.getElementById('iteration');
+        const infinite = document.getElementById('infinite');
+        const direction = document.getElementById('direction');
+        const fillMode = document.getElementById('fillMode');
+        const delay = document.getElementById('delay');
+        const delayValue = document.getElementById('delay-value');
+        const container = document.getElementById('keyframes-container');
+        const addKeyframeBtn = document.getElementById('add-keyframe');
+        const animatedBox = document.getElementById('animated-box');
+        const cssCode = document.getElementById('css-code');
+        const copyBtn = document.getElementById('copy-btn');
+        const boxBg = document.getElementById('boxBg');
+        const boxRadius = document.getElementById('boxRadius');
+        const boxRadiusValue = document.getElementById('boxRadius-value');
+        const boxSize = document.getElementById('boxSize');
+        const boxSizeValue = document.getElementById('boxSize-value');
+
+        // Update display values and regenerate code
+        function updateAll() {
+            // Update labels
+            durationValue.textContent = duration.value + 's';
+            delayValue.textContent = delay.value + 's';
+            boxRadiusValue.textContent = boxRadius.value;
+            boxSizeValue.textContent = boxSize.value;
+
+            // Update infinite checkbox
+            if (infinite.checked) {
+                iteration.value = 'infinite';
+                iteration.disabled = true;
+            } else {
+                iteration.disabled = false;
+            }
+
+            // Update preview box style
+            animatedBox.style.background = boxBg.value;
+            animatedBox.style.borderRadius = boxRadius.value + 'px';
+            animatedBox.style.width = boxSize.value + 'px';
+            animatedBox.style.height = boxSize.value + 'px';
+
+            // Regenerate CSS and apply animation
+            updateCSS();
+        }
+
+        // Generate CSS code
+        function updateCSS() {
+            let name = animName.value || 'animation';
+
+            // Collect all keyframes
+            let keyframeCSS = `@keyframes ${name} {\n`;
+            document.querySelectorAll('.keyframe-row').forEach(row => {
+                let percent = row.dataset.keyframe;
+                let transforms = [];
+                let opacity = null;
+
+                row.querySelectorAll('.keyframe-input').forEach(input => {
+                    let prop = input.dataset.prop;
+                    let val = input.value;
+                    if (prop === 'translateX' && val != 0) transforms.push(`translateX(${val}px)`);
+                    if (prop === 'translateY' && val != 0) transforms.push(`translateY(${val}px)`);
+                    if (prop === 'rotate' && val != 0) transforms.push(`rotate(${val}deg)`);
+                    if (prop === 'scale' && val != 1) transforms.push(`scale(${val})`);
+                    if (prop === 'opacity' && val != 1) opacity = val;
+                });
+
+                keyframeCSS += `  ${percent}% {\n`;
+                if (transforms.length > 0) {
+                    keyframeCSS += `    transform: ${transforms.join(' ')};\n`;
+                }
+                if (opacity !== null) {
+                    keyframeCss += `    opacity: ${opacity};\n`;
+                }
+                keyframeCSS += `  }\n`;
+            });
+            keyframeCSS += `}\n\n`;
+
+            // Element animation shorthand
+            let iter = infinite.checked ? 'infinite' : iteration.value;
+            let anim = `${name} ${duration.value}s ${timing.value} ${delay.value}s ${iter} ${direction.value} ${fillMode.value}`;
+
+            keyframeCSS += `.animated-element {\n`;
+            keyframeCSS += `  animation: ${anim};\n`;
+            keyframeCSS += `}`;
+
+            // Update code display
+            cssCode.textContent = keyframeCSS;
+
+            // Apply to preview box
+            animatedBox.style.animation = anim;
+        }
+
+        // Add a new keyframe
+        function addKeyframe() {
+            // Find the last percentage and increment
+            let existing = Array.from(document.querySelectorAll('.keyframe-row')).map(r => parseInt(r.dataset.keyframe));
+            let newPercent = 50;
+            if (existing.length >= 2) {
+                // Insert after the last before 100%
+                let last = existing[existing.length - 2];
+                newPercent = Math.round((last + 100) / 2);
+            }
+
+            const html = `
+                <div class="keyframe-row border-t pt-4 mt-4" data-keyframe="${newPercent}">
+                    <div class="flex gap-2 items-center mb-2">
+                        <label class="text-sm font-medium text-gray-700 w-16">${newPercent}%</label>
+                        <div class="flex-1"></div>
+                        <button class="remove-keyframe px-2 py-1 bg-red-100 text-red-700 rounded text-sm">-</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-gray-500">Translate X (px)</label>
+                            <input type="number" data-prop="translateX" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">Translate Y (px)</label>
+                            <input type="number" data-prop="translateY" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">Rotate (deg)</label>
+                            <input type="number" data-prop="rotate" value="0" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">Scale</label>
+                            <input type="number" step="0.1" data-prop="scale" value="1" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">Opacity</label>
+                            <input type="number" step="0.1" min="0" max="1" data-prop="opacity" value="1" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+
+            // Re-bind events
+            bindEvents();
+            updateAll();
+        }
+
+        // Remove keyframe
+        function removeKeyframe(e) {
+            const row = e.target.closest('.keyframe-row');
+            const total = document.querySelectorAll('.keyframe-row').length;
+            if (total > 2) {
+                row.remove();
+                updateAll();
+            }
+        }
+
+        // Bind events to dynamic elements
+        function bindEvents() {
+            document.querySelectorAll('.add-keyframe').forEach(btn => {
+                btn.removeEventListener('click', addKeyframe);
+                btn.addEventListener('click', addKeyframe);
+            });
+            document.querySelectorAll('.remove-keyframe').forEach(btn => {
+                btn.removeEventListener('click', () => removeKeyframe(event));
+                btn.addEventListener('click', () => removeKeyframe(event));
+            });
+            document.querySelectorAll('.keyframe-input').forEach(input => {
+                input.removeEventListener('input', updateAll);
+                input.addEventListener('input', updateAll);
+            });
+        }
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                applyPreset(btn.dataset.preset);
+            });
+        });
+
+        function applyPreset(preset) {
+            // Clear existing keyframes except 0% and 100%
+            container.innerHTML = '';
+            document.querySelectorAll('.category-btn').forEach(b => {
+                b.classList.remove('bg-blue-100', 'text-blue-700');
+                b.classList.add('bg-gray-200', 'text-gray-700');
+            });
+
+            let keyframes = [];
+            switch(preset) {
+                case 'float':
+                    animName.value = 'floating';
+                    duration.value = 3;
+                    timing.value = 'ease-in-out';
+                    infinite.checked = true;
+                    direction.value = 'alternate';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 100, tx: 0, ty: -15, r: 0, s: 1.02, o: 1}
+                    ];
+                    break;
+                case 'fade':
+                    animName.value = 'fade';
+                    duration.value = 1.5;
+                    timing.value = 'ease-in-out';
+                    infinite.checked = false;
+                    iteration.value = '1';
+                    direction.value = 'normal';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 20, r: 0, s: 1, o: 0},
+                        {pct: 100, tx: 0, ty: 0, r: 0, s: 1, o: 1}
+                    ];
+                    break;
+                case 'bounce':
+                    animName.value = 'bounce';
+                    duration.value = 1;
+                    timing.value = 'cubic-bezier(0.68,-0.55,0.265,1.55)';
+                    infinite.checked = true;
+                    direction.value = 'normal';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 50, tx: 0, ty: -40, r: 0, s: 1.1, o: 1},
+                        {pct: 100, tx: 0, ty: 0, r: 0, s: 1, o: 1}
+                    ];
+                    break;
+                case 'shake':
+                    animName.value = 'shake';
+                    duration.value = 0.5;
+                    timing.value = 'ease-in-out';
+                    infinite.checked = true;
+                    direction.value = 'normal';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 25, tx: -8, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 50, tx: 8, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 75, tx: -8, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 100, tx: 0, ty: 0, r: 0, s: 1, o: 1}
+                    ];
+                    break;
+                case 'spin':
+                    animName.value = 'spin';
+                    duration.value = 1;
+                    timing.value = 'linear';
+                    infinite.checked = true;
+                    direction.value = 'normal';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 100, tx: 0, ty: 0, r: 360, s: 1, o: 1}
+                    ];
+                    break;
+                case 'pulse':
+                    animName.value = 'pulse';
+                    duration.value = 2;
+                    timing.value = 'ease-in-out';
+                    infinite.checked = true;
+                    direction.value = 'alternate';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 0, r: 0, s: 1, o: 1},
+                        {pct: 50, tx: 0, ty: 0, r: 0, s: 1.1, o: 0.8},
+                        {pct: 100, tx: 0, ty: 0, r: 0, s: 1, o: 1}
+                    ];
+                    break;
+                case 'slide-up':
+                    animName.value = 'slide-up';
+                    duration.value = 0.8;
+                    timing.value = 'ease-out';
+                    infinite.checked = false;
+                    iteration.value = '1';
+                    direction.value = 'normal';
+                    fillMode.value = 'forwards';
+                    delay.value = 0.2;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 50, r: 0, s: 0.8, o: 0},
+                        {pct: 100, tx: 0, ty: 0, r: 0, s: 1, o: 1}
+                    ];
+                    break;
+                case 'zoom':
+                    animName.value = 'zoom';
+                    duration.value = 2;
+                    timing.value = 'ease-in-out';
+                    infinite.checked = true;
+                    direction.value = 'alternate';
+                    fillMode.value = 'forwards';
+                    delay.value = 0;
+                    keyframes = [
+                        {pct: 0, tx: 0, ty: 0, r: 0, s: 0.9, o: 0.8},
+                        {pct: 100, tx: 0, ty: 0, r: 0, s: 1.1, o: 1}
+                    ];
+                    break;
+            }
+
+            // Add keyframes
+            keyframes.forEach(kf => {
+                const html = `
+                    <div class="keyframe-row${kf.pct === 100 ? '' : ' border-t pt-4 mt-4'}" data-keyframe="${kf.pct}">
+                        <div class="flex gap-2 items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700 w-16">${kf.pct}%</label>
+                            <div class="flex-1"></div>
+                            <button class="remove-keyframe px-2 py-1 bg-red-100 text-red-700 rounded text-sm">-</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-500">Translate X (px)</label>
+                                <input type="number" data-prop="translateX" value="${kf.tx}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">Translate Y (px)</label>
+                                <input type="number" data-prop="translateY" value="${kf.ty}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">Rotate (deg)</label>
+                                <input type="number" data-prop="rotate" value="${kf.r}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">Scale</label>
+                                <input type="number" step="0.1" data-prop="scale" value="${kf.s}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">Opacity</label>
+                                <input type="number" step="0.1" min="0" max="1" data-prop="opacity" value="${kf.o}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm keyframe-input">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+
+            bindEvents();
+            updateAll();
+        }
+
+        // Event listeners
+        [duration, delay, boxRadius, boxSize].forEach(el => {
+            el.addEventListener('input', updateAll);
+        });
+        [animName, timing, infinite, direction, fillMode, boxBg].forEach(el => {
+            el.addEventListener('change', updateAll);
+        });
+        infinite.addEventListener('change', updateAll);
+        addKeyframeBtn.addEventListener('click', addKeyframe);
+        bindEvents();
+
+        // Copy button
+        copyBtn.addEventListener('click', () => {
+            const text = cssCode.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const original = copyBtn.textContent;
+                copyBtn.textContent = '✅ 已复制！';
+                copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                setTimeout(() => {
+                    copyBtn.textContent = original;
+                    copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }, 2000);
+            });
+        });
+
+        // Initialize
+        bindEvents();
+        updateAll();
+    </script>
+</body>
+</html>
