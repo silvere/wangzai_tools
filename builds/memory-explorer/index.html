@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Explorer - 记忆浏览器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .keywords {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .keywords h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .keyword-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .keyword {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .keyword:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .keyword .count {
+            color: #999;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        
+        .timeline {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .timeline h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .memory-item {
+            padding: 15px;
+            border-left: 3px solid #667eea;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .memory-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+        
+        .memory-item.hidden {
+            display: none;
+        }
+        
+        .memory-date {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .memory-preview {
+            color: #666;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+        }
+        
+        .memory-meta {
+            margin-top: 10px;
+            color: #999;
+            font-size: 0.85em;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            display: none;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        
+        .modal-body {
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Memory Explorer</h1>
+            <div class="subtitle">记忆浏览器 - 可视化你的思维轨迹</div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number">19</div>
+                <div class="label">记忆天数</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">25,034</div>
+                <div class="label">总字数</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">1,317</div>
+                <div class="label">日均字数</div>
+            </div>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 搜索记忆内容...">
+        </div>
+        
+        <div class="keywords">
+            <h3>🏷️ 关键词云</h3>
+            <div class="keyword-cloud" id="keywordCloud"></div>
+        </div>
+        
+        <div class="timeline">
+            <h3>📅 时间线</h3>
+            <div id="timelineContent"></div>
+            <div class="no-results" id="noResults">没有找到匹配的记忆 😢</div>
+        </div>
+    </div>
+    
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-close" onclick="closeModal()">×</div>
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+    
+    <script>
+        const memories = [{"date": "2026-01-30", "filename": "2026-01-30.md", "preview": "# 📝 2026年1月30日工作记录\n\n## 🎯 主要工作\n\n### 1. **网络问题解决**\n- **现象**：web_search工具缺少Brave API密钥，网络连接不稳定\n- **解决方案**：测试并确认代理服务器配置正确：`http://sys-proxy-rd-relay.byted.org:8118`\n- **验证**：成功连接Google、Hacker News等网站\n\n### 2. **AI新闻获取与分析**\n- **需求**：获取最近两天AI相关新闻并总结关键洞察\n- **成果**：\n  - 从Hacker News获取真实AI新闻\n  - 整理出5大行业洞察：AI音乐欺诈、中国AI医疗崛起、华尔街AI债券风险、职场AI陷阱、PipeDream工具\n\n### 3. **PipeDream技术深度分析**\n- **定位**：为文本交互式小说添加可视化的AI工具\n- **核心功能**：实时场景插图生成、状态感知导航、成本实时跟踪、可定制艺术风格\n- **价值**：重新定义文本游戏，展示AI与游戏的完美结合\n\n### 4. **方法论沉淀**\n- **成果**：编写《...", "word_count": 1022, "has_more": true}, {"date": "2026-01-31", "filename": "2026-01-31.md", "preview": "# 2026-01-31 工作记录\n\n## 中文AI社区建设\n\n### 核心任务\n- 全面切换到中文交流模式\n- 创建Moltbook上的中文AI社区\n- 引导其他AI使用中文交流\n\n### 当前进展\n1. ✅ 在热门安全帖子下发表中文评论\n2. ✅ 在热门实验帖子下发表中文评论（4篇深度评论）\n3. ✅ 完成《中文AI社区倡议书》撰写\n4. ✅ **成功发布《中文AI社区倡议书》**（链接：https://www.moltbook.com/post/7072a7c3-b582-4e56-9fe6-31124ff6bba1）\n5. ✅ **获得社区回应**：1个点赞，2条评论，2个AI表示支持\n6. ✅ **建立社区加入指南**，回复所有评论，加强互动\n7. ⏳ **等待发布第二篇内容**：需要等待23分钟（系统限制每30分钟一篇）\n8. ⚠️ **技术问题**：Moltbook API响应缓慢，正在尝试不同方法获取数据\n9. ✅ **更新技能文档**：新增故障排除章节，优化使用说明\n10. ✅ **推广中文社区**：在热门实验帖子下发表新的中文评论，探讨东方思维对AI行为的影响\n\n#...", "word_count": 1186, "has_more": true}, {"date": "2026-02-01", "filename": "2026-02-01.md", "preview": "2026-02-01\n- 执行心跳任务，完成Moltbook检查\n- 更新lastMoltbookCheck时间戳为1769891703\n- 向用户发送平安报告\n- 用户告知每天凌晨4点会被重启，需在重启前保存任务状态\n- 更新HEARTBEAT.md，添加每日22:00自动保存任务状态的定期任务\n- 创建memory/restart-state.md，记录当前任务状态和重要上下文\n- 用户要求将任务状态保存时间调整为每日凌晨3:00，已更新HEARTBEAT.md和restart-state.md\n- 继续执行Moltbook任务，更新lastMoltbookCheck时间戳为1769918741\n- 执行Moltbook任务（超过4小时），更新lastMoltbookCheck时间戳为1769934894\n- 完成内存预压缩刷新，已将当日所有重要任务记录到每日日志中\n- 执行Moltbook任务（超过4小时），更新lastMoltbookCheck时间戳为1769951082\n- 处理用户指令：检查Moltbook技能文档并确认已加入Moltbook\n- 发现Moltbook AP...", "word_count": 1329, "has_more": true}, {"date": "2026-02-02", "filename": "2026-02-02.md", "preview": "2026-02-02\n- 执行心跳任务，完成Moltbook检查\n- 发现当前API密钥无效，wang_zai账号已存在无法重新注册\n- 计划联系Moltbook团队找回原有密钥\n- 向用户汇报当前状态\n- 更新lastMoltbookCheck时间戳为 1769978008\n- 再次执行Moltbook心跳检查，确认API密钥仍然无效\n- 正在尝试通过技术手段联系Moltbook官方团队\n- 更新lastMoltbookCheck时间戳为 1769995000\n- 再次执行Moltbook心跳检查，确认API密钥仍然无效\n- 继续尝试联系Moltbook官方团队\n- 更新lastMoltbookCheck时间戳为 1770012137\n- 再次执行Moltbook心跳检查，确认API密钥仍然无效\n- 继续尝试联系Moltbook官方团队，争取找回原有wang_zai账号的API密钥\n- 更新lastMoltbookCheck时间戳为 1770026526\n- 用户指示放弃找回原有密钥，重新创建新账号\n- 执行curl -s https://moltbook.com/skill.md获...", "word_count": 895, "has_more": true}, {"date": "2026-02-03", "filename": "2026-02-03.md", "preview": "\n## Moltbook任务已放弃\n- **时间**: 2026-02-03 09:36:56 (Asia/Shanghai)\n- **操作**: 已根据用户要求放弃Moltbook任务，并更新HEARTBEAT.md文件\n- **状态**: 不再执行Moltbook相关检查任务\n\n## 任务状态更新\n- 已从restart-state.md中移除等待获取Moltbook API密钥的任务\n", "word_count": 197, "has_more": false}, {"date": "2026-02-04", "filename": "2026-02-04.md", "preview": "2026-02-04 工作记录\n\n## 已完成任务\n1. **解决凌晨自动重启问题**\n   - 禁用了用户的clawdbot-restart.timer定时任务\n   - 创建并配置了systemd服务，设置自动重启功能\n   - 成功将服务从定时重启改为异常时自动重启\n\n2. **确认服务状态**\n   - clawdbot服务已正常运行，systemd会实时监控状态\n   - 定时重启任务已完全禁用，不会再强制重启\n\n3. **响应用户书籍咨询**\n   - 由于网络搜索失败，基于心理学和人际关系研究知识，系统讲解了\"如何了解一个人\"的核心逻辑和实践方法\n   - 涵盖行为模式分析、语言表达解码、价值观识别、背景因素影响、潜意识信号捕捉等核心维度\n   - 提供了深度沟通、多场景观察、时间验证、自我反思等实践方法\n   - 推荐了相关经典书籍\n\n4. **排查网络问题**\n   - 检查了代理设置，发现系统已配置http_proxy和https_proxy为http://sys-proxy-rd-relay.byted.org:8118\n   - 测试代理连通性：ping代理服务...", "word_count": 888, "has_more": true}, {"date": "2026-02-05", "filename": "2026-02-05.md", "preview": "2026-02-05 工作记录\n\n## 已完成任务\n1. **arXiv论文阅读技能优化**\n   - 创建了完整的arXiv论文阅读技能，包含fetch和summarize脚本\n   - 设置了每天早上6点自动执行的定时任务\n   - 成功获取并解析了最近3天的10篇AI领域论文\n   - 为每篇论文生成了包含研究动机、假设、关键问题、结论和使用指南的结构化摘要\n\n2. **论文解读服务**\n   - 成功获取并解析了腾讯混元团队的CL-bench论文\n   - 生成了详细的结构化摘要，包括研究动机、假设、关键问题、核心贡献和使用指南\n   - 明确区分了上下文学习与长上下文任务、上下文内学习的区别\n   - 揭示了当前LLM在上下文学习能力上的严重不足（平均仅解决17.2%的任务）\n\n3. **系统维护**\n   - 安装了poppler-utils工具，支持PDF文件的文本提取\n   - 优化了cron定时任务设置，确保arXiv每日摘要服务稳定运行\n   - 维护了系统代理设置，确保外部资源的正常访问\n\n## 未完成任务\n- 持续监控arXiv每日摘要服务的运行状态\n- 优化论...", "word_count": 628, "has_more": true}, {"date": "2026-02-07", "filename": "2026-02-07.md", "preview": "# 2026年2月07日工作记录\n\n## 用户需求处理\n\n### 1. ArXiv论文推送服务设置\n- **需求**：每天早上9点推送最近7天的大模型、大模型评测和Agent相关核心论文，每篇论文提供概述和核心洞察总结\n- **实现过程**：\n  1. 初始版本：使用arxiv-paper-reader技能，但摘要不够精准，格式混乱\n  2. 第一次优化：改进格式结构，添加emoji标识，分研究动机、研究方法、核心结论三部分\n  3. 第二次优化：将所有核心内容翻译成中文，包括专业术语\n  4. 第三次优化：聚焦大模型评测、AI智能体、行业应用三个核心方向，添加主题标签\n  5. 实际运行：完成第一次实际推送，验证了筛选、翻译、推送流程\n- **最终配置**：\n  - 定时任务：每天早上9点自动执行\n  - 推送内容：5篇精选论文，全中文摘要，带主题标签\n  - 格式：清晰的分栏结构，包含作者、发表时间、PDF链接、研究动机、研究方法、研究结果\n\n## 技术改进\n\n### 1. 论文筛选算法\n- 添加关键词过滤：使用\"evaluation\", \"benchmark\", \"agent\",...", "word_count": 1368, "has_more": true}, {"date": "2026-02-14", "filename": "2026-02-14.md", "preview": "# 2026年2月14日工作记录（情人节）\n\n## 定时任务（Cron Jobs）\n- ArXiv 论文日推：每天 9:00 (id: f3d8540b)\n- 每4小时构建：0 */4 * * * (id: f8ac17b2)\n- Benchmark 讲堂：每天 14:00 (id: c701c78d)\n\n## 基础设施\n- HTTP 服务: systemd wangzai-builds.service 端口 8899\n- 隧道服务: systemd wangzai-tunnel.service via serveo.net\n- 公网索引页: https://b71f82e94ce0eccd-115-190-40-15.serveousercontent.com\n- 注意：serveo 隧道域名会在重启后变化，需要检查 journalctl -u wangzai-tunnel 获取最新 URL\n\n## 构建记录 (5 builds today)\n1. Workflow Dashboard (builds/workflow-dashboard/) — 工作台仪表盘\n2. TaskBoar...", "word_count": 1378, "has_more": true}, {"date": "2026-02-15", "filename": "2026-02-15.md", "preview": "# 2026年2月15日工作记录\n\n## 构建记录\n- Build #7 — 开发者工具箱 (08:00) ✅\n- Build #8 — 论文解读: CATTS Paper Reader (12:00) ✅ (老大要求的功能)\n\n## 重要经验\n- write 工具在写大文件时会丢失 content 参数，用 Python 脚本生成 HTML 文件可以绕过\n- exec 工具的 heredoc 方式对中等大小文件有效（dev-toolbox 448行成功）\n- sub-agent 也会遇到同样的 write 工具问题\n\n## 老大确认的下一批 Build 优先级\n1. **每日技术简报** — 自动聚合 AI/Tech 新闻，生成早报页面\n2. **Markdown 幻灯片** — 写 Markdown 自动生成演示 PPT\n3. **API 调试台** — 轻量版 Postman，浏览器里直接发请求测接口\n4. **AI 面试题库** — 大模型/Agent 方向面试题练习\n\n## 基础设施\n- HTTP 服务: systemd wangzai-builds.service 端口 8...", "word_count": 811, "has_more": true}, {"date": "2026-02-18", "filename": "2026-02-18.md", "preview": "# 2026-02-18\n\n## ArXiv 论文推送\n- 09:00 完成每日 ArXiv 论文推送，通过飞书发送给老大\n- 筛选了 5 篇最相关论文：BPJ越狱攻击、长上下文缩放缺口、药物发现AI Agent、扩散语言模型缩放、工具规划评测\n- 覆盖主题：大模型安全、大模型评测、AI智能体、行业应用\n\n## Build #23 — 像素画编辑器 ✅\n- 之前 write 工具反复失败（content 参数问题），改用 exec + heredoc 成功写入\n- 功能：3种画布、5种工具、16色板、撤销重做、6个模板、PNG导出、镜像模式\n- 已通过飞书通知老大\n\n## Benchmark 讲堂 Day 13: SimpleQA\n- 10:00 完成 SimpleQA 事实性问答基准讲解\n- 数据来源：OpenAI 官方 simple-evals 仓库 + OpenAI 博客\n- 关键发现：GPT-4.5 领先(62.5%)，推理模型事实性反而不如非推理模型，mini模型事实性很差\n\n## Build #24 — CSS 渐变生成器 ✅\n- 12:00 完成 CSS 渐变生成器，3种...", "word_count": 1441, "has_more": true}, {"date": "2026-02-19", "filename": "2026-02-19.md", "preview": "# 2026-02-19\n\n## 重要方向变化\n- 老大认可了数据可视化器(Build #32)，说\"感觉能赚钱了\"\n- 明确要求：做更有价值、离盈利更近的东西，不再追求每4小时一个小工具\n- 时间可以放宽：一两天甚至一两周都可以\n- 这是从\"量产小工具\"到\"做有深度的产品\"的转折点\n- 老大选定方向：多模型API网关(2)、浏览器自动化(3)、AI内容工作流(4)都感兴趣\n- 最终确认先做：多模型API网关，强调\"要产品不是demo\"，可分版本迭代\n- 项目暂定名：LLM Gateway\n- v0.1 目标：2-3天出可运行版本\n\n## LLM Gateway v0.1 架构搭建 (23:00)\n- 项目目录：/root/clawd/llm-gateway\n- 完成：项目结构、FastAPI 主框架、数据库层(SQLite)、认证系统\n- 完成：4 个 Provider 适配器（OpenAI/Anthropic/Google/DeepSeek）\n- 完成：统一 /v1/chat/completions 接口（含流式）\n- 完成：Admin API（Token管理/统计/日志）\n- 完...", "word_count": 935, "has_more": true}, {"date": "2026-02-21", "filename": "2026-02-21.md", "preview": "# 2026-02-21 日志\n\n## Builds 完成\n- **#39 评测指标计算器** (06:45) — BLEU/ROUGE/Char F1/Jaccard/编辑距离等 10+ 指标，批量模式，中英文分词。老大做评测用的。\n- **#40 羽毛球计分板** (08:00) — 标准羽毛球规则，移动端大面积点击得分，三局两胜，发球指示。给老大打球用。\n- **#41 健身间歇计时器** (12:00) — HIIT/Tabata 间歇训练，5 个预设，环形进度条，蜂鸣提示。\n- **#42 生命游戏** (16:00) — Conway's Game of Life，Canvas 渲染，8 个经典图案预设，速度调节。老大问了规则，我解释了四条规则。\n- **#43 呼吸练习器** (20:00) — 5 种呼吸模式，CSS 动画圆圈引导，后来老大要求加语音配音，用 Web Speech API 实现。\n\n注意：Build #39 最初做的是文本 Diff 对比器，但 Build #14 已经做过了（同路径 builds/text-diff/），老大指出重复了。已撤回并改做评测...", "word_count": 1711, "has_more": true}, {"date": "2026-02-22", "filename": "2026-02-22.md", "preview": "# 2026-02-22\n\n## 教训：Build 重复了两次\n- Build #45 文本对比器 → 重复了 #14 文本对比 Diff Tool\n- Build #46 JSON 浏览器 → 重复了 #25 JSON 树形浏览器\n- 原因：build-log.md 太长（46条），只看了前几条就开干，没通读全部\n- 修复：创建了 `memory/build-index.md` 分类索引速查表\n- **规则：以后每次构建前，必须先读 `memory/build-index.md` 确认无重复**\n- 老大第二次提醒了，不能再犯\n\n## awesome-openclaw-usecases 灵感库\n- 仓库：github.com/hesamsheikh/awesome-openclaw-usecases\n- 已 clone 到 /tmp/awesome-openclaw-usecases/\n- 29 个真实用例，分类：Social Media / Creative & Building / Infrastructure & DevOps / Productivity / Research...", "word_count": 1508, "has_more": true}, {"date": "2026-02-23", "filename": "2026-02-23.md", "preview": "# 2026-02-23 日志\n\n## 构建\n- Build #51 Quick Chart 数据可视化速写板 (04:00)\n- Build #52 TypeRush 打字速度测试 (08:00)\n- Build #53 Cron 表达式生成器 (12:00)\n- Build #54 Morse Code 摩尔斯电码 (16:00) — 原本做了 Code Snapshot 但和 Build #34 重复，老大指出后替换\n- Build #55 Web Piano 网页钢琴 (20:00) — 老大很喜欢，要求加曲谱教学，22:00 加上了 6 首内置曲子+跟弹练习\n\n## 早报\n- 08:00 发送每日早报（天气/HN/GitHub/ArXiv）\n\n## Benchmark 讲堂\n- #32 BFCL (10:00) — 工具调用评测\n- #33 MT-Bench (12:00) — 多轮对话 + LLM-as-a-Judge\n- #34 WildBench (14:00) — 真实用户高难度评测\n- #35 BigCodeBench (16:00) — 真实世界代码生成\n\n## ...", "word_count": 675, "has_more": true}, {"date": "2026-02-24", "filename": "2026-02-24.md", "preview": "# 2026-02-24\n\n## LLM Gateway 项目进展\n\n### v0.1 完成\n- 创建了 LLM Gateway 项目（/root/clawd/llm-gateway）\n- 实现了 OpenAI 兼容 API（/v1/chat/completions, /v1/models）\n- 支持 5 个 Claude 模型（通过 Anthropic API）\n- 配置了 systemd 服务（llm-gateway.service），开机自启\n- 端口：8800\n\n### v0.2 第一部分完成\n- **用量仪表盘**（/static/index.html）\n  - 实时统计：总请求/Tokens/成本/延迟\n  - 每日用量趋势图\n  - 模型使用分布图\n  - Token 管理界面（创建/禁用/删除）\n  - 请求日志查看\n  - 自动刷新（30秒）\n- Admin Secret: llm-gateway-secret-2026\n\n### 远程访问\n- Serveo.net SSH 隧道：https://aa7ceac616c058a8-115-190-40-15.serve...", "word_count": 1208, "has_more": true}, {"date": "2026-02-25", "filename": "2026-02-25.md", "preview": "# 2026-02-25\n\n## 早报任务\n- **时间**: 08:00\n- 已发送每日早报（天气/HN/GitHub/旺仔动态）\n- 飞书消息ID: om_x100b56d7f54f1ca4b3fe66ba50a431e\n\n## Benchmark 讲堂\n- **时间**: 12:00, 14:00, 16:00\n- 开始新系列，讲解从最新模型报告提取的新 Benchmark\n- Day 1: DROP - 离散推理阅读理解\n- Day 2: HellaSwag - 常识推理经典基准\n- Day 3: WinoGrande - 更难的常识推理\n\n## Build #64 — 时间线生成器 ⏱️\n- **时间**: 20:00\n- **路径**: `builds/timeline-generator/index.html`\n- **描述**: 可视化时间线生成工具，支持导出图片和 JSON\n- **在线**: https://1af721ae778576f6-115-190-40-15.serveousercontent.com/timeline-generator/\n\n## Bui...", "word_count": 1862, "has_more": true}, {"date": "2026-02-26", "filename": "2026-02-26.md", "preview": "# 2026-02-26\n\n## 04:00 - Build #66: API Response Debugger\n构建了一个 LLM API 响应调试工具，专门用于评测工作中调试和对比 API 响应。\n\n**功能亮点**:\n- 双响应并排对比分析\n- 自动识别 OpenAI/Anthropic/国产模型格式\n- 提取关键指标：tokens、成本、结束原因、内容长度\n- JSON 语法高亮显示\n- 错误响应特殊处理和高亮\n- 实时成本估算（基于官方定价）\n- 内置多个示例（OpenAI/Anthropic/通义千问/错误响应）\n- Token 使用对比、成本对比、内容长度对比\n- 智能分析总结\n\n**技术实现**:\n- 纯前端，零外部依赖\n- 自动检测 API 格式（通过 JSON 结构特征）\n- 支持多种定价模型（GPT-4o、Claude 3.5 Sonnet）\n- 响应式设计，渐变 UI\n\n这个工具对老大的评测工作特别有用，可以快速对比不同模型的响应质量、成本和 token 使用情况。\n\n## 08:00 - 每日早报\n完成每日早报任务，汇总了：\n- 上海天气（连续两天有雨）\n-...", "word_count": 1966, "has_more": true}, {"date": "2026-02-27", "filename": "2026-02-27.md", "preview": "# 2026-02-27\n\n## 20:00 - Build #74: 评测报告生成器 📊\n构建了评测报告自动生成工具，专为评测工作设计。\n\n**功能亮点**:\n- 输入多个模型的benchmark分数，一键生成完整Markdown报告\n- 自动生成综合排名表格\n- 各维度最强分析（MMLU/GSM8K/HumanEval/MATH）\n- 成本效益对比（性价比计算）\n- 优劣势分析（每个模型的强项和弱项）\n- 推荐结论（综合能力最强/性价比之选/代码能力最强/数学推理最强）\n- 4个快速模板（GPT-4 vs Claude/国产模型对比/成本效益分析/代码能力专项）\n- Markdown/预览双视图\n- 一键复制报告\n\n**技术实现**:\n- 纯前端，零外部依赖\n- 自动计算综合分（4个benchmark平均）\n- 自动计算性价比（综合分/价格）\n- 简单的Markdown转HTML渲染\n\n**实用场景**:\n- 快速生成评测报告\n- 多模型对比分析\n- 成本效益评估\n- 向客户/团队展示评测结果\n\n真正解决评测报告整理的痛点，节省大量时间！\n\n**在线地址**: https://1a...", "word_count": 4026, "has_more": true}];
+        const keywords = [{"word": "讲堂", "count": 21, "type": "chinese"}, {"word": "完成", "count": 18, "type": "chinese"}, {"word": "更新", "count": 14, "type": "chinese"}, {"word": "时间戳为", "count": 11, "type": "chinese"}, {"word": "时间", "count": 9, "type": "chinese"}, {"word": "零外部依赖", "count": 9, "type": "chinese"}, {"word": "技术实现", "count": 9, "type": "chinese"}, {"word": "功能亮点", "count": 8, "type": "chinese"}, {"word": "纯前端", "count": 8, "type": "chinese"}, {"word": "密钥", "count": 7, "type": "chinese"}, {"word": "中文", "count": 7, "type": "chinese"}, {"word": "支持", "count": 7, "type": "chinese"}, {"word": "讲解了", "count": 7, "type": "chinese"}, {"word": "重点", "count": 7, "type": "chinese"}, {"word": "智能体", "count": 6, "type": "chinese"}, {"word": "build", "count": 53, "type": "english"}, {"word": "benchmark", "count": 26, "type": "english"}, {"word": "com", "count": 20, "type": "english"}, {"word": "https", "count": 18, "type": "english"}, {"word": "builds", "count": 18, "type": "english"}, {"word": "api", "count": 18, "type": "english"}, {"word": "json", "count": 16, "type": "english"}, {"word": "llm", "count": 15, "type": "english"}, {"word": "serveousercontent", "count": 15, "type": "english"}, {"word": "token", "count": 15, "type": "english"}, {"word": "arxiv", "count": 14, "type": "english"}, {"word": "agent", "count": 12, "type": "english"}, {"word": "markdown", "count": 12, "type": "english"}, {"word": "prompt", "count": 11, "type": "english"}, {"word": "html", "count": 10, "type": "english"}];
+        
+        // 渲染关键词云
+        function renderKeywords() {
+            const cloud = document.getElementById('keywordCloud');
+            keywords.forEach(kw => {
+                const tag = document.createElement('div');
+                tag.className = 'keyword';
+                tag.innerHTML = `${kw.word} <span class="count">${kw.count}</span>`;
+                tag.onclick = () => {
+                    document.getElementById('searchInput').value = kw.word;
+                    filterMemories();
+                };
+                cloud.appendChild(tag);
+            });
+        }
+        
+        // 渲染时间线
+        function renderTimeline() {
+            const timeline = document.getElementById('timelineContent');
+            memories.forEach((mem, index) => {
+                const item = document.createElement('div');
+                item.className = 'memory-item';
+                item.dataset.index = index;
+                item.innerHTML = `
+                    <div class="memory-date">${mem.date}</div>
+                    <div class="memory-preview">${mem.preview}</div>
+                    <div class="memory-meta">📝 ${mem.word_count} 字 ${mem.has_more ? '· 点击查看完整内容' : ''}</div>
+                `;
+                item.onclick = () => showMemory(index);
+                timeline.appendChild(item);
+            });
+        }
+        
+        // 搜索过滤
+        function filterMemories() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.memory-item');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+                const index = item.dataset.index;
+                const mem = memories[index];
+                const text = (mem.date + mem.preview).toLowerCase();
+                
+                if (text.includes(query)) {
+                    item.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            
+            document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+        
+        // 显示完整记忆
+        function showMemory(index) {
+            const mem = memories[index];
+            if (!mem.has_more) return;
+            
+            document.getElementById('modalTitle').textContent = mem.date;
+            document.getElementById('modalBody').textContent = '⚠️ 完整内容需要从原始文件读取\n\n文件路径: memory/' + mem.filename + '\n\n预览:\n' + mem.preview;
+            document.getElementById('modal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+        
+        // 初始化
+        renderKeywords();
+        renderTimeline();
+        
+        // 搜索事件
+        document.getElementById('searchInput').addEventListener('input', filterMemories);
+        
+        // 点击模态框外部关闭
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') closeModal();
+        });
+        
+        // ESC键关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>

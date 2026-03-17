@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议纪要生成器 📝</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .participants {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .participants input {
+            flex: 1;
+        }
+
+        .add-btn {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .add-btn:hover {
+            background: #5568d3;
+        }
+
+        .participant-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .participant-tag {
+            background: #f0f0ff;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .participant-tag button {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .output {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 400px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .template-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .template-btn {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .template-btn:hover {
+            border-color: #667eea;
+        }
+
+        .template-btn.active {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 会议纪要生成器</h1>
+            <p>3分钟生成专业会议纪要，告别手写烦恼</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📋 会议信息</h2>
+
+                <div class="input-group">
+                    <label>会议模板</label>
+                    <div class="template-selector">
+                        <button class="template-btn active" onclick="selectTemplate('standard')">标准会议</button>
+                        <button class="template-btn" onclick="selectTemplate('project')">项目评审</button>
+                        <button class="template-btn" onclick="selectTemplate('weekly')">周会</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>会议主题</label>
+                    <input type="text" id="title" placeholder="例如：2026年Q1产品规划会议">
+                </div>
+
+                <div class="input-group">
+                    <label>会议时间</label>
+                    <input type="datetime-local" id="datetime">
+                </div>
+
+                <div class="input-group">
+                    <label>会议地点</label>
+                    <input type="text" id="location" placeholder="例如：3楼会议室 / 腾讯会议">
+                </div>
+
+                <div class="input-group">
+                    <label>参会人员</label>
+                    <div class="participants">
+                        <input type="text" id="participantInput" placeholder="输入姓名后按回车">
+                        <button class="add-btn" onclick="addParticipant()">添加</button>
+                    </div>
+                    <div class="participant-list" id="participantList"></div>
+                </div>
+
+                <div class="input-group">
+                    <label>主持人</label>
+                    <input type="text" id="host" placeholder="例如：张三">
+                </div>
+
+                <div class="input-group">
+                    <label>记录人</label>
+                    <input type="text" id="recorder" placeholder="例如：李四">
+                </div>
+
+                <div class="input-group">
+                    <label>会议内容（每行一个要点）</label>
+                    <textarea id="content" placeholder="例如：&#10;1. 讨论Q1产品路线图&#10;2. 确定重点功能优先级&#10;3. 分配各团队任务&#10;4. 明确时间节点"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>决议事项（可选）</label>
+                    <textarea id="decisions" placeholder="例如：&#10;1. 优先开发用户反馈最多的功能&#10;2. 3月15日前完成原型设计"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>待办事项（可选）</label>
+                    <textarea id="todos" placeholder="例如：&#10;1. 张三：整理需求文档（3月10日前）&#10;2. 李四：完成技术方案（3月12日前）"></textarea>
+                </div>
+
+                <button class="generate-btn" onclick="generateMinutes()">🚀 生成会议纪要</button>
+            </div>
+
+            <div class="card">
+                <h2>📄 生成结果</h2>
+                <div class="output" id="output">会议纪要将显示在这里...</div>
+                
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="copyOutput()">复制纪要</button>
+                    <button class="btn btn-secondary" onclick="downloadOutput()">下载Word</button>
+                    <button class="btn btn-secondary" onclick="downloadMarkdown()">下载Markdown</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let currentTemplate = 'standard';
+        let generatedMinutes = '';
+
+        // 初始化日期时间
+        document.getElementById('datetime').value = new Date().toISOString().slice(0, 16);
+
+        // 回车添加参会人员
+        document.getElementById('participantInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addParticipant();
+            }
+        });
+
+        function selectTemplate(template) {
+            currentTemplate = template;
+            document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function addParticipant() {
+            const input = document.getElementById('participantInput');
+            const name = input.value.trim();
+            
+            if (name && !participants.includes(name)) {
+                participants.push(name);
+                updateParticipantList();
+                input.value = '';
+            }
+        }
+
+        function removeParticipant(name) {
+            participants = participants.filter(p => p !== name);
+            updateParticipantList();
+        }
+
+        function updateParticipantList() {
+            const list = document.getElementById('participantList');
+            list.innerHTML = participants.map(name => `
+                <div class="participant-tag">
+                    ${name}
+                    <button onclick="removeParticipant('${name}')">×</button>
+                </div>
+            `).join('');
+        }
+
+        function generateMinutes() {
+            const title = document.getElementById('title').value.trim();
+            const datetime = document.getElementById('datetime').value;
+            const location = document.getElementById('location').value.trim();
+            const host = document.getElementById('host').value.trim();
+            const recorder = document.getElementById('recorder').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const decisions = document.getElementById('decisions').value.trim();
+            const todos = document.getElementById('todos').value.trim();
+
+            if (!title || !datetime || !content) {
+                alert('请至少填写会议主题、时间和内容');
+                return;
+            }
+
+            const date = new Date(datetime);
+            const formattedDate = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+            let minutes = '';
+
+            if (currentTemplate === 'standard') {
+                minutes = generateStandardMinutes(title, formattedDate, location, host, recorder, content, decisions, todos);
+            } else if (currentTemplate === 'project') {
+                minutes = generateProjectMinutes(title, formattedDate, location, host, recorder, content, decisions, todos);
+            } else if (currentTemplate === 'weekly') {
+                minutes = generateWeeklyMinutes(title, formattedDate, location, host, recorder, content, decisions, todos);
+            }
+
+            generatedMinutes = minutes;
+            document.getElementById('output').textContent = minutes;
+        }
+
+        function generateStandardMinutes(title, date, location, host, recorder, content, decisions, todos) {
+            let minutes = `会议纪要\n\n`;
+            minutes += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `会议主题：${title}\n`;
+            minutes += `会议时间：${date}\n`;
+            if (location) minutes += `会议地点：${location}\n`;
+            if (host) minutes += `主持人：${host}\n`;
+            if (recorder) minutes += `记录人：${recorder}\n`;
+            if (participants.length > 0) minutes += `参会人员：${participants.join('、')}\n`;
+            
+            minutes += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `一、会议内容\n\n`;
+            minutes += formatList(content);
+            
+            if (decisions) {
+                minutes += `\n二、决议事项\n\n`;
+                minutes += formatList(decisions);
+            }
+            
+            if (todos) {
+                minutes += `\n三、待办事项\n\n`;
+                minutes += formatList(todos);
+            }
+            
+            minutes += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `记录人：${recorder || '______'}　　　　　审核人：______\n`;
+            minutes += `日期：${new Date().toLocaleDateString('zh-CN')}\n`;
+            
+            return minutes;
+        }
+
+        function generateProjectMinutes(title, date, location, host, recorder, content, decisions, todos) {
+            let minutes = `项目评审会议纪要\n\n`;
+            minutes += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `项目名称：${title}\n`;
+            minutes += `评审时间：${date}\n`;
+            if (location) minutes += `评审地点：${location}\n`;
+            if (host) minutes += `评审主持：${host}\n`;
+            if (participants.length > 0) minutes += `评审专家：${participants.join('、')}\n`;
+            
+            minutes += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `一、评审内容\n\n`;
+            minutes += formatList(content);
+            
+            if (decisions) {
+                minutes += `\n二、评审结论\n\n`;
+                minutes += formatList(decisions);
+            }
+            
+            if (todos) {
+                minutes += `\n三、整改要求\n\n`;
+                minutes += formatList(todos);
+            }
+            
+            minutes += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `记录人：${recorder || '______'}　　　　　签字：______\n`;
+            
+            return minutes;
+        }
+
+        function generateWeeklyMinutes(title, date, location, host, recorder, content, decisions, todos) {
+            let minutes = `周会纪要\n\n`;
+            minutes += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `会议主题：${title}\n`;
+            minutes += `会议时间：${date}\n`;
+            if (participants.length > 0) minutes += `参会人员：${participants.join('、')}\n`;
+            
+            minutes += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            minutes += `一、本周工作总结\n\n`;
+            minutes += formatList(content);
+            
+            if (decisions) {
+                minutes += `\n二、重点事项\n\n`;
+                minutes += formatList(decisions);
+            }
+            
+            if (todos) {
+                minutes += `\n三、下周计划\n\n`;
+                minutes += formatList(todos);
+            }
+            
+            minutes += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            
+            return minutes;
+        }
+
+        function formatList(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            return lines.map(line => {
+                line = line.trim();
+                if (/^\d+[.、]/.test(line)) {
+                    return line + '\n';
+                } else {
+                    return '• ' + line + '\n';
+                }
+            }).join('');
+        }
+
+        function copyOutput() {
+            if (!generatedMinutes) {
+                alert('请先生成会议纪要');
+                return;
+            }
+            
+            navigator.clipboard.writeText(generatedMinutes).then(() => {
+                alert('会议纪要已复制到剪贴板！');
+            });
+        }
+
+        function downloadOutput() {
+            if (!generatedMinutes) {
+                alert('请先生成会议纪要');
+                return;
+            }
+            
+            const blob = new Blob([generatedMinutes], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `会议纪要_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadMarkdown() {
+            if (!generatedMinutes) {
+                alert('请先生成会议纪要');
+                return;
+            }
+            
+            const blob = new Blob([generatedMinutes], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `会议纪要_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

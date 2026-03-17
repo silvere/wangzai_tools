@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🫁 呼吸练习</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:#0a0a1a;color:#e0e0e0;user-select:none}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 50% 50%,#0d1b2a,#0a0a1a);transition:background 4s}
+.bg.inhale{background:radial-gradient(ellipse at 50% 50%,#1b2838,#0a0a1a)}
+.bg.hold{background:radial-gradient(ellipse at 50% 50%,#1a2540,#0a0a1a)}
+.bg.exhale{background:radial-gradient(ellipse at 50% 50%,#0d1520,#0a0a1a)}
+.container{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:24px;padding:20px}
+.title{font-size:14px;color:#556;letter-spacing:2px;text-transform:uppercase}
+.circle-wrap{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center}
+.circle-outer{position:absolute;width:260px;height:260px;border-radius:50%;border:1px solid #ffffff10;transition:transform var(--dur) ease-in-out}
+.circle-mid{position:absolute;width:200px;height:200px;border-radius:50%;border:1px solid #ffffff08;transition:transform var(--dur) ease-in-out}
+.circle-inner{position:absolute;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,#3b82f640,#3b82f610,transparent);transition:transform var(--dur) ease-in-out,background var(--dur)}
+.inhale .circle-outer{transform:scale(1.3)}
+.inhale .circle-mid{transform:scale(1.4)}
+.inhale .circle-inner{transform:scale(2.2);background:radial-gradient(circle,#3b82f660,#3b82f620,transparent)}
+.hold .circle-outer{transform:scale(1.3)}
+.hold .circle-mid{transform:scale(1.4)}
+.hold .circle-inner{transform:scale(2.2);background:radial-gradient(circle,#8b5cf660,#8b5cf620,transparent)}
+.exhale .circle-outer{transform:scale(1)}
+.exhale .circle-mid{transform:scale(1)}
+.exhale .circle-inner{transform:scale(1);background:radial-gradient(circle,#22c55e40,#22c55e10,transparent)}
+.idle .circle-inner{transform:scale(1)}
+.phase-text{font-size:22px;font-weight:300;letter-spacing:4px;z-index:2;transition:color 1s}
+.inhale .phase-text{color:#60a5fa}
+.hold .phase-text{color:#a78bfa}
+.exhale .phase-text{color:#4ade80}
+.idle .phase-text{color:#556}
+.timer{font-size:48px;font-weight:200;font-variant-numeric:tabular-nums;z-index:2;min-height:60px}
+.info-row{display:flex;gap:24px;font-size:12px;color:#556}
+.info-row .val{color:#8890a0;font-weight:500}
+.controls{display:flex;gap:12px;margin-top:8px}
+.btn{padding:8px 20px;border-radius:20px;border:1px solid #ffffff15;background:#ffffff08;color:#aab;cursor:pointer;font-size:13px;transition:.2s;backdrop-filter:blur(4px)}
+.btn:hover{border-color:#ffffff30;color:#dde}
+.btn.active{background:#3b82f630;border-color:#3b82f650;color:#60a5fa}
+.btn.start{background:#3b82f640;border-color:#3b82f660;color:#93c5fd;font-weight:500;padding:10px 28px;font-size:14px}
+.btn.start:hover{background:#3b82f660}
+.btn.stop{background:#ef444430;border-color:#ef444450;color:#fca5a5}
+.presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.preset{padding:6px 14px;border-radius:16px;border:1px solid #ffffff10;background:transparent;color:#667;font-size:12px;cursor:pointer;transition:.2s}
+.preset:hover{border-color:#ffffff25;color:#aab}
+.preset.active{border-color:#3b82f650;color:#60a5fa;background:#3b82f615}
+.session-info{font-size:11px;color:#445;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="bg" id="bg"></div>
+<div class="container">
+  <div class="title">呼吸练习</div>
+  <div class="presets">
+    <button class="preset active" onclick="setPattern('relax')">😌 4-7-8 放松</button>
+    <button class="preset" onclick="setPattern('box')">📦 箱式呼吸 4-4-4-4</button>
+    <button class="preset" onclick="setPattern('calm')">🌊 平静 4-4</button>
+    <button class="preset" onclick="setPattern('energy')">⚡ 提神 2-2-4</button>
+    <button class="preset" onclick="setPattern('deep')">🧘 深呼吸 6-0-6</button>
+  </div>
+  <div class="circle-wrap idle" id="circleWrap">
+    <div class="circle-outer"></div>
+    <div class="circle-mid"></div>
+    <div class="circle-inner"></div>
+    <div class="phase-text" id="phaseText">准备</div>
+  </div>
+  <div class="timer" id="timer"></div>
+  <div class="info-row">
+    <span>循环: <span class="val" id="cycleCount">0</span></span>
+    <span>时长: <span class="val" id="elapsed">0:00</span></span>
+    <span>模式: <span class="val" id="modeName">4-7-8 放松</span></span>
+  </div>
+  <div class="controls">
+    <button class="btn start" id="startBtn" onclick="toggleSession()">开始</button>
+    <button class="btn active" id="voiceBtn" onclick="toggleVoice()">🔊 语音</button>
+  </div>
+  <div class="session-info">点击「开始」，跟随圆圈呼吸</div>
+</div>
+
+<script>
+var PATTERNS = {
+  relax:  {name:'4-7-8 放松', inhale:4, hold:7, exhale:8, holdAfter:0},
+  box:    {name:'箱式呼吸 4-4-4-4', inhale:4, hold:4, exhale:4, holdAfter:4},
+  calm:   {name:'平静 4-4', inhale:4, hold:0, exhale:4, holdAfter:0},
+  energy: {name:'提神 2-2-4', inhale:2, hold:2, exhale:4, holdAfter:0},
+  deep:   {name:'深呼吸 6-0-6', inhale:6, hold:0, exhale:6, holdAfter:0}
+};
+
+var currentPattern = 'relax';
+var running = false;
+var voiceEnabled = true;
+var synth = window.speechSynthesis || null;
+
+function speak(text) {
+  if (!voiceEnabled || !synth) return;
+  try {
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = 0.8;
+    u.pitch = 0.9;
+    u.volume = 0.7;
+    // Try to find a Chinese voice
+    var voices = synth.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('zh') >= 0) { u.voice = voices[i]; break; }
+    }
+    synth.speak(u);
+  } catch(e) {}
+}
+var cycles = 0;
+var startTime = 0;
+var phaseTimer = null;
+var countdownTimer = null;
+var elapsedTimer = null;
+
+function setPattern(key) {
+  currentPattern = key;
+  var p = PATTERNS[key];
+  document.getElementById('modeName').textContent = p.name;
+  document.querySelectorAll('.preset').forEach(function(el) {
+    el.classList.toggle('active', el.textContent.indexOf(p.name.split(' ')[0]) >= 0 || el.onclick.toString().indexOf(key) >= 0);
+  });
+  // Reset active states
+  document.querySelectorAll('.preset').forEach(function(el, i) {
+    var keys = Object.keys(PATTERNS);
+    el.classList.toggle('active', keys[i] === key);
+  });
+  if (running) {
+    stopSession();
+    startSession();
+  }
+}
+
+function toggleSession() {
+  if (running) stopSession();
+  else startSession();
+}
+
+function startSession() {
+  running = true;
+  cycles = 0;
+  startTime = Date.now();
+  document.getElementById('startBtn').textContent = '停止';
+  document.getElementById('startBtn').className = 'btn stop';
+  document.getElementById('cycleCount').textContent = '0';
+  updateElapsed();
+  elapsedTimer = setInterval(updateElapsed, 1000);
+  runCycle();
+}
+
+function stopSession() {
+  running = false;
+  clearTimeout(phaseTimer);
+  clearInterval(countdownTimer);
+  clearInterval(elapsedTimer);
+  document.getElementById('startBtn').textContent = '开始';
+  document.getElementById('startBtn').className = 'btn start';
+  setPhase('idle', '准备', 0);
+  document.getElementById('timer').textContent = '';
+}
+
+function runCycle() {
+  if (!running) return;
+  var p = PATTERNS[currentPattern];
+  var phases = [];
+  phases.push({phase:'inhale', text:'吸气', dur:p.inhale});
+  if (p.hold > 0) phases.push({phase:'hold', text:'屏息', dur:p.hold});
+  phases.push({phase:'exhale', text:'呼气', dur:p.exhale});
+  if (p.holdAfter > 0) phases.push({phase:'hold', text:'屏息', dur:p.holdAfter});
+  
+  runPhases(phases, 0);
+}
+
+function runPhases(phases, idx) {
+  if (!running) return;
+  if (idx >= phases.length) {
+    cycles++;
+    document.getElementById('cycleCount').textContent = cycles;
+    runCycle();
+    return;
+  }
+  var ph = phases[idx];
+  setPhase(ph.phase, ph.text, ph.dur);
+  startCountdown(ph.dur);
+  phaseTimer = setTimeout(function() {
+    runPhases(phases, idx + 1);
+  }, ph.dur * 1000);
+}
+
+function setPhase(phase, text, dur) {
+  var wrap = document.getElementById('circleWrap');
+  var bg = document.getElementById('bg');
+  wrap.className = 'circle-wrap ' + phase;
+  bg.className = 'bg ' + phase;
+  wrap.style.setProperty('--dur', dur + 's');
+  document.getElementById('phaseText').textContent = text;
+  if (phase !== 'idle') speak(text);
+}
+
+function startCountdown(secs) {
+  clearInterval(countdownTimer);
+  var remaining = secs;
+  document.getElementById('timer').textContent = remaining;
+  // Don't speak first number - let phase name finish first
+  countdownTimer = setInterval(function() {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      document.getElementById('timer').textContent = '';
+    } else {
+      document.getElementById('timer').textContent = remaining;
+      speakNum(remaining);
+    }
+  }, 1000);
+}
+
+function speakNum(n) {
+  if (!voiceEnabled || !synth) return;
+  try {
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(String(n));
+    u.lang = 'zh-CN';
+    u.rate = 1.0;
+    u.pitch = 0.85;
+    u.volume = 0.5;
+    var voices = synth.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('zh') >= 0) { u.voice = voices[i]; break; }
+    }
+    synth.speak(u);
+  } catch(e) {}
+}
+
+function updateElapsed() {
+  var secs = Math.floor((Date.now() - startTime) / 1000);
+  var m = Math.floor(secs / 60);
+  var s = secs % 60;
+  document.getElementById('elapsed').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  var btn = document.getElementById('voiceBtn');
+  btn.textContent = voiceEnabled ? '🔊 语音' : '🔇 静音';
+  btn.classList.toggle('active', voiceEnabled);
+}
+
+// Preload voices (some browsers load async)
+if (synth && synth.onvoiceschanged !== undefined) {
+  synth.onvoiceschanged = function() { synth.getVoices(); };
+}
+</script>
+</body>
+</html>

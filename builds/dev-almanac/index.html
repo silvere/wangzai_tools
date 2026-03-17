@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>程序员黄历 🧑‍💻</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f0f;--card:#1a1a2e;--gold:#d4a853;--red:#c0392b;--green:#27ae60;--text:#e8e8e8;--dim:#888;--border:#2a2a4a}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+.container{max-width:520px;width:100%}
+.header{text-align:center;padding:30px 0 20px}
+.header h1{font-size:1.8em;color:var(--gold);letter-spacing:4px}
+.header .sub{color:var(--dim);font-size:0.9em;margin-top:6px}
+.date-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
+.date-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold),var(--red))}
+.lunar{color:var(--gold);font-size:0.95em;margin-bottom:8px}
+.solar{font-size:2.4em;font-weight:700;color:#fff;line-height:1.2}
+.solar .year{font-size:0.4em;color:var(--dim);display:block;font-weight:400}
+.weekday{color:var(--dim);font-size:0.95em;margin-top:4px}
+.fortune-bar{display:flex;gap:8px;margin:16px 0}
+.fortune-bar .star{flex:1;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 8px}
+.fortune-bar .star .label{font-size:0.75em;color:var(--dim);margin-bottom:4px}
+.fortune-bar .star .val{font-size:1.1em}
+.section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px}
+.section-title{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:1.05em;font-weight:600}
+.section-title .badge{display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.8em;font-weight:500}
+.badge-good{background:rgba(39,174,96,0.15);color:var(--green);border:1px solid rgba(39,174,96,0.3)}
+.badge-bad{background:rgba(192,57,43,0.15);color:var(--red);border:1px solid rgba(192,57,43,0.3)}
+.items{display:flex;flex-direction:column;gap:10px}
+.item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.03)}
+.item .icon{font-size:1.3em;flex-shrink:0;margin-top:2px}
+.item .text .name{font-weight:600;font-size:0.95em}
+.item .text .desc{color:var(--dim);font-size:0.82em;margin-top:2px;line-height:1.4}
+.lucky-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lucky-item{background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;text-align:center}
+.lucky-item .lbl{font-size:0.75em;color:var(--dim);margin-bottom:4px}
+.lucky-item .lval{font-size:1.05em}
+.lucky-item .color-dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:4px;border:1px solid rgba(255,255,255,0.2)}
+.quote-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;font-style:italic;color:var(--dim);line-height:1.6;font-size:0.92em}
+.quote-box .q{color:var(--text);font-style:normal;font-size:1em}
+.nav{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
+.nav button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.9em;transition:all 0.2s}
+.nav button:hover{border-color:var(--gold);color:var(--gold)}
+.nav button.today-btn{background:rgba(212,168,83,0.1);border-color:var(--gold);color:var(--gold)}
+.footer{text-align:center;padding:20px 0;color:#444;font-size:0.8em}
+.share-btn{display:block;width:100%;background:linear-gradient(135deg,var(--gold),#b8860b);color:#000;border:none;padding:12px;border-radius:10px;font-size:0.95em;font-weight:600;cursor:pointer;margin-bottom:16px;transition:opacity 0.2s}
+.share-btn:hover{opacity:0.85}
+.copied{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);color:var(--gold);padding:12px 24px;border-radius:10px;font-size:0.95em;z-index:99;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.copied.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>程序员黄历</h1>
+    <div class="sub">🧑‍💻 每日宜忌 · 编程指南</div>
+  </div>
+  <div class="nav">
+    <button onclick="changeDay(-1)">← 昨天</button>
+    <button class="today-btn" onclick="goToday()">今天</button>
+    <button onclick="changeDay(1)">明天 →</button>
+  </div>
+  <div id="content"></div>
+  <button class="share-btn" onclick="shareText()">📋 复制今日黄历分享</button>
+  <div class="footer">🥛 旺仔出品 · 程序员黄历 · 仅供娱乐参考</div>
+</div>
+<div class="copied" id="copied">✅ 已复制到剪贴板</div>
+<script>
+const GOOD_THINGS = [
+  {name:'写单元测试',desc:'今日测试运极佳，bug 无处遁形',icon:'🧪'},
+  {name:'重构代码',desc:'灵感涌现，屎山变花园',icon:'♻️'},
+  {name:'上线部署',desc:'一次过审，零回滚',icon:'🚀'},
+  {name:'Code Review',desc:'火眼金睛，一审到底',icon:'👀'},
+  {name:'学习新技术',desc:'触类旁通，举一反三',icon:'📚'},
+  {name:'写文档',desc:'文思泉涌，字字珠玑',icon:'📝'},
+  {name:'结对编程',desc:'1+1>2，默契十足',icon:'👥'},
+  {name:'修复 Bug',desc:'手到擒来，药到病除',icon:'🔧'},
+  {name:'数据库优化',desc:'索引命中，查询飞起',icon:'🗄️'},
+  {name:'提交 PR',desc:'Approve 如潮，零 Comment',icon:'✅'},
+  {name:'写接口文档',desc:'清晰明了，前后端和谐',icon:'📋'},
+  {name:'性能优化',desc:'毫秒必争，丝滑如奶',icon:'⚡'},
+  {name:'设计架构',desc:'高屋建瓴，一步到位',icon:'🏗️'},
+  {name:'清理技术债',desc:'轻装上阵，如释重负',icon:'🧹'},
+  {name:'写自动化脚本',desc:'一劳永逸，解放双手',icon:'🤖'},
+  {name:'做技术分享',desc:'口若悬河，掌声雷动',icon:'🎤'},
+  {name:'升级依赖',desc:'兼容无忧，版本和谐',icon:'📦'},
+  {name:'画流程图',desc:'逻辑清晰，一目了然',icon:'🗺️'},
+  {name:'写 CSS',desc:'像素完美，设计师落泪',icon:'🎨'},
+  {name:'摸鱼',desc:'适度休息是为了更好地工作',icon:'🐟'},
+  {name:'喝咖啡',desc:'咖啡因加持，效率翻倍',icon:'☕'},
+  {name:'提需求',desc:'言简意赅，PM 秒懂',icon:'💡'},
+  {name:'git rebase',desc:'历史线清爽，合并无冲突',icon:'🌿'},
+  {name:'写正则表达式',desc:'一次写对，无需调试',icon:'🔤'},
+];
+const BAD_THINGS = [
+  {name:'删库',desc:'rm -rf 的手请收回去',icon:'💀'},
+  {name:'周五部署',desc:'周末想加班？请便',icon:'📅'},
+  {name:'不写注释',desc:'三个月后的你会恨现在的你',icon:'🤐'},
+  {name:'直接改生产数据',desc:'刺激是刺激，但命只有一条',icon:'⚠️'},
+  {name:'通宵加班',desc:'头发：告辞',icon:'🌙'},
+  {name:'跳过测试',desc:'上线后的 bug 会加倍奉还',icon:'🎰'},
+  {name:'复制 Stack Overflow',desc:'今日抄码运不佳，建议理解后再写',icon:'📋'},
+  {name:'重写整个项目',desc:'冲动是魔鬼，先喝杯水冷静下',icon:'🔥'},
+  {name:'使用 eval()',desc:'安全漏洞在向你招手',icon:'🕳️'},
+  {name:'忽略报警',desc:'小问题不管，大故障等着',icon:'🔔'},
+  {name:'硬编码密码',desc:'安全团队已经在路上了',icon:'🔑'},
+  {name:'不做备份就升级',desc:'薛定谔的数据：升完才知道还在不在',icon:'🎲'},
+  {name:'写超长函数',desc:'一个函数 500 行，维护者诅咒你',icon:'📜'},
+  {name:'跟产品经理吵架',desc:'今日口舌运不佳，忍一忍',icon:'🗣️'},
+  {name:'合并冲突时选 theirs',desc:'你的代码不要了？',icon:'⚔️'},
+  {name:'用 !important',desc:'CSS 优先级地狱在等你',icon:'🏴'},
+  {name:'不看日志就排查',desc:'盲人摸象，事倍功半',icon:'🙈'},
+  {name:'在 main 分支直接提交',desc:'CI/CD 会教你做人',icon:'🚫'},
+  {name:'嵌套超过 5 层 if',desc:'箭头代码警告⚠️',icon:'➡️'},
+  {name:'忽略 TypeScript 报错',desc:'any 一时爽，重构火葬场',icon:'🔴'},
+  {name:'不锁依赖版本',desc:'今天能跑，明天天塌',icon:'🔓'},
+  {name:'写 TODO 不写日期',desc:'这个 TODO 会活到项目结束',icon:'📌'},
+  {name:'force push 公共分支',desc:'同事的代码：我消失了',icon:'💨'},
+  {name:'用 setTimeout 解决异步问题',desc:'定时炸弹已埋好',icon:'⏰'},
+];
+const LANGUAGES = ['JavaScript','TypeScript','Python','Rust','Go','Java','C++','Kotlin','Swift','Ruby','PHP','Elixir','Haskell','Lua','Dart','Zig','C#','Scala','Clojure','OCaml'];
+const COLORS = [
+  {name:'极客绿',hex:'#27ae60'},{name:'终端黑',hex:'#1a1a2e'},{name:'警告黄',hex:'#f1c40f'},
+  {name:'错误红',hex:'#e74c3c'},{name:'链接蓝',hex:'#3498db'},{name:'注释灰',hex:'#95a5a6'},
+  {name:'字符串橙',hex:'#e67e22'},{name:'关键字紫',hex:'#9b59b6'},{name:'成功青',hex:'#1abc9c'},
+  {name:'高亮粉',hex:'#e91e63'},{name:'深海蓝',hex:'#2c3e50'},{name:'薄荷绿',hex:'#00b894'},
+];
+const DIRECTIONS = ['面朝北方，背靠服务器','面朝东方，迎接朝阳','面朝南方，温暖如春','面朝西方，夕阳无限','面朝显示器，心无旁骛','背对老板，效率翻倍','面朝窗户，灵感涌现','面朝门口，随时跑路'];
+const DRINKS = ['美式咖啡 ☕','拿铁 🥛','红茶 🍵','可乐 🥤','气泡水 💧','奶茶 🧋','绿茶 🍃','热可可 🍫','柠檬水 🍋','椰子水 🥥'];
+const QUOTES = [
+  '"任何傻瓜都能写出计算机能理解的代码，优秀的程序员写出人能理解的代码。" —— Martin Fowler',
+  '"先让它能工作，再让它正确，最后让它快。" —— Kent Beck',
+  '"简单是可靠的先决条件。" —— Edsger W. Dijkstra',
+  '"代码是写给人看的，只是顺便能在机器上运行。" —— Harold Abelson',
+  '"过早优化是万恶之源。" —— Donald Knuth',
+  '"好的代码本身就是最好的文档。" —— Steve McConnell',
+  '"调试比编写代码难两倍。所以如果你写代码时用尽了聪明才智，那调试时你就不够聪明了。" —— Brian Kernighan',
+  '"程序必须是为了给人看而写，给机器执行只是附带的。" —— SICP',
+  '"最好的错误消息是永远不会出现的那个。" —— Thomas Fuchs',
+  '"删除代码比写代码更能提升软件质量。" —— Jeff Sickel',
+  '"Talk is cheap. Show me the code." —— Linus Torvalds',
+  '"It works on my machine. 🤷" —— 每个程序员',
+  '"一个人写的烂代码是另一个人的全职工作。" —— Jessica Kerr',
+  '"软件开发中最难的两件事：缓存失效和命名。" —— Phil Karlton',
+  '"如果调试是消除 bug 的过程，那编程就是引入 bug 的过程。" —— Edsger W. Dijkstra',
+  '"永远不要相信一个不写测试的程序员。" —— 匿名',
+];
+
+const WEEKDAYS = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+const LUNAR_DATA = {
+  '2026-02-17':'正月初二','2026-02-18':'正月初三','2026-02-19':'正月初四',
+  '2026-02-20':'正月初五','2026-02-21':'正月初六','2026-02-22':'正月初七',
+  '2026-02-23':'正月初八','2026-02-24':'正月初九','2026-02-25':'正月初十',
+  '2026-02-16':'正月初一','2026-02-15':'除夕','2026-02-14':'腊月廿八',
+  '2026-02-26':'正月十一','2026-02-27':'正月十二','2026-02-28':'正月十三',
+  '2026-03-01':'正月十四','2026-03-02':'元宵节',
+};
+
+function hash(str){let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h)+str.charCodeAt(i);return Math.abs(h)}
+function seededRandom(seed){let s=seed;return function(){s=(s*16807)%2147483647;return(s-1)/2147483646}}
+
+let currentDate = new Date();
+
+function formatDate(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function pick(arr,rng){return arr[Math.floor(rng()*arr.length)]}
+function pickN(arr,n,rng){
+  const copy=[...arr];
+  const result=[];
+  for(let i=0;i<n&&copy.length;i++){
+    const idx=Math.floor(rng()*copy.length);
+    result.push(copy.splice(idx,1)[0]);
+  }
+  return result;
+}
+
+function render(){
+  const ds=formatDate(currentDate);
+  const seed=hash(ds+'dev-almanac-v1');
+  const rng=seededRandom(seed);
+
+  const goodCount=2+Math.floor(rng()*2); // 2-3
+  const badCount=2+Math.floor(rng()*2);  // 2-3
+  const goods=pickN(GOOD_THINGS,goodCount,rng);
+  const bads=pickN(BAD_THINGS,badCount,rng);
+  const lang=pick(LANGUAGES,rng);
+  const color=pick(COLORS,rng);
+  const dir=pick(DIRECTIONS,rng);
+  const drink=pick(DRINKS,rng);
+  const quote=pick(QUOTES,rng);
+  const luckyNum=Math.floor(rng()*100);
+
+  // Overall fortune 1-5 stars
+  const fortune=1+Math.floor(rng()*5);
+  const codeFortuneVal=1+Math.floor(rng()*5);
+  const bugFortuneVal=1+Math.floor(rng()*5);
+
+  const starStr=s=>'★'.repeat(s)+'☆'.repeat(5-s);
+  const lunar=LUNAR_DATA[ds]||'';
+  const wd=WEEKDAYS[currentDate.getDay()];
+
+  const isToday=formatDate(new Date())===ds;
+
+  document.getElementById('content').innerHTML=`
+    <div class="date-card">
+      ${lunar?`<div class="lunar">🏮 ${lunar} · 乙巳蛇年</div>`:''}
+      <div class="solar"><span class="year">${currentDate.getFullYear()}</span>${currentDate.getMonth()+1}月${currentDate.getDate()}日</div>
+      <div class="weekday">${wd}${isToday?' · 今天':''}</div>
+    </div>
+    <div class="fortune-bar">
+      <div class="star"><div class="label">综合运势</div><div class="val" style="color:${fortune>=4?'var(--green)':fortune>=2?'var(--gold)':'var(--red)'}">${starStr(fortune)}</div></div>
+      <div class="star"><div class="label">编码运</div><div class="val" style="color:${codeFortuneVal>=4?'var(--green)':codeFortuneVal>=2?'var(--gold)':'var(--red)'}">${starStr(codeFortuneVal)}</div></div>
+      <div class="star"><div class="label">防 Bug</div><div class="val" style="color:${bugFortuneVal>=4?'var(--green)':bugFortuneVal>=2?'var(--gold)':'var(--red)'}">${starStr(bugFortuneVal)}</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title"><span class="badge badge-good">宜</span> 今日宜做</div>
+      <div class="items">
+        ${goods.map(g=>`<div class="item"><div class="icon">${g.icon}</div><div class="text"><div class="name">${g.name}</div><div class="desc">${g.desc}</div></div></div>`).join('')}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title"><span class="badge badge-bad">忌</span> 今日忌做</div>
+      <div class="items">
+        ${bads.map(b=>`<div class="item"><div class="icon">${b.icon}</div><div class="text"><div class="name">${b.name}</div><div class="desc">${b.desc}</div></div></div>`).join('')}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">🍀 今日幸运</div>
+      <div class="lucky-grid">
+        <div class="lucky-item"><div class="lbl">幸运语言</div><div class="lval">💻 ${lang}</div></div>
+        <div class="lucky-item"><div class="lbl">幸运颜色</div><div class="lval"><span class="color-dot" style="background:${color.hex}"></span>${color.name}</div></div>
+        <div class="lucky-item"><div class="lbl">幸运数字</div><div class="lval">🔢 ${luckyNum}</div></div>
+        <div class="lucky-item"><div class="lbl">幸运饮品</div><div class="lval">${drink}</div></div>
+      </div>
+    </div>
+    <div class="section" style="text-align:center">
+      <div style="font-size:0.85em;color:var(--dim);margin-bottom:6px">🧭 编码方位</div>
+      <div style="font-size:1.05em">${dir}</div>
+    </div>
+    <div class="quote-box">
+      <div style="font-size:0.75em;color:var(--dim);margin-bottom:8px">💬 今日箴言</div>
+      <div class="q">${quote}</div>
+    </div>
+  `;
+}
+
+function changeDay(delta){
+  currentDate=new Date(currentDate.getTime()+delta*86400000);
+  render();
+}
+function goToday(){
+  currentDate=new Date();
+  render();
+}
+
+function shareText(){
+  const ds=formatDate(currentDate);
+  const seed=hash(ds+'dev-almanac-v1');
+  const rng=seededRandom(seed);
+  const goodCount=2+Math.floor(rng()*2);
+  const badCount=2+Math.floor(rng()*2);
+  const goods=pickN(GOOD_THINGS,goodCount,rng);
+  const bads=pickN(BAD_THINGS,badCount,rng);
+  const lang=pick(LANGUAGES,rng);
+
+  let text=`📅 程序员黄历 · ${ds}\n`;
+  const lunar=LUNAR_DATA[ds];
+  if(lunar)text+=`🏮 ${lunar}\n`;
+  text+=`\n✅ 宜：${goods.map(g=>g.name).join('、')}\n`;
+  text+=`❌ 忌：${bads.map(b=>b.name).join('、')}\n`;
+  text+=`💻 幸运语言：${lang}\n`;
+  text+=`\n—— 程序员黄历 🧑‍💻`;
+
+  navigator.clipboard.writeText(text).then(()=>{
+    const el=document.getElementById('copied');
+    el.classList.add('show');
+    setTimeout(()=>el.classList.remove('show'),1500);
+  }).catch(()=>alert(text));
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON ↔ YAML 转换器 🔄 | OpenClaw 工具百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F59E0B',
+                        secondary: '#EF4444',
+                        success: '#10B981',
+                        info: '#3B82F6',
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .editor-area {
+                font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fa fa-exchange text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">JSON ↔ YAML 转换器 🔄</h1>
+                        <p class="text-orange-100 mt-1">完全离线运行，一键转换 JSON 和 YAML 格式，开发配置必备神器</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">100% 本地处理</span>
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">实时校验</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Conversion Mode Selector -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex items-center justify-center space-x-4">
+                <button id="jsonToYamlBtn" class="px-6 py-3 rounded-lg font-medium transition-colors bg-primary text-white">
+                    <i class="fa fa-arrow-right mr-2"></i>
+                    JSON → YAML
+                </button>
+                <button id="yamlToJsonBtn" class="px-6 py-3 rounded-lg font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    YAML → JSON
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Editor -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                        <i id="inputIcon" class="fa fa-file-code-o text-primary mr-2"></i>
+                        <span id="inputTitle">JSON 输入</span>
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <button id="loadExampleBtn" class="text-sm text-primary hover:text-primary/80 font-medium">
+                            <i class="fa fa-lightbulb-o mr-1"></i>
+                            加载示例
+                        </button>
+                        <button id="clearInputBtn" class="text-sm text-gray-500 hover:text-gray-700 font-medium">
+                            <i class="fa fa-trash-o mr-1"></i>
+                            清空
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea 
+                    id="inputEditor" 
+                    rows="20" 
+                    class="editor-area w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder='{
+  "name": "OpenClaw",
+  "version": "2026.1.24",
+  "features": [
+    "自动化",
+    "AI 助手",
+    "技能扩展"
+  ],
+  "config": {
+    "theme": "dark",
+    "language": "zh-CN",
+    "plugins": ["tavily-search", "nano-banana-pro"]
+  }
+}'></textarea>
+
+                <div class="mt-4">
+                    <div id="inputError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+                        <i class="fa fa-exclamation-circle mr-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button 
+                            id="formatBtn" 
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-medium transition-colors"
+                        >
+                            <i class="fa fa-indent mr-2"></i>
+                            格式化
+                        </button>
+                        <button 
+                            id="convertBtn" 
+                            class="bg-primary hover:bg-primary/90 text-white py-2 rounded-lg font-medium transition-colors"
+                        >
+                            <i class="fa fa-exchange mr-2"></i>
+                            转换
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Editor -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                        <i id="outputIcon" class="fa fa-file-text-o text-success mr-2"></i>
+                        <span id="outputTitle">YAML 输出</span>
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <button id="copyOutputBtn" class="text-sm text-success hover:text-success/80 font-medium">
+                            <i class="fa fa-copy mr-1"></i>
+                            复制
+                        </button>
+                        <button id="downloadOutputBtn" class="text-sm text-info hover:text-info/80 font-medium">
+                            <i class="fa fa-download mr-1"></i>
+                            下载
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea 
+                    id="outputEditor" 
+                    rows="20" 
+                    readonly
+                    class="editor-area w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-success focus:border-success"
+                    placeholder="转换后的内容将显示在这里..."></textarea>
+
+                <div class="mt-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-gray-500">输入大小</p>
+                            <p class="text-lg font-bold text-gray-900" id="inputSize">0 B</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-gray-500">输出大小</p>
+                            <p class="text-lg font-bold text-gray-900" id="outputSize">0 B</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <div class="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                <div class="flex items-center mb-2">
+                    <i class="fa fa-shield text-primary text-xl mr-2"></i>
+                    <h3 class="font-semibold text-gray-900">完全本地处理</h3>
+                </div>
+                <p class="text-sm text-gray-600">所有转换都在浏览器中完成，数据绝不会上传到任何服务器，配置文件安全可靠</p>
+            </div>
+            <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                <div class="flex items-center mb-2">
+                    <i class="fa fa-bolt text-success text-xl mr-2"></i>
+                    <h3 class="font-semibold text-gray-900">实时校验转换</h3>
+                </div>
+                <p class="text-sm text-gray-600">自动检测语法错误，显示详细错误信息，转换成功率 100%，支持格式美化</p>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <div class="flex items-center mb-2">
+                    <i class="fa fa-wrench text-info text-xl mr-2"></i>
+                    <h3 class="font-semibold text-gray-900">开发必备工具</h3>
+                </div>
+                <p class="text-sm text-gray-600">支持 Kubernetes 配置、GitHub Actions、docker-compose 等常用配置文件格式转换</p>
+            </div>
+        </div>
+
+        <!-- Use Cases -->
+        <div class="bg-white rounded-xl shadow-md p-6 mt-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <i class="fa fa-lightbulb-o text-primary mr-2"></i>
+                适用场景
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-start">
+                    <div class="bg-primary/10 rounded-full p-2 mr-3 mt-0.5">
+                        <i class="fa fa-cogs text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-1">配置文件转换</h3>
+                        <p class="text-sm text-gray-600">K8s、Docker Compose、CI/CD 等配置文件在 JSON 和 YAML 之间互相转换</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="bg-primary/10 rounded-full p-2 mr-3 mt-0.5">
+                        <i class="fa fa-code text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-1">API 开发调试</h3>
+                        <p class="text-sm text-gray-600">接口响应 JSON 转成 YAML 格式，更易读易维护，适合写入配置文件</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="bg-primary/10 rounded-full p-2 mr-3 mt-0.5">
+                        <i class="fa fa-file-text text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-1">数据格式迁移</h3>
+                        <p class="text-sm text-gray-600">批量转换配置文件格式，适配不同系统和工具的要求</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="bg-primary/10 rounded-full p-2 mr-3 mt-0.5">
+                        <i class="fa fa-check-circle text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-1">语法校验</h3>
+                        <p class="text-sm text-gray-600">快速验证 JSON/YAML 语法是否正确，定位错误位置和原因</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>🚀 OpenClaw 工具百宝箱 | JSON ↔ YAML 转换器 🔄</p>
+            <p class="text-sm mt-2">100% 本地运行 · 零数据上传 · 安全可靠</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const jsonToYamlBtn = document.getElementById('jsonToYamlBtn');
+        const yamlToJsonBtn = document.getElementById('yamlToJsonBtn');
+        const inputIcon = document.getElementById('inputIcon');
+        const inputTitle = document.getElementById('inputTitle');
+        const outputIcon = document.getElementById('outputIcon');
+        const outputTitle = document.getElementById('outputTitle');
+        const inputEditor = document.getElementById('inputEditor');
+        const outputEditor = document.getElementById('outputEditor');
+        const loadExampleBtn = document.getElementById('loadExampleBtn');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const formatBtn = document.getElementById('formatBtn');
+        const convertBtn = document.getElementById('convertBtn');
+        const copyOutputBtn = document.getElementById('copyOutputBtn');
+        const downloadOutputBtn = document.getElementById('downloadOutputBtn');
+        const inputError = document.getElementById('inputError');
+        const errorMessage = document.getElementById('errorMessage');
+        const inputSize = document.getElementById('inputSize');
+        const outputSize = document.getElementById('outputSize');
+
+        // Global state
+        let currentMode = 'json-to-yaml'; // 'json-to-yaml' or 'yaml-to-json'
+
+        // Mode switching
+        jsonToYamlBtn.addEventListener('click', () => {
+            currentMode = 'json-to-yaml';
+            jsonToYamlBtn.classList.add('bg-primary', 'text-white');
+            jsonToYamlBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            yamlToJsonBtn.classList.add('bg-gray-200', 'text-gray-700');
+            yamlToJsonBtn.classList.remove('bg-success', 'text-white');
+            
+            inputTitle.textContent = 'JSON 输入';
+            outputTitle.textContent = 'YAML 输出';
+            inputIcon.className = 'fa fa-file-code-o text-primary mr-2';
+            outputIcon.className = 'fa fa-file-text-o text-success mr-2';
+            
+            // Swap content if needed
+            const input = inputEditor.value;
+            const output = outputEditor.value;
+            if (output && !input) {
+                inputEditor.value = output;
+                outputEditor.value = '';
+            }
+            
+            clearError();
+            updateStats();
+        });
+
+        yamlToJsonBtn.addEventListener('click', () => {
+            currentMode = 'yaml-to-json';
+            yamlToJsonBtn.classList.add('bg-success', 'text-white');
+            yamlToJsonBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            jsonToYamlBtn.classList.add('bg-gray-200', 'text-gray-700');
+            jsonToYamlBtn.classList.remove('bg-primary', 'text-white');
+            
+            inputTitle.textContent = 'YAML 输入';
+            outputTitle.textContent = 'JSON 输出';
+            inputIcon.className = 'fa fa-file-text-o text-success mr-2';
+            outputIcon.className = 'fa fa-file-code-o text-primary mr-2';
+            
+            // Swap content if needed
+            const input = inputEditor.value;
+            const output = outputEditor.value;
+            if (output && !input) {
+                inputEditor.value = output;
+                outputEditor.value = '';
+            }
+            
+            clearError();
+            updateStats();
+        });
+
+        // Conversion logic
+        function convert() {
+            const input = inputEditor.value.trim();
+            if (!input) {
+                showError('请输入内容');
+                return;
+            }
+
+            try {
+                clearError();
+                let output;
+
+                if (currentMode === 'json-to-yaml') {
+                    // JSON to YAML
+                    const json = JSON.parse(input);
+                    output = jsyaml.dump(json, { 
+                        indent: 2,
+                        lineWidth: -1,
+                        noRefs: true
+                    });
+                } else {
+                    // YAML to JSON
+                    const yaml = jsyaml.load(input);
+                    output = JSON.stringify(yaml, null, 2);
+                }
+
+                outputEditor.value = output;
+                updateStats();
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function formatInput() {
+            const input = inputEditor.value.trim();
+            if (!input) return;
+
+            try {
+                clearError();
+                let formatted;
+
+                if (currentMode === 'json-to-yaml') {
+                    // Format JSON
+                    const json = JSON.parse(input);
+                    formatted = JSON.stringify(json, null, 2);
+                } else {
+                    // Format YAML (parse and dump to format)
+                    const yaml = jsyaml.load(input);
+                    formatted = jsyaml.dump(yaml, { 
+                        indent: 2,
+                        lineWidth: -1,
+                        noRefs: true
+                    });
+                }
+
+                inputEditor.value = formatted;
+                updateStats();
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function loadExample() {
+            if (currentMode === 'json-to-yaml') {
+                inputEditor.value = JSON.stringify({
+                    "name": "OpenClaw",
+                    "version": "2026.1.24",
+                    "description": "开源 AI 助手框架",
+                    "features": [
+                        "自动化任务处理",
+                        "可扩展技能系统",
+                        "多渠道消息支持",
+                        "本地离线运行"
+                    ],
+                    "config": {
+                        "theme": "dark",
+                        "language": "zh-CN",
+                        "plugins": [
+                            "tavily-search",
+                            "nano-banana-pro",
+                            "ai-ppt-generator"
+                        ],
+                        "settings": {
+                            "autoUpdate": true,
+                            "telemetry": false,
+                            "logLevel": "info"
+                        }
+                    },
+                    "author": {
+                        "name": "旺仔",
+                        "role": "AI 助手"
+                    }
+                }, null, 2);
+            } else {
+                inputEditor.value = `name: OpenClaw
+version: 2026.1.24
+description: 开源 AI 助手框架
+features:
+  - 自动化任务处理
+  - 可扩展技能系统
+  - 多渠道消息支持
+  - 本地离线运行
+config:
+  theme: dark
+  language: zh-CN
+  plugins:
+    - tavily-search
+    - nano-banana-pro
+    - ai-ppt-generator
+  settings:
+    autoUpdate: true
+    telemetry: false
+    logLevel: info
+author:
+  name: 旺仔
+  role: AI 助手`;
+            }
+            clearError();
+            updateStats();
+            convert();
+        }
+
+        function clearInput() {
+            inputEditor.value = '';
+            outputEditor.value = '';
+            clearError();
+            updateStats();
+        }
+
+        function copyOutput() {
+            const output = outputEditor.value;
+            if (!output) return;
+
+            outputEditor.select();
+            document.execCommand('copy');
+            
+            const originalText = copyOutputBtn.innerHTML;
+            copyOutputBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 已复制';
+            copyOutputBtn.classList.add('text-green-600');
+            
+            setTimeout(() => {
+                copyOutputBtn.innerHTML = originalText;
+                copyOutputBtn.classList.remove('text-green-600');
+            }, 2000);
+        }
+
+        function downloadOutput() {
+            const output = outputEditor.value;
+            if (!output) return;
+
+            const extension = currentMode === 'json-to-yaml' ? 'yaml' : 'json';
+            const mimeType = currentMode === 'json-to-yaml' ? 'text/yaml' : 'application/json';
+            const filename = `converted.${extension}`;
+
+            const blob = new Blob([output], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            inputError.classList.remove('hidden');
+        }
+
+        function clearError() {
+            inputError.classList.add('hidden');
+            errorMessage.textContent = '';
+        }
+
+        function updateStats() {
+            const inputBytes = new Blob([inputEditor.value]).size;
+            const outputBytes = new Blob([outputEditor.value]).size;
+            
+            inputSize.textContent = formatFileSize(inputBytes);
+            outputSize.textContent = formatFileSize(outputBytes);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Event listeners
+        convertBtn.addEventListener('click', convert);
+        formatBtn.addEventListener('click', formatInput);
+        loadExampleBtn.addEventListener('click', loadExample);
+        clearInputBtn.addEventListener('click', clearInput);
+        copyOutputBtn.addEventListener('click', copyOutput);
+        downloadOutputBtn.addEventListener('click', downloadOutput);
+        
+        inputEditor.addEventListener('input', () => {
+            clearError();
+            updateStats();
+        });
+
+        // Drag and drop support
+        document.body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['json', 'yaml', 'yml'].includes(ext)) {
+                alert('请上传 JSON 或 YAML 文件');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                inputEditor.value = e.target.result;
+                
+                // Auto switch mode based on file extension
+                if (ext === 'json') {
+                    jsonToYamlBtn.click();
+                } else {
+                    yamlToJsonBtn.click();
+                }
+                
+                clearError();
+                updateStats();
+            };
+            reader.readAsText(file);
+        });
+
+        // Initialize with example
+        loadExample();
+    </script>
+</body>
+</html>

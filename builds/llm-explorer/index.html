@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Benchmark Explorer | 旺仔</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#0a0a1a;color:#e0e0e0;min-height:100vh;padding:20px}
+.container{max-width:1100px;margin:0 auto}
+h1{text-align:center;font-size:1.6em;background:linear-gradient(135deg,#7c83ff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.subtitle{text-align:center;color:#666;font-size:0.85em;margin-bottom:24px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;align-items:center}
+.controls select,.controls input{background:#12122a;border:1px solid #2a2a4a;color:#e0e0e0;padding:8px 12px;border-radius:8px;font-size:0.9em}
+.controls select{cursor:pointer}
+.controls select:focus,.controls input:focus{outline:none;border-color:#7c83ff}
+.controls label{color:#888;font-size:0.85em}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.75em;margin-left:6px}
+.badge-code{background:#1e3a5f;color:#60a5fa}
+.badge-math{background:#3b1f4b;color:#c084fc}
+.badge-know{background:#1f3b2d;color:#4ade80}
+.badge-agent{background:#3b3b1f;color:#fbbf24}
+.badge-instruct{background:#3b1f1f;color:#f87171}
+table{width:100%;border-collapse:collapse;font-size:0.88em;margin-top:12px}
+th{background:#12122a;color:#7c83ff;padding:10px 8px;text-align:left;border-bottom:2px solid #2a2a4a;cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:#fff}
+th.sorted-asc::after{content:" ▲";font-size:0.7em}
+th.sorted-desc::after{content:" ▼";font-size:0.7em}
+td{padding:8px;border-bottom:1px solid #1a1a3e}
+tr:hover{background:#15152f}
+.model-name{font-weight:600;white-space:nowrap}
+.score{text-align:center;font-variant-numeric:tabular-nums}
+.score-best{color:#4ade80;font-weight:700}
+.score-second{color:#60a5fa;font-weight:600}
+.score-na{color:#444;font-style:italic}
+.bar-cell{position:relative;min-width:80px}
+.bar-bg{position:absolute;left:0;top:2px;bottom:2px;border-radius:3px;opacity:0.2}
+.bar-val{position:relative;z-index:1;text-align:center;font-size:0.85em}
+.company-tag{font-size:0.75em;color:#666;margin-left:4px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;font-size:0.8em;color:#888}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+.footer{text-align:center;color:#444;font-size:0.8em;padding:24px 0}
+.highlight-row{background:#1a1a3e !important}
+.compare-btn{background:#7c83ff;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.8em}
+.compare-btn:hover{background:#6366f1}
+.compare-btn.active{background:#ff6b9d}
+.stats-bar{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
+.stat-card{background:#12122a;border:1px solid #2a2a4a;border-radius:8px;padding:12px 16px;flex:1;min-width:120px;text-align:center}
+.stat-card .num{font-size:1.4em;font-weight:700;color:#7c83ff}
+.stat-card .label{font-size:0.8em;color:#888;margin-top:2px}
+@media(max-width:768px){table{font-size:0.78em}th,td{padding:6px 4px}.controls{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔍 LLM Benchmark Explorer</h1>
+<div class="subtitle">交互式大模型基准排行榜 · 旺仔出品 · 数据截至 2026-02-14</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<div class="controls">
+  <label>分类筛选:</label>
+  <select id="category-filter">
+    <option value="all">全部基准</option>
+    <option value="code">💻 代码能力</option>
+    <option value="math">🔢 数学推理</option>
+    <option value="knowledge">📚 知识理解</option>
+    <option value="agent">🤖 Agent/工具</option>
+    <option value="instruct">📝 指令遵循</option>
+  </select>
+  <label>搜索模型:</label>
+  <input type="text" id="model-search" placeholder="输入模型名..." style="width:160px">
+  <label>排序基准:</label>
+  <select id="sort-benchmark"></select>
+  <label>
+    <input type="checkbox" id="show-bars" checked> 显示柱状图
+  </label>
+</div>
+
+<div style="overflow-x:auto">
+  <table id="main-table">
+    <thead id="table-head"></thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<div class="footer">🥛 旺仔 LLM Benchmark Explorer · Build #4 · 数据来源: 各模型官方技术报告 + Aider Leaderboard</div>
+</div>
+
+<script>
+const MODELS = [
+  {name:"GPT-5 (high)", company:"OpenAI", color:"#f87171"},
+  {name:"o3 (high)", company:"OpenAI", color:"#f87171"},
+  {name:"Claude Opus 4", company:"Anthropic", color:"#fbbf24"},
+  {name:"Claude Sonnet 4", company:"Anthropic", color:"#fbbf24"},
+  {name:"Gemini 2.5 Pro", company:"Google", color:"#67e8f9"},
+  {name:"Gemini 2.5 Flash", company:"Google", color:"#67e8f9"},
+  {name:"DeepSeek V3.2", company:"DeepSeek", color:"#a78bfa"},
+  {name:"DeepSeek R1", company:"DeepSeek", color:"#a78bfa"},
+  {name:"Kimi K2", company:"Moonshot", color:"#7c83ff"},
+  {name:"Qwen3-235B", company:"Alibaba", color:"#f472b6"},
+  {name:"GPT-4.1", company:"OpenAI", color:"#f87171"},
+  {name:"GLM-4-32B", company:"Zhipu", color:"#34d399"},
+];
+
+const BENCHMARKS = [
+  {key:"lcb", name:"LiveCodeBench v6", cat:"code", badge:"badge-code", max:100},
+  {key:"swe_ag", name:"SWE-bench Agent", cat:"code", badge:"badge-code", max:100},
+  {key:"swe_al", name:"SWE-bench Agentless", cat:"code", badge:"badge-code", max:100},
+  {key:"aider", name:"Aider Polyglot", cat:"code", badge:"badge-code", max:100},
+  {key:"mple", name:"MultiPL-E", cat:"code", badge:"badge-code", max:100},
+  {key:"mmlu", name:"MMLU", cat:"knowledge", badge:"badge-know", max:100},
+  {key:"gpqa", name:"GPQA-Diamond", cat:"knowledge", badge:"badge-know", max:100},
+  {key:"simpleqa", name:"SimpleQA", cat:"knowledge", badge:"badge-know", max:100},
+  {key:"math500", name:"MATH-500", cat:"math", badge:"badge-math", max:100},
+  {key:"aime25", name:"AIME 2025", cat:"math", badge:"badge-math", max:100},
+  {key:"ifeval", name:"IFEval", cat:"instruct", badge:"badge-instruct", max:100},
+  {key:"tau2_tel", name:"Tau2 Telecom", cat:"agent", badge:"badge-agent", max:100},
+  {key:"acebench", name:"AceBench", cat:"agent", badge:"badge-agent", max:100},
+];
+
+const SCORES = {
+  "GPT-5 (high)":     {lcb:null, swe_ag:null, swe_al:null, aider:88.0, mple:null, mmlu:null, gpqa:null, simpleqa:null, math500:null, aime25:null, ifeval:null, tau2_tel:null, acebench:null},
+  "o3 (high)":        {lcb:null, swe_ag:null, swe_al:null, aider:81.3, mple:null, mmlu:null, gpqa:null, simpleqa:null, math500:null, aime25:null, ifeval:null, tau2_tel:null, acebench:null},
+  "Claude Opus 4":    {lcb:47.4, swe_ag:72.5, swe_al:53.0, aider:70.7, mple:89.6, mmlu:92.9, gpqa:74.9, simpleqa:22.8, math500:94.4, aime25:33.9, ifeval:87.4, tau2_tel:57.0, acebench:75.6},
+  "Claude Sonnet 4":  {lcb:48.5, swe_ag:72.7, swe_al:50.2, aider:56.4, mple:88.6, mmlu:91.5, gpqa:70.0, simpleqa:15.9, math500:94.0, aime25:33.1, ifeval:87.6, tau2_tel:45.2, acebench:76.2},
+  "Gemini 2.5 Pro":   {lcb:null, swe_ag:null, swe_al:null, aider:83.1, mple:null, mmlu:91.0, gpqa:null, simpleqa:null, math500:null, aime25:null, ifeval:null, tau2_tel:null, acebench:null},
+  "Gemini 2.5 Flash": {lcb:44.7, swe_ag:null, swe_al:32.6, aider:44.0, mple:85.6, mmlu:90.1, gpqa:68.2, simpleqa:23.3, math500:95.4, aime25:46.6, ifeval:84.3, tau2_tel:16.9, acebench:74.5},
+  "DeepSeek V3.2":    {lcb:null, swe_ag:null, swe_al:null, aider:70.2, mple:null, mmlu:null, gpqa:null, simpleqa:null, math500:null, aime25:null, ifeval:null, tau2_tel:null, acebench:null},
+  "DeepSeek R1":      {lcb:null, swe_ag:null, swe_al:null, aider:71.4, mple:null, mmlu:null, gpqa:null, simpleqa:null, math500:null, aime25:null, ifeval:null, tau2_tel:null, acebench:null},
+  "Kimi K2":          {lcb:53.7, swe_ag:65.8, swe_al:51.8, aider:60.0, mple:85.7, mmlu:89.5, gpqa:75.1, simpleqa:31.0, math500:97.4, aime25:49.5, ifeval:89.8, tau2_tel:65.8, acebench:76.5},
+  "Qwen3-235B":       {lcb:37.0, swe_ag:34.4, swe_al:39.4, aider:61.8, mple:78.2, mmlu:87.0, gpqa:62.9, simpleqa:13.2, math500:91.2, aime25:24.7, ifeval:83.2, tau2_tel:22.1, acebench:70.5},
+  "GPT-4.1":          {lcb:44.7, swe_ag:54.6, swe_al:40.8, aider:52.4, mple:86.7, mmlu:90.4, gpqa:66.3, simpleqa:42.3, math500:92.4, aime25:37.0, ifeval:88.0, tau2_tel:38.6, acebench:80.1},
+  "GLM-4-32B":        {lcb:null, swe_ag:null, swe_al:null, aider:null, mple:null, mmlu:null, gpqa:null, simpleqa:null, math500:null, aime25:null, ifeval:null, tau2_tel:null, acebench:null},
+};
+
+// DeepSeek V3-0324 data from Kimi K2 report
+SCORES["DeepSeek V3.2"].lcb = 46.9;
+SCORES["DeepSeek V3.2"].swe_ag = 38.8;
+SCORES["DeepSeek V3.2"].swe_al = 36.6;
+SCORES["DeepSeek V3.2"].mple = 83.1;
+SCORES["DeepSeek V3.2"].mmlu = 89.4;
+SCORES["DeepSeek V3.2"].gpqa = 68.4;
+SCORES["DeepSeek V3.2"].simpleqa = 27.7;
+SCORES["DeepSeek V3.2"].math500 = 94.0;
+SCORES["DeepSeek V3.2"].aime25 = 46.7;
+SCORES["DeepSeek V3.2"].ifeval = 81.1;
+SCORES["DeepSeek V3.2"].tau2_tel = 32.5;
+SCORES["DeepSeek V3.2"].acebench = 72.7;
+
+let currentSort = {key: "lcb", dir: "desc"};
+let currentCategory = "all";
+let searchQuery = "";
+
+function getVisibleBenchmarks() {
+  if (currentCategory === "all") return BENCHMARKS;
+  return BENCHMARKS.filter(b => b.cat === currentCategory);
+}
+
+function findBestScores(benchmarks) {
+  const best = {}, second = {};
+  benchmarks.forEach(b => {
+    let scores = MODELS.map(m => SCORES[m.name]?.[b.key]).filter(v => v !== null && v !== undefined);
+    scores.sort((a, b) => b - a);
+    if (scores.length > 0) best[b.key] = scores[0];
+    if (scores.length > 1) second[b.key] = scores[1];
+  });
+  return {best, second};
+}
+
+function render() {
+  const benchmarks = getVisibleBenchmarks();
+  const {best, second} = findBestScores(benchmarks);
+  const showBars = document.getElementById("show-bars").checked;
+
+  // Filter models
+  let models = MODELS.filter(m => {
+    if (!searchQuery) return true;
+    return m.name.toLowerCase().includes(searchQuery) || m.company.toLowerCase().includes(searchQuery);
+  });
+
+  // Sort
+  if (currentSort.key === "name") {
+    models.sort((a, b) => currentSort.dir === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+  } else {
+    models.sort((a, b) => {
+      const va = SCORES[a.name]?.[currentSort.key] ?? -1;
+      const vb = SCORES[b.name]?.[currentSort.key] ?? -1;
+      return currentSort.dir === "asc" ? va - vb : vb - va;
+    });
+  }
+
+  // Header
+  let headHtml = `<tr><th data-key="name" class="${currentSort.key==='name'?'sorted-'+currentSort.dir:''}">模型</th>`;
+  benchmarks.forEach(b => {
+    const cls = currentSort.key === b.key ? `sorted-${currentSort.dir}` : "";
+    headHtml += `<th data-key="${b.key}" class="${cls}" style="text-align:center;font-size:0.8em">${b.name}<br><span class="badge ${b.badge}">${b.cat}</span></th>`;
+  });
+  headHtml += `</tr>`;
+  document.getElementById("table-head").innerHTML = headHtml;
+
+  // Body
+  let bodyHtml = "";
+  models.forEach(m => {
+    const s = SCORES[m.name] || {};
+    bodyHtml += `<tr>`;
+    bodyHtml += `<td class="model-name"><span style="color:${m.color}">●</span> ${m.name}<span class="company-tag">${m.company}</span></td>`;
+    benchmarks.forEach(b => {
+      const v = s[b.key];
+      if (v === null || v === undefined) {
+        bodyHtml += `<td class="score score-na">-</td>`;
+      } else {
+        let cls = "score";
+        if (v === best[b.key]) cls += " score-best";
+        else if (v === second[b.key]) cls += " score-second";
+        if (showBars) {
+          const pct = Math.min(v / b.max * 100, 100);
+          bodyHtml += `<td class="bar-cell"><div class="bar-bg" style="width:${pct}%;background:${m.color}"></div><div class="bar-val ${cls}">${v}</div></td>`;
+        } else {
+          bodyHtml += `<td class="${cls}">${v}</td>`;
+        }
+      }
+    });
+    bodyHtml += `</tr>`;
+  });
+  document.getElementById("table-body").innerHTML = bodyHtml;
+
+  // Stats
+  const totalBenchmarks = BENCHMARKS.length;
+  const totalModels = MODELS.length;
+  const totalScores = Object.values(SCORES).reduce((sum, s) => sum + Object.values(s).filter(v => v !== null).length, 0);
+  document.getElementById("stats-bar").innerHTML = `
+    <div class="stat-card"><div class="num">${totalModels}</div><div class="label">模型</div></div>
+    <div class="stat-card"><div class="num">${totalBenchmarks}</div><div class="label">基准测试</div></div>
+    <div class="stat-card"><div class="num">${totalScores}</div><div class="label">数据点</div></div>
+    <div class="stat-card"><div class="num">${benchmarks.length}</div><div class="label">当前显示</div></div>
+  `;
+
+  // Sort dropdown
+  const sortSel = document.getElementById("sort-benchmark");
+  const curVal = sortSel.value;
+  sortSel.innerHTML = `<option value="name">模型名</option>` + benchmarks.map(b => `<option value="${b.key}">${b.name}</option>`).join("");
+  if (benchmarks.find(b => b.key === curVal)) sortSel.value = curVal;
+  else sortSel.value = benchmarks[0]?.key || "name";
+}
+
+// Event listeners
+document.getElementById("category-filter").addEventListener("change", e => {
+  currentCategory = e.target.value;
+  const benchmarks = getVisibleBenchmarks();
+  if (!benchmarks.find(b => b.key === currentSort.key)) {
+    currentSort.key = benchmarks[0]?.key || "name";
+  }
+  render();
+});
+
+document.getElementById("model-search").addEventListener("input", e => {
+  searchQuery = e.target.value.toLowerCase();
+  render();
+});
+
+document.getElementById("sort-benchmark").addEventListener("change", e => {
+  currentSort.key = e.target.value;
+  currentSort.dir = "desc";
+  render();
+});
+
+document.getElementById("show-bars").addEventListener("change", () => render());
+
+document.getElementById("table-head").addEventListener("click", e => {
+  const th = e.target.closest("th");
+  if (!th) return;
+  const key = th.dataset.key;
+  if (currentSort.key === key) {
+    currentSort.dir = currentSort.dir === "desc" ? "asc" : "desc";
+  } else {
+    currentSort.key = key;
+    currentSort.dir = "desc";
+  }
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

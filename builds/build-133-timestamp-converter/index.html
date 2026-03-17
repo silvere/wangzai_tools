@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unix 时间戳转换工具 ⏰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        secondary: '#059669',
+                        accent: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .time-unit {
+                @apply bg-slate-100 px-3 py-1.5 rounded-lg text-slate-700 font-medium text-sm;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-emerald-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg">
+                        <i class="fa fa-clock-o text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">Unix 时间戳转换工具 ⏰</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="currentTime" class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-mono">--:--:--</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 当前时间卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 mb-1">当前时间戳 (10位)</p>
+                        <p id="timestamp10" class="text-2xl font-bold text-slate-800 font-mono">0</p>
+                    </div>
+                    <button class="copy-btn p-2 bg-emerald-50 text-primary rounded-lg hover:bg-emerald-100 transition" data-copy="timestamp10">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 mb-1">当前时间戳 (13位)</p>
+                        <p id="timestamp13" class="text-2xl font-bold text-slate-800 font-mono">0</p>
+                    </div>
+                    <button class="copy-btn p-2 bg-emerald-50 text-primary rounded-lg hover:bg-emerald-100 transition" data-copy="timestamp13">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 mb-1">当前时间 (ISO)</p>
+                        <p id="isoTime" class="text-lg font-semibold text-slate-800 font-mono text-sm">--</p>
+                    </div>
+                    <button class="copy-btn p-2 bg-emerald-50 text-primary rounded-lg hover:bg-emerald-100 transition" data-copy="isoTime">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 mb-1">当前时间 (本地)</p>
+                        <p id="localTime" class="text-lg font-semibold text-slate-800">--</p>
+                    </div>
+                    <button class="copy-btn p-2 bg-emerald-50 text-primary rounded-lg hover:bg-emerald-100 transition" data-copy="localTime">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 转换区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- 时间戳转时间 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-xl font-semibold text-slate-800 mb-4 flex items-center">
+                    <i class="fa fa-calendar-check-o mr-2 text-primary"></i>时间戳转时间
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">输入 Unix 时间戳</label>
+                        <div class="flex space-x-2">
+                            <input 
+                                id="timestampInput" 
+                                type="text" 
+                                class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono text-lg" 
+                                placeholder="支持10位/13位时间戳，如：1709876543"
+                            >
+                            <button id="convertTimestampBtn" class="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-secondary transition btn-hover">
+                                <i class="fa fa-exchange mr-1"></i>转换
+                            </button>
+                            <button id="nowBtn" class="px-4 py-3 bg-amber-50 text-amber-700 rounded-lg font-medium hover:bg-amber-100 transition btn-hover">
+                                <i class="fa fa-clock-o"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="timestampResult" class="hidden bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">北京时间 (Asia/Shanghai)</p>
+                                <p id="beijingTime" class="text-lg font-semibold text-slate-800">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">UTC 时间</p>
+                                <p id="utcTime" class="text-lg font-semibold text-slate-800">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">相对时间</p>
+                                <p id="relativeTime" class="text-lg font-semibold text-slate-800">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">日期格式</p>
+                                <p id="dateFormat" class="text-lg font-semibold text-slate-800">--</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 快速选择 -->
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 mb-2">快速选择时间</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="0">现在</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="-3600">1小时前</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="3600">1小时后</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="-86400">昨天</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="86400">明天</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="-604800">上周</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="604800">下周</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="-2592000">上月</button>
+                            <button class="quick-time px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition" data-offset="2592000">下月</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 时间转时间戳 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-xl font-semibold text-slate-800 mb-4 flex items-center">
+                    <i class="fa fa-calendar-plus-o mr-2 text-primary"></i>时间转时间戳
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">选择日期时间</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input 
+                                id="dateInput" 
+                                type="date" 
+                                class="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                            >
+                            <input 
+                                id="timeInput" 
+                                type="time" 
+                                step="1"
+                                class="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">或输入时间字符串</label>
+                        <div class="flex space-x-2">
+                            <input 
+                                id="dateStringInput" 
+                                type="text" 
+                                class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                                placeholder="支持多种格式，如：2026-03-13 12:00:00"
+                            >
+                            <button id="convertDateBtn" class="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-secondary transition btn-hover">
+                                <i class="fa fa-exchange mr-1"></i>转换
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="dateResult" class="hidden bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">10 位时间戳</p>
+                                <p id="resultTimestamp10" class="text-xl font-bold text-slate-800 font-mono">0</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">13 位时间戳</p>
+                                <p id="resultTimestamp13" class="text-xl font-bold text-slate-800 font-mono">0</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">ISO 格式</p>
+                                <p id="resultIso" class="text-sm font-semibold text-slate-800 font-mono">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1">相对时间</p>
+                                <p id="resultRelative" class="text-lg font-semibold text-slate-800">--</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 mt-4">
+                            <button class="copy-result-btn px-3 py-1.5 bg-emerald-50 text-primary rounded-lg text-sm hover:bg-emerald-100 transition" data-copy="resultTimestamp10">
+                                <i class="fa fa-copy mr-1"></i>复制10位
+                            </button>
+                            <button class="copy-result-btn px-3 py-1.5 bg-emerald-50 text-primary rounded-lg text-sm hover:bg-emerald-100 transition" data-copy="resultTimestamp13">
+                                <i class="fa fa-copy mr-1"></i>复制13位
+                            </button>
+                            <button class="copy-result-btn px-3 py-1.5 bg-emerald-50 text-primary rounded-lg text-sm hover:bg-emerald-100 transition" data-copy="resultIso">
+                                <i class="fa fa-copy mr-1"></i>复制ISO
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 常用时间格式示例 -->
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 mb-2">支持的时间格式示例</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600">
+                            <div class="time-unit">2026-03-13 12:00:00</div>
+                            <div class="time-unit">2026/03/13 12:00 PM</div>
+                            <div class="time-unit">Mar 13, 2026 12:00:00</div>
+                            <div class="time-unit">2026-03-13T12:00:00Z</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 时间差计算 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-xl font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fa fa-calculator mr-2 text-primary"></i>时间差计算
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">开始时间戳</label>
+                    <input 
+                        id="diffStart" 
+                        type="text" 
+                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono" 
+                        placeholder="开始时间戳"
+                    >
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">结束时间戳</label>
+                    <input 
+                        id="diffEnd" 
+                        type="text" 
+                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono" 
+                        placeholder="结束时间戳"
+                    >
+                </div>
+                <div class="flex items-end">
+                    <button id="calculateDiffBtn" class="w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-secondary transition btn-hover">
+                        <i class="fa fa-calculator mr-1"></i>计算差值
+                    </button>
+                </div>
+            </div>
+
+            <div id="diffResult" class="hidden mt-4 bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="text-center">
+                        <p class="text-sm text-slate-500 mb-1">总天数</p>
+                        <p id="diffDays" class="text-2xl font-bold text-slate-800">0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-slate-500 mb-1">小时</p>
+                        <p id="diffHours" class="text-2xl font-bold text-slate-800">0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-slate-500 mb-1">分钟</p>
+                        <p id="diffMinutes" class="text-2xl font-bold text-slate-800">0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-slate-500 mb-1">秒数</p>
+                        <p id="diffSeconds" class="text-2xl font-bold text-slate-800">0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-slate-500 mb-1">总秒数</p>
+                        <p id="diffTotalSeconds" class="text-2xl font-bold text-slate-800 font-mono text-sm">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示信息 -->
+        <div id="successAlert" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-check-circle mr-2"></i>
+                <span id="successMessage">复制成功！</span>
+            </div>
+        </div>
+
+        <div id="errorAlert" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                <span id="errorMessage">时间格式错误，请检查输入。</span>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fa fa-info-circle mr-2 text-primary"></i>使用说明
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
+                <div>
+                    <h3 class="font-medium text-slate-800 mb-2">什么是 Unix 时间戳？</h3>
+                    <p>Unix 时间戳是从 1970年1月1日 00:00:00 UTC 到现在的总秒数（10位）或毫秒数（13位），广泛应用于计算机系统中记录时间。</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-slate-800 mb-2">常用场景</h3>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li>调试接口时转换时间戳，方便查看日志中的时间</li>
+                        <li>数据库中存储的时间字段转换为可读格式</li>
+                        <li>计算两个时间点之间的间隔</li>
+                        <li>生成特定时间的时间戳用于代码测试</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>💡 旺仔工具百宝箱 - Unix 时间戳转换工具 | 完全本地运行，无需网络</p>
+            <p class="mt-2">支持10位/13位时间戳互转、时间差计算、多种时间格式解析</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM 元素
+        const currentTimeEl = document.getElementById('currentTime');
+        const timestamp10El = document.getElementById('timestamp10');
+        const timestamp13El = document.getElementById('timestamp13');
+        const isoTimeEl = document.getElementById('isoTime');
+        const localTimeEl = document.getElementById('localTime');
+        const timestampInput = document.getElementById('timestampInput');
+        const convertTimestampBtn = document.getElementById('convertTimestampBtn');
+        const nowBtn = document.getElementById('nowBtn');
+        const timestampResult = document.getElementById('timestampResult');
+        const beijingTimeEl = document.getElementById('beijingTime');
+        const utcTimeEl = document.getElementById('utcTime');
+        const relativeTimeEl = document.getElementById('relativeTime');
+        const dateFormatEl = document.getElementById('dateFormat');
+        const quickTimeBtns = document.querySelectorAll('.quick-time');
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+        const dateStringInput = document.getElementById('dateStringInput');
+        const convertDateBtn = document.getElementById('convertDateBtn');
+        const dateResult = document.getElementById('dateResult');
+        const resultTimestamp10El = document.getElementById('resultTimestamp10');
+        const resultTimestamp13El = document.getElementById('resultTimestamp13');
+        const resultIsoEl = document.getElementById('resultIso');
+        const resultRelativeEl = document.getElementById('resultRelative');
+        const diffStart = document.getElementById('diffStart');
+        const diffEnd = document.getElementById('diffEnd');
+        const calculateDiffBtn = document.getElementById('calculateDiffBtn');
+        const diffResult = document.getElementById('diffResult');
+        const diffDaysEl = document.getElementById('diffDays');
+        const diffHoursEl = document.getElementById('diffHours');
+        const diffMinutesEl = document.getElementById('diffMinutes');
+        const diffSecondsEl = document.getElementById('diffSeconds');
+        const diffTotalSecondsEl = document.getElementById('diffTotalSeconds');
+        const copyBtns = document.querySelectorAll('.copy-btn');
+        const copyResultBtns = document.querySelectorAll('.copy-result-btn');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // 显示成功提示
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successAlert.classList.remove('hidden');
+            setTimeout(() => {
+                successAlert.classList.add('hidden');
+            }, 2000);
+        }
+
+        // 显示错误提示
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => {
+                errorAlert.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 格式化时间
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 格式化 UTC 时间
+        function formatUTCDate(date) {
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const hours = String(date.getUTCHours()).padStart(2, '0');
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
+        }
+
+        // 获取相对时间
+        function getRelativeTime(timestamp) {
+            const now = Date.now();
+            const diff = timestamp - now;
+            const absDiff = Math.abs(diff);
+            
+            const seconds = Math.floor(absDiff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (diff === 0) return '现在';
+            if (diff > 0) {
+                if (days > 0) return `${days} 天后`;
+                if (hours > 0) return `${hours} 小时后`;
+                if (minutes > 0) return `${minutes} 分钟后`;
+                return `${seconds} 秒后`;
+            } else {
+                if (days > 0) return `${days} 天前`;
+                if (hours > 0) return `${hours} 小时前`;
+                if (minutes > 0) return `${minutes} 分钟前`;
+                return `${seconds} 秒前`;
+            }
+        }
+
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const timestamp10 = Math.floor(now.getTime() / 1000);
+            const timestamp13 = now.getTime();
+            
+            currentTimeEl.textContent = formatDate(now);
+            timestamp10El.textContent = timestamp10;
+            timestamp13El.textContent = timestamp13;
+            isoTimeEl.textContent = now.toISOString();
+            localTimeEl.textContent = now.toLocaleString('zh-CN');
+        }
+
+        // 转换时间戳到时间
+        function convertTimestamp() {
+            let input = timestampInput.value.trim();
+            if (!input) {
+                showError('请输入时间戳');
+                return;
+            }
+
+            // 移除非数字字符
+            input = input.replace(/\D/g, '');
+            
+            let timestamp;
+            if (input.length === 10) {
+                timestamp = parseInt(input) * 1000;
+            } else if (input.length === 13) {
+                timestamp = parseInt(input);
+            } else {
+                showError('请输入10位或13位有效时间戳');
+                return;
+            }
+
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                showError('无效的时间戳');
+                return;
+            }
+
+            beijingTimeEl.textContent = formatDate(date);
+            utcTimeEl.textContent = formatUTCDate(date);
+            relativeTimeEl.textContent = getRelativeTime(timestamp);
+            dateFormatEl.textContent = date.toLocaleDateString('zh-CN', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            });
+
+            timestampResult.classList.remove('hidden');
+            showSuccess('转换成功');
+        }
+
+        // 转换时间到时间戳
+        function convertDate() {
+            let dateStr = dateStringInput.value.trim();
+            let date;
+
+            // 如果有选择日期时间，优先使用
+            if (dateInput.value && timeInput.value) {
+                dateStr = `${dateInput.value} ${timeInput.value}`;
+            }
+
+            if (!dateStr) {
+                showError('请输入时间或选择日期时间');
+                return;
+            }
+
+            try {
+                date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    // 尝试其他格式
+                    date = new Date(Date.parse(dateStr.replace(/-/g, '/')));
+                    if (isNaN(date.getTime())) {
+                        throw new Error('无法解析时间格式');
+                    }
+                }
+            } catch (e) {
+                showError('时间格式错误，请检查输入');
+                return;
+            }
+
+            const timestamp10 = Math.floor(date.getTime() / 1000);
+            const timestamp13 = date.getTime();
+
+            resultTimestamp10El.textContent = timestamp10;
+            resultTimestamp13El.textContent = timestamp13;
+            resultIsoEl.textContent = date.toISOString();
+            resultRelativeEl.textContent = getRelativeTime(date.getTime());
+
+            dateResult.classList.remove('hidden');
+            showSuccess('转换成功');
+        }
+
+        // 计算时间差
+        function calculateDiff() {
+            const startStr = diffStart.value.trim();
+            const endStr = diffEnd.value.trim();
+
+            if (!startStr || !endStr) {
+                showError('请输入开始和结束时间戳');
+                return;
+            }
+
+            let start = parseInt(startStr);
+            let end = parseInt(endStr);
+
+            // 处理10位时间戳
+            if (startStr.length === 10) start *= 1000;
+            if (endStr.length === 10) end *= 1000;
+
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                showError('无效的时间戳');
+                return;
+            }
+
+            let diff = Math.abs(end - start);
+            const totalSeconds = Math.floor(diff / 1000);
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            diff %= (1000 * 60 * 60 * 24);
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            diff %= (1000 * 60 * 60);
+            const minutes = Math.floor(diff / (1000 * 60));
+            diff %= (1000 * 60);
+            const seconds = Math.floor(diff / 1000);
+
+            diffDaysEl.textContent = days;
+            diffHoursEl.textContent = hours;
+            diffMinutesEl.textContent = minutes;
+            diffSecondsEl.textContent = seconds;
+            diffTotalSecondsEl.textContent = totalSeconds;
+
+            diffResult.classList.remove('hidden');
+            showSuccess('计算完成');
+        }
+
+        // 事件监听
+        copyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const copyId = btn.getAttribute('data-copy');
+                const text = document.getElementById(copyId).textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    showSuccess('已复制到剪贴板');
+                });
+            });
+        });
+
+        copyResultBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const copyId = btn.getAttribute('data-copy');
+                const text = document.getElementById(copyId).textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    showSuccess('已复制到剪贴板');
+                });
+            });
+        });
+
+        convertTimestampBtn.addEventListener('click', convertTimestamp);
+        nowBtn.addEventListener('click', () => {
+            timestampInput.value = Math.floor(Date.now() / 1000);
+            convertTimestamp();
+        });
+
+        quickTimeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const offset = parseInt(btn.getAttribute('data-offset'));
+                const timestamp = Math.floor(Date.now() / 1000) + offset;
+                timestampInput.value = timestamp;
+                convertTimestamp();
+            });
+        });
+
+        convertDateBtn.addEventListener('click', convertDate);
+        calculateDiffBtn.addEventListener('click', calculateDiff);
+
+        // 日期时间输入变化时自动更新输入框
+        dateInput.addEventListener('change', () => {
+            if (dateInput.value && timeInput.value) {
+                dateStringInput.value = `${dateInput.value} ${timeInput.value}`;
+            }
+        });
+
+        timeInput.addEventListener('change', () => {
+            if (dateInput.value && timeInput.value) {
+                dateStringInput.value = `${dateInput.value} ${timeInput.value}`;
+            }
+        });
+
+        // 回车键转换
+        timestampInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') convertTimestamp();
+        });
+
+        dateStringInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') convertDate();
+        });
+
+        diffEnd.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') calculateDiff();
+        });
+
+        // 每秒更新当前时间
+        setInterval(updateCurrentTime, 1000);
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCurrentTime();
+            // 设置默认日期为今天
+            const today = new Date();
+            dateInput.value = today.toISOString().split('T')[0];
+            timeInput.value = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}:${String(today.getSeconds()).padStart(2, '0')}`;
+        });
+    </script>
+</body>
+</html>

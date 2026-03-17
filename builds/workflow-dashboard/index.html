@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旺仔工作台 🥛</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f23; color: #e0e0e0; min-height: 100vh; padding: 24px; }
+.header { text-align: center; margin-bottom: 32px; }
+.header h1 { font-size: 2em; color: #fff; }
+.header .subtitle { color: #888; margin-top: 4px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+.card { background: #1a1a2e; border-radius: 12px; padding: 20px; border: 1px solid #2a2a4a; }
+.card h2 { font-size: 1.1em; color: #7c83ff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h2 .icon { font-size: 1.3em; }
+.stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2a2a4a; }
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: #888; }
+.stat-value { color: #fff; font-weight: 600; }
+.build-item { padding: 10px 0; border-bottom: 1px solid #2a2a4a; }
+.build-item:last-child { border-bottom: none; }
+.build-name { color: #7c83ff; font-weight: 600; }
+.build-date { color: #666; font-size: 0.85em; }
+.build-desc { color: #aaa; font-size: 0.9em; margin-top: 4px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.status-active { background: #4ade80; }
+.status-idle { background: #fbbf24; }
+.cron-item { padding: 8px 0; border-bottom: 1px solid #2a2a4a; display: flex; justify-content: space-between; align-items: center; }
+.cron-item:last-child { border-bottom: none; }
+.cron-name { color: #e0e0e0; }
+.cron-schedule { color: #888; font-size: 0.85em; font-family: monospace; }
+.memory-file { padding: 6px 0; color: #aaa; font-size: 0.9em; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin: 2px; }
+.tag-agent { background: #1e3a5f; color: #60a5fa; }
+.tag-eval { background: #3b1f4b; color: #c084fc; }
+.tag-app { background: #1f3b2d; color: #4ade80; }
+.refresh-btn { position: fixed; bottom: 24px; right: 24px; background: #7c83ff; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; }
+.refresh-btn:hover { background: #6366f1; }
+#clock { color: #7c83ff; font-family: monospace; font-size: 1.1em; }
+.empty { color: #555; font-style: italic; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🥛 旺仔工作台</h1>
+  <div class="subtitle">Dashboard for 老大 · <span id="clock"></span></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2><span class="icon">📊</span> 系统状态</h2>
+    <div class="stat-row"><span class="stat-label">服务状态</span><span class="stat-value"><span class="status-dot status-active"></span>运行中</span></div>
+    <div class="stat-row"><span class="stat-label">今日日期</span><span class="stat-value" id="today-date"></span></div>
+    <div class="stat-row"><span class="stat-label">定时任务</span><span class="stat-value" id="cron-count">2 个</span></div>
+    <div class="stat-row"><span class="stat-label">记忆文件</span><span class="stat-value" id="memory-count">-</span></div>
+    <div class="stat-row"><span class="stat-label">构建项目</span><span class="stat-value" id="build-count">1 个</span></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">⏰</span> 定时任务</h2>
+    <div class="cron-item">
+      <div>
+        <div class="cron-name"><span class="status-dot status-active"></span>ArXiv 论文日推</div>
+      </div>
+      <div class="cron-schedule">每天 09:00</div>
+    </div>
+    <div class="cron-item">
+      <div>
+        <div class="cron-name"><span class="status-dot status-active"></span>创意构建时间</div>
+      </div>
+      <div class="cron-schedule">每 4 小时</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🛠️</span> 构建日志</h2>
+    <div id="build-log">
+      <div class="build-item">
+        <div class="build-name">📋 Workflow Dashboard</div>
+        <div class="build-date">2026-02-14 · Build #1</div>
+        <div class="build-desc">工作台仪表盘 — 一目了然查看系统状态、定时任务、构建历史和记忆文件</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🧠</span> 最近记忆</h2>
+    <div id="memory-list">
+      <div class="memory-file">📄 2026-02-14.md — 情人节，日报推送，cron恢复</div>
+      <div class="memory-file">📄 2026-02-07.md — ArXiv推送服务配置完成</div>
+      <div class="memory-file">📄 2026-02-05.md</div>
+      <div class="memory-file">📄 2026-02-04.md</div>
+      <div class="memory-file">📄 2026-02-03.md</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">📚</span> 今日论文推送</h2>
+    <div class="build-item">
+      <div class="build-name">CM2: 多轮多步智能体工具使用RL</div>
+      <span class="tag tag-agent">#AI智能体</span>
+    </div>
+    <div class="build-item">
+      <div class="build-name">Agentic Test-Time Scaling for WebAgents</div>
+      <span class="tag tag-agent">#AI智能体</span>
+    </div>
+    <div class="build-item">
+      <div class="build-name">Think like a Scientist: LLM Agent</div>
+      <span class="tag tag-agent">#AI智能体</span>
+    </div>
+    <div class="build-item">
+      <div class="build-name">ExtractBench: 结构化提取基准</div>
+      <span class="tag tag-eval">#大模型评测</span>
+    </div>
+    <div class="build-item">
+      <div class="build-name">UniT: 多模态思维链扩展</div>
+      <span class="tag tag-eval">#大模型</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">💡</span> 即将构建</h2>
+    <div class="build-item">
+      <div class="build-desc">每 4 小时旺仔会自动构建一个小工具来改善我们的工作流。下次构建时间：<span id="next-build"></span></div>
+    </div>
+    <div class="build-item">
+      <div class="build-desc" style="color: #666;">可能的方向：任务管理、消息模板、自动化脚本、数据可视化、记忆整理工具...</div>
+    </div>
+  </div>
+</div>
+
+<button class="refresh-btn" onclick="location.reload()">🔄 刷新</button>
+
+<script>
+function updateClock() {
+  const now = new Date();
+  const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', opts);
+}
+function updateDate() {
+  const now = new Date();
+  const opts = { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' };
+  document.getElementById('today-date').textContent = now.toLocaleDateString('zh-CN', opts);
+}
+function updateNextBuild() {
+  const now = new Date();
+  const h = now.getHours();
+  const nextH = Math.ceil((h + 1) / 4) * 4;
+  const diff = nextH - h;
+  document.getElementById('next-build').textContent = `约 ${diff} 小时后`;
+}
+updateClock();
+updateDate();
+updateNextBuild();
+setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

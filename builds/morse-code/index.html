@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📡 Morse Code 摩尔斯电码</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#38bdf8;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--purple:#a78bfa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
+.container{max-width:700px;margin:0 auto}
+.header{text-align:center;margin-bottom:20px}
+.header h1{font-size:22px}.header p{color:var(--text2);font-size:13px;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;padding:12px;resize:vertical;outline:none;height:100px;font-family:inherit}
+textarea:focus{border-color:var(--accent)}
+.morse-output{font-family:'SF Mono',Monaco,Consolas,monospace;font-size:18px;letter-spacing:2px;word-break:break-all;line-height:1.8}
+.morse-output .dot{color:var(--accent)}.morse-output .dash{color:var(--yellow)}.morse-output .space{color:var(--text2);margin:0 4px}.morse-output .sep{color:var(--surface2);margin:0 2px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface2);border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#0f172a;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:#7dd3fc}
+.btn.playing{background:var(--green);border-color:var(--green);color:#0f172a}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.row label{margin-bottom:0;white-space:nowrap}
+input[type=range]{flex:1;height:6px;-webkit-appearance:none;background:var(--surface2);border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
+.speed-val{color:var(--accent);font-size:13px;min-width:50px;text-align:right;font-family:monospace}
+.mode-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.mode-btn{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;background:var(--surface)}
+.mode-btn:hover{background:var(--surface2)}
+.mode-btn.active{background:var(--accent);color:#0f172a}
+.ref-table{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px;margin-top:8px}
+.ref-item{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:all .15s}
+.ref-item:hover{border-color:var(--accent);transform:scale(1.05)}
+.ref-item .char{font-size:16px;font-weight:700;color:var(--accent)}
+.ref-item .code{font-family:monospace;font-size:11px;color:var(--text2);margin-top:2px}
+.visualizer{height:60px;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;margin-bottom:14px}
+.viz-bar{position:absolute;bottom:0;width:3px;background:var(--accent);transition:height .05s;border-radius:1px 1px 0 0}
+.light{width:24px;height:24px;border-radius:50%;background:var(--surface2);transition:all .1s;display:inline-block;vertical-align:middle;margin-right:8px}
+.light.on{background:var(--accent);box-shadow:0 0 12px var(--accent)}
+.tap-area{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;user-select:none;transition:all .15s;margin-bottom:14px}
+.tap-area:active{background:var(--surface2);border-color:var(--accent)}
+.tap-area .big{font-size:28px;margin-bottom:4px}
+.tap-area p{color:var(--text2);font-size:12px}
+.decoded{font-size:18px;color:var(--green);min-height:24px;font-weight:600;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>📡 Morse Code 摩尔斯电码</h1>
+<p>文字 ↔ 摩尔斯电码互转 + 音频播放 + 手动敲击 — Build #54 by 旺仔</p>
+</div>
+<div class="mode-toggle">
+<div class="mode-btn active" data-mode="encode" onclick="setMode('encode')">📝 文字 → 电码</div>
+<div class="mode-btn" data-mode="decode" onclick="setMode('decode')">🔓 电码 → 文字</div>
+<div class="mode-btn" data-mode="tap" onclick="setMode('tap')">👆 手动敲击</div>
+</div>
+
+<div id="encodePanel">
+<div class="card">
+<label>输入文字（支持英文字母、数字、常用标点）</label>
+<textarea id="textInput" placeholder="Hello World 123">HELLO WORLD</textarea>
+</div>
+<div class="card">
+<label>摩尔斯电码</label>
+<div class="morse-output" id="morseOutput"></div>
+</div>
+</div>
+
+<div id="decodePanel" style="display:none">
+<div class="card">
+<label>输入摩尔斯电码（用空格分隔字母，/ 分隔单词）</label>
+<textarea id="morseInput" placeholder=".... . .-.. .-.. --- / .-- --- .-. .-.. -..">.... . .-.. .-.. --- / .-- --- .-. .-.. -..</textarea>
+</div>
+<div class="card">
+<label>解码结果</label>
+<div class="decoded" id="decodeResult"></div>
+</div>
+</div>
+
+<div id="tapPanel" style="display:none">
+<div class="card">
+<div style="display:flex;align-items:center;margin-bottom:8px">
+<span class="light" id="tapLight"></span>
+<span style="font-size:13px;color:var(--text2)">按住 = 划（长），点击 = 点（短）</span>
+</div>
+<div class="tap-area" id="tapArea">
+<div class="big">👆</div>
+<p>点击或按住这里敲击电码（也可以按空格键）</p>
+</div>
+<div>
+<label>敲击的电码</label>
+<div class="morse-output" id="tapMorse" style="min-height:24px"></div>
+<div class="decoded" id="tapDecoded"></div>
+</div>
+<div style="margin-top:8px">
+<button class="btn" onclick="clearTap()">🗑️ 清空</button>
+<button class="btn" onclick="tapAddSpace()">⎵ 字母间隔</button>
+<button class="btn" onclick="tapAddWordSpace()">/ 单词间隔</button>
+</div>
+</div>
+</div>
+
+<div class="visualizer" id="visualizer"></div>
+
+<div class="controls">
+<button class="btn primary" id="playBtn" onclick="playMorse()">▶️ 播放</button>
+<button class="btn" id="stopBtn" onclick="stopMorse()" disabled>⏹️ 停止</button>
+<button class="btn" onclick="copyMorse()">📋 复制电码</button>
+<button class="btn" onclick="copyText()">📋 复制文字</button>
+</div>
+
+<div class="row">
+<label>速度</label>
+<input type="range" id="speed" min="5" max="30" value="15">
+<span class="speed-val" id="speedVal">15 WPM</span>
+</div>
+<div class="row">
+<label>频率</label>
+<input type="range" id="freq" min="300" max="1200" value="700" step="50">
+<span class="speed-val" id="freqVal">700 Hz</span>
+</div>
+
+<div class="card">
+<label>📖 摩尔斯电码速查表（点击播放）</label>
+<div class="ref-table" id="refTable"></div>
+</div>
+</div>
+
+<script>
+const MORSE={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+'0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
+'.':'.-.-.-',',':'--..--','?':'..--..','/':'-..-.','-':'-....-','(':'-.--.',')':'-.--.-','!':'-.-.--',':':'---...',';':'-.-.-.','=':'-...-','+':'.-.-.','"':'.-..-.','@':'.--.-.','\'':'.----.','&':'.-...'};
+const REVERSE={};Object.entries(MORSE).forEach(([k,v])=>REVERSE[v]=k);
+
+let audioCtx=null,playing=false,playTimeout=null;
+
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+
+function textToMorse(text){
+  return text.toUpperCase().split('').map(c=>{
+    if(c===' ')return '/';
+    return MORSE[c]||'';
+  }).filter(Boolean).join(' ');
+}
+
+function morseToText(morse){
+  return morse.split(' / ').map(word=>
+    word.split(' ').map(c=>REVERSE[c]||'?').join('')
+  ).join(' ');
+}
+
+function renderMorse(morse,el){
+  el.innerHTML=morse.split('').map(c=>{
+    if(c==='.')return'<span class="dot">·</span>';
+    if(c==='-')return'<span class="dash">—</span>';
+    if(c==='/')return'<span class="space">/</span>';
+    if(c===' ')return'<span class="sep"> </span>';
+    return c;
+  }).join('');
+}
+
+function encode(){
+  const text=document.getElementById('textInput').value;
+  const morse=textToMorse(text);
+  renderMorse(morse,document.getElementById('morseOutput'));
+}
+
+function decode(){
+  const morse=document.getElementById('morseInput').value;
+  document.getElementById('decodeResult').textContent=morseToText(morse);
+}
+
+function setMode(mode){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  document.getElementById('encodePanel').style.display=mode==='encode'?'':'none';
+  document.getElementById('decodePanel').style.display=mode==='decode'?'':'none';
+  document.getElementById('tapPanel').style.display=mode==='tap'?'':'none';
+}
+
+// Audio playback
+function playTone(duration){
+  const ctx=getAudioCtx();
+  const freq=parseInt(document.getElementById('freq').value);
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type='sine';osc.frequency.value=freq;
+  gain.gain.value=0.3;
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start();
+  gain.gain.setValueAtTime(0.3,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration/1000);
+  osc.stop(ctx.currentTime+duration/1000);
+}
+
+function getMorse(){
+  const encPanel=document.getElementById('encodePanel');
+  if(encPanel.style.display!=='none')return textToMorse(document.getElementById('textInput').value);
+  const decPanel=document.getElementById('decodePanel');
+  if(decPanel.style.display!=='none')return document.getElementById('morseInput').value;
+  return tapMorseStr;
+}
+
+async function playMorse(){
+  if(playing)return;
+  playing=true;
+  const btn=document.getElementById('playBtn');
+  btn.classList.add('playing');btn.textContent='🔊 播放中';
+  document.getElementById('stopBtn').disabled=false;
+  const wpm=parseInt(document.getElementById('speed').value);
+  const dot=1200/wpm;
+  const morse=getMorse();
+  const vizEl=document.getElementById('visualizer');
+  let vizBars=[];
+
+  for(let i=0;i<morse.length&&playing;i++){
+    const c=morse[i];
+    if(c==='.'){
+      playTone(dot);addVizBar(vizEl,vizBars,20);
+      await sleep(dot);
+    }else if(c==='-'){
+      playTone(dot*3);addVizBar(vizEl,vizBars,50);
+      await sleep(dot*3);
+    }else if(c===' '){
+      await sleep(dot*3);
+    }else if(c==='/'){
+      await sleep(dot*7);
+    }
+    if(c==='.'||c==='-')await sleep(dot);// inter-element gap
+  }
+  stopMorse();
+}
+
+function addVizBar(el,bars,h){
+  const bar=document.createElement('div');
+  bar.className='viz-bar';
+  bar.style.left=(bars.length*5)%el.clientWidth+'px';
+  bar.style.height=h+'px';
+  el.appendChild(bar);bars.push(bar);
+  if(bars.length>el.clientWidth/5){
+    const old=bars.shift();old.remove();
+    bars.forEach((b,i)=>b.style.left=i*5+'px');
+  }
+}
+
+function stopMorse(){
+  playing=false;
+  const btn=document.getElementById('playBtn');
+  btn.classList.remove('playing');btn.textContent='▶️ 播放';
+  document.getElementById('stopBtn').disabled=true;
+}
+
+function sleep(ms){return new Promise(r=>playTimeout=setTimeout(r,ms))}
+
+function copyMorse(){
+  const m=getMorse();
+  navigator.clipboard.writeText(m).then(()=>alert('✅ 电码已复制'));
+}
+function copyText(){
+  let t='';
+  const enc=document.getElementById('encodePanel');
+  if(enc.style.display!=='none')t=document.getElementById('textInput').value;
+  else t=document.getElementById('decodeResult').textContent||morseToText(getMorse());
+  navigator.clipboard.writeText(t).then(()=>alert('✅ 文字已复制'));
+}
+
+// Tap mode
+let tapMorseStr='',tapDown=0,tapTimer=null;
+const tapArea=document.getElementById('tapArea');
+const tapLight=document.getElementById('tapLight');
+
+function tapStart(e){
+  e.preventDefault();
+  tapDown=Date.now();
+  tapLight.classList.add('on');
+  playTone(2000);// will be cut short on release
+}
+function tapEnd(e){
+  e.preventDefault();
+  tapLight.classList.remove('on');
+  const dur=Date.now()-tapDown;
+  tapMorseStr+=dur>200?'-':'.';
+  renderTap();
+  clearTimeout(tapTimer);
+  tapTimer=setTimeout(()=>{tapMorseStr+=' ';renderTap()},600);
+}
+function renderTap(){
+  renderMorse(tapMorseStr,document.getElementById('tapMorse'));
+  document.getElementById('tapDecoded').textContent=morseToText(tapMorseStr);
+}
+function clearTap(){tapMorseStr='';renderTap()}
+function tapAddSpace(){tapMorseStr+=' ';renderTap()}
+function tapAddWordSpace(){tapMorseStr+=' / ';renderTap()}
+
+tapArea.addEventListener('mousedown',tapStart);
+tapArea.addEventListener('mouseup',tapEnd);
+tapArea.addEventListener('touchstart',tapStart);
+tapArea.addEventListener('touchend',tapEnd);
+
+// Keyboard support
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&document.getElementById('tapPanel').style.display!=='none'){
+    e.preventDefault();if(!tapDown)tapStart(e);
+  }
+});
+document.addEventListener('keyup',e=>{
+  if(e.code==='Space'&&document.getElementById('tapPanel').style.display!=='none'){
+    e.preventDefault();tapEnd(e);
+  }
+});
+
+// Reference table
+const refEl=document.getElementById('refTable');
+Object.entries(MORSE).forEach(([char,code])=>{
+  const d=document.createElement('div');
+  d.className='ref-item';
+  d.innerHTML=`<div class="char">${char}</div><div class="code">${code}</div>`;
+  d.onclick=()=>{
+    const wpm=parseInt(document.getElementById('speed').value);
+    const dot=1200/wpm;
+    let i=0;
+    const play=()=>{
+      if(i>=code.length)return;
+      const c=code[i];
+      if(c==='.')playTone(dot);else playTone(dot*3);
+      i++;setTimeout(play,c==='.'?dot*2:dot*4);
+    };
+    play();
+  };
+  refEl.appendChild(d);
+});
+
+// Bindings
+document.getElementById('textInput').addEventListener('input',encode);
+document.getElementById('morseInput').addEventListener('input',decode);
+document.getElementById('speed').addEventListener('input',function(){document.getElementById('speedVal').textContent=this.value+' WPM'});
+document.getElementById('freq').addEventListener('input',function(){document.getElementById('freqVal').textContent=this.value+' Hz'});
+
+encode();
+</script>
+</body>
+</html>

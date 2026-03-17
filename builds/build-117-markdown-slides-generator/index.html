@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 幻灯片生成器 🎥</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/bash.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        dark: '#0F172A',
+                        darker: '#0B1120',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-image: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-in;
+            }
+            .slide-transition {
+                transition: transform 0.5s ease-in-out;
+            }
+        }
+
+        /* Markdown Styles for Slides */
+        .slide-content h1 {
+            @apply text-4xl font-bold mb-6 text-white text-center;
+        }
+        .slide-content h2 {
+            @apply text-3xl font-bold mb-4 text-white;
+        }
+        .slide-content h3 {
+            @apply text-2xl font-semibold mb-3 text-white;
+        }
+        .slide-content p {
+            @apply text-lg text-slate-200 mb-4 leading-relaxed;
+        }
+        .slide-content ul, .slide-content ol {
+            @apply text-lg text-slate-200 mb-4 pl-6 space-y-2;
+        }
+        .slide-content ul {
+            @apply list-disc;
+        }
+        .slide-content ol {
+            @apply list-decimal;
+        }
+        .slide-content li {
+            @apply leading-relaxed;
+        }
+        .slide-content a {
+            @apply text-primary hover:text-purple-400 underline transition-colors;
+        }
+        .slide-content blockquote {
+            @apply border-l-4 border-primary pl-4 italic text-slate-300 my-4;
+        }
+        .slide-content code {
+            @apply bg-slate-800 px-2 py-0.5 rounded text-green-400 font-mono text-sm;
+        }
+        .slide-content pre {
+            @apply bg-slate-800 p-4 rounded-xl mb-4 overflow-x-auto;
+        }
+        .slide-content pre code {
+            @apply bg-transparent p-0 text-sm;
+        }
+        .slide-content table {
+            @apply w-full border-collapse mb-4;
+        }
+        .slide-content th, .slide-content td {
+            @apply border border-slate-600 px-4 py-2 text-slate-200;
+        }
+        .slide-content th {
+            @apply bg-slate-800 font-semibold;
+        }
+        .slide-content img {
+            @apply max-w-full max-h-[400px] mx-auto rounded-xl my-4;
+        }
+        .slide-content hr {
+            @apply border-slate-700 my-6;
+        }
+    </style>
+</head>
+<body class="bg-darker font-inter text-slate-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold mb-3">
+                <span class="text-gradient">Markdown 幻灯片生成器</span> 🎥
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                用Markdown写幻灯片，实时预览，支持演讲者模式，一键导出PDF/HTML，做PPT再也不用浪费时间调格式！
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Panel: Editor -->
+            <div class="space-y-6">
+                <!-- Toolbar -->
+                <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl">
+                    <div class="flex flex-wrap gap-3 items-center justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="intro">
+                                🏠 封面模板
+                            </button>
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="content">
+                                📋 内容模板
+                            </button>
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="code">
+                                💻 代码演示
+                            </button>
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="end">
+                                🏁 结束页
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="presentBtn" class="bg-gradient-primary hover:opacity-90 text-white px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                开始演示
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor -->
+                <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+                    <div class="bg-slate-800/50 px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                        <h3 class="font-semibold text-white">Markdown 编辑器</h3>
+                        <div class="text-xs text-slate-400">使用 --- 分隔每页</div>
+                    </div>
+                    <div class="p-4">
+                        <textarea id="editor" class="w-full h-[600px] bg-darker border border-slate-700/50 rounded-xl p-4 font-mono text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" placeholder="在这里输入Markdown内容，使用 --- 分隔每页..."># 🎉 Markdown 幻灯片生成器
+## 快速制作精美演示文稿
+### 旺仔工具百宝箱
+#### 2026年3月10日
+
+---
+
+## ✨ 功能亮点
+- ✅ 纯Markdown语法，不用调格式
+- ✅ 实时预览，所见即所得
+- ✅ 支持演讲者模式，带备注功能
+- ✅ 代码高亮，完美支持技术分享
+- ✅ 一键导出PDF和HTML
+- ✅ 完全本地运行，数据安全
+
+---
+
+## 💡 使用方法
+1. 左侧输入Markdown内容
+2. 使用 `---` 分隔不同的页面
+3. 右侧实时预览效果
+4. 点击"开始演示"进入全屏模式
+5. 按键盘 ← → 键切换页面
+
+---
+
+## 🚀 代码示例
+```python
+def hello():
+    print("Hello, World!")
+    # 代码自动高亮
+    return "这是Python代码示例"
+```
+
+```javascript
+const name = "旺仔";
+console.log(`Hello ${name}!`);
+// 支持多种编程语言
+```
+
+---
+
+## 📊 表格支持
+| 功能 | 状态 | 备注 |
+|------|------|------|
+| Markdown语法 | ✅ | 完全支持 |
+| 代码高亮 | ✅ | Python/JS/Shell等 |
+| 导出PDF | ✅ | 一键导出 |
+| 演讲者模式 | ✅ | 带计时器和备注 |
+| 自定义主题 | 🔄 | 开发中 |
+
+---
+
+## 🏆 为什么用它？
+- **节省时间**：不用花时间调PPT格式
+- **专注内容**：只需要写Markdown就行
+- **一致性**：所有幻灯片样式自动统一
+- **版本控制**：纯文本格式，方便Git管理
+- **跨平台**：导出HTML可以在任何设备打开
+
+---
+
+# 🎈 谢谢观看！
+## 现在就开始你的演示吧！
+### 工具地址：`builds/build-117-markdown-slides-generator/index.html`</textarea>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="grid grid-cols-3 gap-4">
+                    <button id="exportHTML" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                        <span class="text-sm font-medium">导出 HTML</span>
+                    </button>
+                    <button id="exportPDF" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">导出 PDF</span>
+                    </button>
+                    <button id="copyMarkdown" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span class="text-sm font-medium">复制内容</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Preview -->
+            <div class="space-y-6">
+                <!-- Preview -->
+                <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+                    <div class="bg-slate-800/50 px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                        <h3 class="font-semibold text-white">预览</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <button id="prevBtn" class="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <span id="pageIndicator" class="text-sm text-slate-300">1 / 6</span>
+                                <button id="nextBtn" class="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-0 bg-gradient-to-br from-slate-900 to-darker aspect-[16/9] overflow-hidden relative">
+                        <div id="slidesContainer" class="w-full h-full flex">
+                            <div id="slidePreview" class="w-full h-full flex-shrink-0 p-8 flex items-center justify-center overflow-auto">
+                                <div class="slide-content w-full max-w-4xl animate-fade-in">
+                                    <!-- Slide content will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-4 right-4 bg-dark/80 backdrop-blur px-3 py-1 rounded-full text-xs text-slate-300">
+                            按 F 全屏 / 空格键下一页
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                        <div class="text-3xl font-bold text-primary mb-1" id="slideCount">0</div>
+                        <div class="text-xs text-slate-400">总页数</div>
+                    </div>
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                        <div class="text-3xl font-bold text-secondary mb-1" id="wordCount">0</div>
+                        <div class="text-xs text-slate-400">字数</div>
+                    </div>
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                        <div class="text-3xl font-bold text-green-400 mb-1" id="renderTime">0</div>
+                        <div class="text-xs text-slate-400">渲染时间 (ms)</div>
+                    </div>
+                </div>
+
+                <!-- Speaker Notes -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h3 class="text-xl font-semibold text-white mb-4">🗣️ 演讲者备注</h3>
+                    <textarea id="speakerNotes" class="w-full h-[200px] bg-darker border border-slate-700/50 rounded-xl p-4 font-sans text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" placeholder="在这里写演讲备注，演示模式下只有你能看到...">这是第一页的备注：介绍工具的主要功能和亮点
+
+---
+
+这是第二页的备注：详细讲解每个功能的特点
+
+---
+
+这是第三页的备注：演示使用方法，注意事项
+
+---
+
+这是第四页的备注：介绍代码高亮功能，支持的语言
+
+---
+
+这是第五页的备注：表格、列表等元素的支持情况
+
+---
+
+这是第六页的备注：总结优势，鼓励用户使用</textarea>
+                    <p class="text-xs text-slate-400 mt-2">使用 --- 分隔不同页面的备注，演示模式下会自动同步当前页备注</p>
+                </div>
+
+                <!-- Quick Tips -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h3 class="text-xl font-semibold text-white mb-4">💡 快捷键</h3>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-slate-800/50 p-3 rounded-lg">
+                            <div class="font-mono text-xs text-primary mb-1">← / → 箭头键</div>
+                            <div class="text-slate-300 text-xs">上一页 / 下一页</div>
+                        </div>
+                        <div class="bg-slate-800/50 p-3 rounded-lg">
+                            <div class="font-mono text-xs text-primary mb-1">空格 / Enter</div>
+                            <div class="text-slate-300 text-xs">下一页</div>
+                        </div>
+                        <div class="bg-slate-800/50 p-3 rounded-lg">
+                            <div class="font-mono text-xs text-primary mb-1">F 键</div>
+                            <div class="text-slate-300 text-xs">全屏 / 退出全屏</div>
+                        </div>
+                        <div class="bg-slate-800/50 p-3 rounded-lg">
+                            <div class="font-mono text-xs text-primary mb-1">Esc 键</div>
+                            <div class="text-slate-300 text-xs">退出全屏</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-slate-500 text-sm">
+            <p>旺仔工具百宝箱 © 2026 | 纯本地运行，数据绝不上传</p>
+        </div>
+    </div>
+
+    <!-- Presentation Modal -->
+    <div id="presentationModal" class="fixed inset-0 bg-black z-50 hidden">
+        <div class="w-full h-full flex">
+            <!-- Main Slide Area -->
+            <div class="w-3/4 h-full flex items-center justify-center p-8">
+                <div id="presentationSlide" class="w-full max-w-6xl slide-content">
+                    <!-- Presentation content here -->
+                </div>
+            </div>
+            
+            <!-- Speaker Panel -->
+            <div class="w-1/4 h-full bg-dark border-l border-slate-700 p-6 flex flex-col">
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-white mb-2">演讲者视图</h3>
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-slate-800 p-3 rounded-lg text-center">
+                            <div id="presentTimer" class="text-2xl font-bold text-green-400 font-mono">00:00</div>
+                            <div class="text-xs text-slate-400">已用时间</div>
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-lg text-center">
+                            <div id="presentPageIndicator" class="text-2xl font-bold text-primary font-mono">1/6</div>
+                            <div class="text-xs text-slate-400">当前页</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-medium text-white mb-2">下一页预览</h4>
+                    <div id="nextSlidePreview" class="bg-slate-800 rounded-lg p-4 aspect-[16/9] overflow-auto text-xs">
+                        <!-- Next slide preview here -->
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-auto">
+                    <h4 class="font-medium text-white mb-2">当前页备注</h4>
+                    <div id="presentNotes" class="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        <!-- Notes here -->
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-slate-700 flex justify-between">
+                    <button id="exitPresentBtn" class="bg-danger hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                        退出演示
+                    </button>
+                    <div class="flex gap-2">
+                        <button id="presentPrevBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                            上一页
+                        </button>
+                        <button id="presentNextBtn" class="bg-primary hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                            下一页
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure marked
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+
+        // State
+        let state = {
+            slides: [],
+            notes: [],
+            currentSlide: 0,
+            presentationMode: false,
+            timer: null,
+            startTime: null
+        };
+
+        // Parse markdown into slides
+        function parseSlides(markdown) {
+            return markdown.split(/^---$/m).map(slide => slide.trim()).filter(slide => slide);
+        }
+
+        // Parse notes
+        function parseNotes(notesText) {
+            return notesText.split(/^---$/m).map(note => note.trim()).filter(note => note);
+        }
+
+        // Render single slide
+        function renderSlide(slideContent) {
+            return marked.parse(slideContent);
+        }
+
+        // Update preview
+        function updatePreview() {
+            const startTime = performance.now();
+            const markdown = document.getElementById('editor').value;
+            const notesText = document.getElementById('speakerNotes').value;
+            
+            state.slides = parseSlides(markdown);
+            state.notes = parseNotes(notesText);
+            
+            // Render current slide
+            const slideContainer = document.querySelector('#slidePreview .slide-content');
+            if (state.slides.length > 0) {
+                slideContainer.innerHTML = renderSlide(state.slides[state.currentSlide]);
+            } else {
+                slideContainer.innerHTML = '<div class="text-center text-slate-400">请输入Markdown内容</div>';
+            }
+            
+            // Update page indicator
+            document.getElementById('pageIndicator').textContent = `${state.currentSlide + 1} / ${state.slides.length}`;
+            document.getElementById('slideCount').textContent = state.slides.length;
+            
+            // Update word count
+            const wordCount = markdown.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, ' ').trim().split(/\s+/).length;
+            document.getElementById('wordCount').textContent = wordCount;
+            
+            // Update render time
+            const renderTime = Math.round(performance.now() - startTime);
+            document.getElementById('renderTime').textContent = renderTime;
+        }
+
+        // Change slide
+        function changeSlide(delta) {
+            const newIndex = state.currentSlide + delta;
+            if (newIndex >= 0 && newIndex < state.slides.length) {
+                state.currentSlide = newIndex;
+                updatePreview();
+                
+                if (state.presentationMode) {
+                    updatePresentationView();
+                }
+            }
+        }
+
+        // Presentation mode
+        function startPresentation() {
+            state.presentationMode = true;
+            state.currentSlide = 0;
+            state.startTime = Date.now();
+            
+            // Show modal
+            document.getElementById('presentationModal').classList.remove('hidden');
+            
+            // Start timer
+            state.timer = setInterval(updateTimer, 1000);
+            
+            // Update view
+            updatePresentationView();
+            
+            // Focus to capture keyboard events
+            document.getElementById('presentationModal').focus();
+        }
+
+        function stopPresentation() {
+            state.presentationMode = false;
+            clearInterval(state.timer);
+            document.getElementById('presentationModal').classList.add('hidden');
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('presentTimer').textContent = `${minutes}:${seconds}`;
+        }
+
+        function updatePresentationView() {
+            // Current slide
+            const currentSlide = state.slides[state.currentSlide];
+            document.getElementById('presentationSlide').innerHTML = renderSlide(currentSlide);
+            
+            // Page indicator
+            document.getElementById('presentPageIndicator').textContent = `${state.currentSlide + 1}/${state.slides.length}`;
+            
+            // Next slide preview
+            if (state.currentSlide + 1 < state.slides.length) {
+                const nextSlide = state.slides[state.currentSlide + 1];
+                document.getElementById('nextSlidePreview').innerHTML = renderSlide(nextSlide);
+            } else {
+                document.getElementById('nextSlidePreview').innerHTML = '<div class="text-center text-slate-400">已经是最后一页</div>';
+            }
+            
+            // Notes
+            if (state.notes[state.currentSlide]) {
+                document.getElementById('presentNotes').textContent = state.notes[state.currentSlide];
+            } else {
+                document.getElementById('presentNotes').textContent = '该页没有备注';
+            }
+        }
+
+        // Export HTML
+        function exportHTML() {
+            const markdown = document.getElementById('editor').value;
+            const slides = parseSlides(markdown);
+            
+            const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Slides</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0B1120; color: #E2E8F0; overflow: hidden; }
+        .slide { width: 100vw; height: 100vh; display: none; align-items: center; justify-content: center; padding: 8rem; }
+        .slide.active { display: flex; }
+        .slide-content { max-width: 1200px; width: 100%; }
+        h1 { font-size: 4rem; font-weight: bold; margin-bottom: 2rem; text-align: center; color: white; }
+        h2 { font-size: 3rem; font-weight: bold; margin-bottom: 1.5rem; color: white; }
+        h3 { font-size: 2rem; font-weight: 600; margin-bottom: 1rem; color: white; }
+        p { font-size: 1.5rem; margin-bottom: 1rem; line-height: 1.8; }
+        ul, ol { font-size: 1.5rem; margin-bottom: 1rem; padding-left: 2rem; }
+        li { margin-bottom: 0.5rem; }
+        code { background: #1E293B; padding: 0.2rem 0.5rem; border-radius: 0.3rem; color: #34D399; font-family: monospace; }
+        pre { background: #1E293B; padding: 1.5rem; border-radius: 0.8rem; margin-bottom: 1rem; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 1.2rem; }
+        th, td { border: 1px solid #475569; padding: 1rem; }
+        th { background: #1E293B; font-weight: 600; }
+        .controls { position: fixed; bottom: 2rem; right: 2rem; display: flex; gap: 1rem; }
+        .control-btn { background: #8B5CF6; color: white; border: none; padding: 1rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; }
+        .page-indicator { position: fixed; bottom: 2rem; left: 2rem; color: #94A3B8; font-size: 1rem; }
+    </style>
+</head>
+<body>
+    ${slides.map((slide, index) => `
+    <div class="slide ${index === 0 ? 'active' : ''}">
+        <div class="slide-content">
+            ${marked.parse(slide)}
+        </div>
+    </div>
+    `).join('')}
+    
+    <div class="page-indicator">
+        <span id="pageNum">1</span> / ${slides.length}
+    </div>
+    
+    <div class="controls">
+        <button class="control-btn" onclick="changeSlide(-1)">← 上一页</button>
+        <button class="control-btn" onclick="changeSlide(1)">下一页 →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const pageNum = document.getElementById('pageNum');
+        
+        function changeSlide(delta) {
+            const newIndex = currentSlide + delta;
+            if (newIndex >= 0 && newIndex < slides.length) {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = newIndex;
+                slides[currentSlide].classList.add('active');
+                pageNum.textContent = currentSlide + 1;
+            }
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'PageUp') changeSlide(-1);
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Enter') changeSlide(1);
+            if (e.key === 'f') document.documentElement.requestFullscreen();
+            if (e.key === 'Escape') document.exitFullscreen();
+        });
+    </script>
+</body>
+</html>`;
+            
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'slides.html';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Export PDF (simple print version)
+        function exportPDF() {
+            window.print();
+        }
+
+        // Copy markdown
+        function copyMarkdown() {
+            const markdown = document.getElementById('editor').value;
+            navigator.clipboard.writeText(markdown).then(() => {
+                const btn = document.getElementById('copyMarkdown');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path><span class="text-sm font-medium">已复制</span>';
+                btn.classList.add('bg-green-600');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('bg-green-600');
+                }, 2000);
+            });
+        }
+
+        // Templates
+        const templates = {
+            intro: `# 🎯 演示标题
+## 副标题
+### 演讲者：你的名字
+#### 日期：2026年X月X日`,
+            
+            content: `## 📋 目录
+- 第一部分内容介绍
+- 第二部分核心功能
+- 第三部分技术实现
+- 第四部分总结展望`,
+            
+            code: `## 💻 代码示例
+\`\`\`python
+def main():
+    # 这里写你的代码
+    print("Hello, World!")
+    return "成功"
+\`\`\`
+
+### 代码说明
+- 这是一个示例函数
+- 功能是打印Hello World
+- 返回值是字符串"成功"`,
+            
+            end: `# 🎈 谢谢观看！
+## Q & A
+### 联系方式：your@email.com`
+        };
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const editor = document.getElementById('editor');
+            
+            // Initial render
+            updatePreview();
+            
+            // Editor input
+            editor.addEventListener('input', updatePreview);
+            document.getElementById('speakerNotes').addEventListener('input', updatePreview);
+            
+            // Navigation buttons
+            document.getElementById('prevBtn').addEventListener('click', () => changeSlide(-1));
+            document.getElementById('nextBtn').addEventListener('click', () => changeSlide(1));
+            
+            // Template buttons
+            document.querySelectorAll('.template-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const template = btn.dataset.template;
+                    editor.value = templates[template];
+                    updatePreview();
+                });
+            });
+            
+            // Presentation
+            document.getElementById('presentBtn').addEventListener('click', startPresentation);
+            document.getElementById('exitPresentBtn').addEventListener('click', stopPresentation);
+            document.getElementById('presentPrevBtn').addEventListener('click', () => changeSlide(-1));
+            document.getElementById('presentNextBtn').addEventListener('click', () => changeSlide(1));
+            
+            // Export buttons
+            document.getElementById('exportHTML').addEventListener('click', exportHTML);
+            document.getElementById('exportPDF').addEventListener('click', exportPDF);
+            document.getElementById('copyMarkdown').addEventListener('click', copyMarkdown);
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (!state.presentationMode) {
+                    if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey) changeSlide(-1);
+                    if (e.key === 'ArrowRight' && !e.ctrlKey && !e.metaKey) changeSlide(1);
+                    if (e.key === 'f' && e.ctrlKey) {
+                        e.preventDefault();
+                        startPresentation();
+                    }
+                } else {
+                    if (e.key === 'Escape') stopPresentation();
+                    if (e.key === 'ArrowLeft' || e.key === 'PageUp') changeSlide(-1);
+                    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Enter') changeSlide(1);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

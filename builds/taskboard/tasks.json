@@ -1,0 +1,32 @@
+{
+  "next_id": 4,
+  "tasks": [
+    {
+      "id": 1,
+      "desc": "部署 Dashboard 到稳定的静态托管平台",
+      "priority": "medium",
+      "tag": "infra",
+      "status": "open",
+      "created": "2026-02-14 12:01",
+      "completed": null
+    },
+    {
+      "id": 2,
+      "desc": "优化 ArXiv 论文筛选算法，提高相关性",
+      "priority": "low",
+      "tag": "feature",
+      "status": "open",
+      "created": "2026-02-14 12:01",
+      "completed": null
+    },
+    {
+      "id": 3,
+      "desc": "每4小时构建新工具",
+      "priority": "high",
+      "tag": "build",
+      "status": "open",
+      "created": "2026-02-14 12:01",
+      "completed": null
+    }
+  ]
+}

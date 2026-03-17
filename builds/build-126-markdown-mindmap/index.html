@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 思维导图生成器 🧠</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .node-circle {
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            .node-circle:hover {
+                stroke-width: 4px;
+                filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+            }
+            .node-text {
+                cursor: pointer;
+                user-select: none;
+            }
+            .link-path {
+                transition: stroke 0.3s ease;
+            }
+            .editor-area {
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-7xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                        <i class="fa fa-sitemap"></i>
+                        Markdown 思维导图生成器
+                    </h1>
+                    <p class="mt-2 text-purple-100 opacity-90">纯前端实现 · 实时渲染 · 支持拖拽 · 一键导出</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
+                        🚀 所有处理均在本地完成，数据绝不会上传
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-7xl px-4 py-8">
+        <!-- Toolbar -->
+        <div class="bg-white rounded-2xl p-4 shadow-xl mb-6 flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex flex-wrap gap-3">
+                <button id="zoomInBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-search-plus"></i>
+                    放大
+                </button>
+                <button id="zoomOutBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-search-minus"></i>
+                    缩小
+                </button>
+                <button id="fitBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-expand"></i>
+                    适应画布
+                </button>
+                <button id="centerBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-bullseye"></i>
+                    居中
+                </button>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button id="exportPNGBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-file-image-o"></i>
+                    导出 PNG
+                </button>
+                <button id="exportSVGBtn" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-file-code-o"></i>
+                    导出 SVG
+                </button>
+                <button id="exportMarkdownBtn" class="bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-file-text-o"></i>
+                    导出 Markdown
+                </button>
+                <button id="themeToggle" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <i class="fa fa-paint-brush"></i>
+                    切换主题
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor and Canvas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Editor -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-edit text-primary"></i>
+                        Markdown 编辑器
+                    </h2>
+                    <div class="flex gap-2">
+                        <button id="clearBtn" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 transition-colors">
+                            清空
+                        </button>
+                        <button id="exampleBtn" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 transition-colors">
+                            示例
+                        </button>
+                    </div>
+                </div>
+                <textarea 
+                    id="editor" 
+                    class="editor-area w-full h-[600px] p-6 focus:outline-none resize-none text-gray-800 text-base"
+                    placeholder="在这里输入 Markdown 标题列表，支持 # 到 ###### 六级标题，系统会自动识别层级生成思维导图...
+
+示例：
+# 项目规划
+## 需求分析
+### 用户需求
+### 功能需求
+### 非功能需求
+## 技术选型
+### 前端技术
+### 后端技术
+### 数据库
+## 项目排期
+### 第一阶段
+### 第二阶段
+### 第三阶段
+## 风险评估
+### 技术风险
+### 时间风险
+### 人员风险"
+                ></textarea>
+            </div>
+
+            <!-- Canvas -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-project-diagram text-primary"></i>
+                        思维导图
+                    </h2>
+                    <div class="text-sm text-gray-500">
+                        <span class="mr-4"><i class="fa fa-mouse-pointer"></i> 拖拽移动</span>
+                        <span><i class="fa fa-mouse"></i> 滚轮缩放</span>
+                    </div>
+                </div>
+                <div id="canvasContainer" class="w-full h-[600px] bg-gray-50 cursor-grab active:cursor-grabbing overflow-hidden">
+                    <svg id="mindmapSvg" width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+                        <g id="mindmapGroup">
+                            <g id="linksGroup"></g>
+                            <g id="nodesGroup"></g>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-8 border border-indigo-100">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <i class="fa fa-star text-primary"></i>
+                功能特点
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">纯 Markdown 语法</h3>
+                        <p class="text-gray-600 text-sm mt-1">使用标准的 Markdown 标题语法，无需学习新的语法规则</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">实时渲染</h3>
+                        <p class="text-gray-600 text-sm mt-1">输入内容实时更新思维导图，所见即所得</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-arrows-alt"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">交互友好</h3>
+                        <p class="text-gray-600 text-sm mt-1">支持拖拽移动、滚轮缩放、点击节点展开/折叠</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-download"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">多格式导出</h3>
+                        <p class="text-gray-600 text-sm mt-1">支持导出 PNG 图片、SVG 矢量图和 Markdown 源文件</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-paint-brush"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">多主题支持</h3>
+                        <p class="text-gray-600 text-sm mt-1">内置多种配色主题，一键切换，满足不同场景需求</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-wifi"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">完全离线运行</h3>
+                        <p class="text-gray-600 text-sm mt-1">所有处理均在本地完成，数据绝不会上传到任何服务器</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-mobile"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">响应式设计</h3>
+                        <p class="text-gray-600 text-sm mt-1">完美适配桌面端和移动端，随时随地梳理思路</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-save"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">自动保存</h3>
+                        <p class="text-gray-600 text-sm mt-1">自动保存编辑内容，刷新页面不会丢失</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-lightbulb-o"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">应用场景广泛</h3>
+                        <p class="text-gray-600 text-sm mt-1">适合头脑风暴、项目规划、知识梳理、读书笔记等多种场景</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 px-4 mt-12">
+        <div class="container mx-auto max-w-7xl text-center">
+            <p class="text-gray-400">
+                🏗️ 由旺仔开发 | Markdown 思维导图生成器 | 完全本地运行，保护您的思想隐私
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                用 Markdown 快速梳理思路，让思考更清晰，效率翻倍
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 状态
+        let currentTheme = 0;
+        const themes = [
+            {
+                name: '经典紫',
+                nodeColors: ['#6366f1', '#8b5cf6', '#a855f7', '#c084fc', '#d8b4fe', '#e9d5ff'],
+                linkColor: '#cbd5e1',
+                textColor: '#1f2937'
+            },
+            {
+                name: '清新绿',
+                nodeColors: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5', '#ecfdf5'],
+                linkColor: '#cbd5e1',
+                textColor: '#1f2937'
+            },
+            {
+                name: '活力橙',
+                nodeColors: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7', '#fffbeb'],
+                linkColor: '#cbd5e1',
+                textColor: '#1f2937'
+            },
+            {
+                name: '冷静蓝',
+                nodeColors: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff'],
+                linkColor: '#cbd5e1',
+                textColor: '#1f2937'
+            },
+            {
+                name: '优雅灰',
+                nodeColors: ['#4b5563', '#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb', '#f3f4f6'],
+                linkColor: '#cbd5e1',
+                textColor: '#1f2937'
+            }
+        ];
+
+        let treeData = null;
+        let zoom = d3.zoom().scaleExtent([0.1, 4]);
+        let svg = d3.select('#mindmapSvg');
+        let g = d3.select('#mindmapGroup');
+
+        // DOM 元素
+        const editor = document.getElementById('editor');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const fitBtn = document.getElementById('fitBtn');
+        const centerBtn = document.getElementById('centerBtn');
+        const exportPNGBtn = document.getElementById('exportPNGBtn');
+        const exportSVGBtn = document.getElementById('exportSVGBtn');
+        const exportMarkdownBtn = document.getElementById('exportMarkdownBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const clearBtn = document.getElementById('clearBtn');
+        const exampleBtn = document.getElementById('exampleBtn');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 加载自动保存的内容
+            const savedContent = localStorage.getItem('mindmapContent');
+            if (savedContent) {
+                editor.value = savedContent;
+            } else {
+                setExampleContent();
+            }
+
+            // 初始化缩放
+            svg.call(zoom.on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            }));
+
+            // 首次渲染
+            parseMarkdown();
+            renderMindmap();
+
+            // 绑定事件
+            editor.addEventListener('input', () => {
+                parseMarkdown();
+                renderMindmap();
+                saveToLocalStorage();
+            });
+
+            zoomInBtn.addEventListener('click', () => {
+                svg.transition().call(zoom.scaleBy, 1.3);
+            });
+
+            zoomOutBtn.addEventListener('click', () => {
+                svg.transition().call(zoom.scaleBy, 1 / 1.3);
+            });
+
+            fitBtn.addEventListener('click', fitToView);
+
+            centerBtn.addEventListener('click', () => {
+                svg.transition().call(zoom.transform, d3.zoomIdentity.translate(0, 0).scale(1));
+            });
+
+            exportPNGBtn.addEventListener('click', exportPNG);
+            exportSVGBtn.addEventListener('click', exportSVG);
+            exportMarkdownBtn.addEventListener('click', exportMarkdown);
+
+            themeToggle.addEventListener('click', () => {
+                currentTheme = (currentTheme + 1) % themes.length;
+                showToast(`切换到${themes[currentTheme].name}主题`);
+                renderMindmap();
+            });
+
+            clearBtn.addEventListener('click', () => {
+                if (confirm('确定要清空编辑器内容吗？')) {
+                    editor.value = '';
+                    parseMarkdown();
+                    renderMindmap();
+                    saveToLocalStorage();
+                }
+            });
+
+            exampleBtn.addEventListener('click', () => {
+                setExampleContent();
+                parseMarkdown();
+                renderMindmap();
+                saveToLocalStorage();
+            });
+
+            // 窗口大小变化时重绘
+            window.addEventListener('resize', renderMindmap);
+        });
+
+        // 设置示例内容
+        function setExampleContent() {
+            editor.value = `# 项目规划
+## 需求分析
+### 用户需求
+- 功能需求收集
+- 用户调研
+- 竞品分析
+### 功能需求
+- 核心功能
+- 辅助功能
+- 边缘功能
+### 非功能需求
+- 性能要求
+- 安全要求
+- 易用性要求
+## 技术选型
+### 前端技术
+- Vue3 + TypeScript
+- Tailwind CSS
+- Pinia 状态管理
+### 后端技术
+- Python FastAPI
+- PostgreSQL
+- Redis 缓存
+### 基础设施
+- Docker 容器化
+- Kubernetes 编排
+- CI/CD 自动化部署
+## 项目排期
+### 第一阶段 (2周)
+- 需求评审
+- 技术方案设计
+- 数据库设计
+### 第二阶段 (4周)
+- 前端开发
+- 后端开发
+- 接口联调
+### 第三阶段 (2周)
+- 测试用例编写
+- 功能测试
+- 性能优化
+## 风险评估
+### 技术风险
+- 新技术学习成本
+- 性能瓶颈
+- 兼容性问题
+### 时间风险
+- 需求变更
+- 人员变动
+- 第三方依赖延迟
+### 人员风险
+- 核心人员离职
+- 团队磨合
+- 技能不足`;
+        }
+
+        // 解析 Markdown 为树形结构
+        function parseMarkdown() {
+            const lines = editor.value.split('\n');
+            const root = {
+                text: '根节点',
+                level: 0,
+                children: [],
+                expanded: true,
+                id: 'root'
+            };
+            const stack = [root];
+            let nodeId = 0;
+
+            lines.forEach(line => {
+                const match = line.match(/^(#{1,6})\s+(.*)$/);
+                if (match) {
+                    const level = match[1].length;
+                    const text = match[2].trim();
+
+                    if (!text) return;
+
+                    const node = {
+                        text,
+                        level,
+                        children: [],
+                        expanded: true,
+                        id: `node_${nodeId++}`
+                    };
+
+                    // 找到合适的父节点
+                    while (stack.length > 1 && stack[stack.length - 1].level >= level) {
+                        stack.pop();
+                    }
+
+                    stack[stack.length - 1].children.push(node);
+                    stack.push(node);
+                }
+            });
+
+            // 处理根节点
+            if (root.children.length === 1) {
+                treeData = root.children[0];
+                treeData.level = 0;
+            } else {
+                treeData = root;
+                treeData.text = '思维导图';
+            }
+        }
+
+        // 计算节点布局
+        function calculateLayout(root) {
+            const dx = 200;
+            const dy = 60;
+
+            const treeLayout = d3.tree()
+                .nodeSize([dy, dx]);
+
+            const rootNode = d3.hierarchy(root);
+            return treeLayout(rootNode);
+        }
+
+        // 渲染思维导图
+        function renderMindmap() {
+            if (!treeData) return;
+
+            const root = calculateLayout(treeData);
+            const theme = themes[currentTheme];
+
+            // 清除旧内容
+            d3.select('#linksGroup').selectAll('*').remove();
+            d3.select('#nodesGroup').selectAll('*').remove();
+
+            // 绘制连线
+            const links = root.links();
+            const link = d3.select('#linksGroup')
+                .selectAll('path')
+                .data(links)
+                .join('path')
+                .attr('class', 'link-path')
+                .attr('d', d3.linkHorizontal()
+                    .x(d => d.y)
+                    .y(d => d.x)
+                )
+                .attr('fill', 'none')
+                .attr('stroke', theme.linkColor)
+                .attr('stroke-width', 2);
+
+            // 绘制节点
+            const nodes = root.descendants();
+            const node = d3.select('#nodesGroup')
+                .selectAll('g')
+                .data(nodes)
+                .join('g')
+                .attr('transform', d => `translate(${d.y},${d.x})`)
+                .on('click', (event, d) => {
+                    if (d.data.children && d.data.children.length > 0) {
+                        d.data.expanded = !d.data.expanded;
+                        renderMindmap();
+                    }
+                });
+
+            // 节点圆形
+            node.append('circle')
+                .attr('class', 'node-circle')
+                .attr('r', 16)
+                .attr('fill', d => theme.nodeColors[Math.min(d.depth, theme.nodeColors.length - 1)])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 3);
+
+            // 展开/折叠图标
+            node.filter(d => d.data.children && d.data.children.length > 0)
+                .append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.3em')
+                .attr('fill', '#fff')
+                .attr('font-size', '14px')
+                .attr('font-weight', 'bold')
+                .text(d => d.data.expanded ? '−' : '+');
+
+            // 节点文本
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('x', d => d.children ? 28 : -28)
+                .attr('dy', '0.35em')
+                .attr('text-anchor', d => d.children ? 'start' : 'end')
+                .attr('fill', theme.textColor)
+                .attr('font-size', '14px')
+                .attr('font-weight', d => d.depth === 0 ? 'bold' : 'normal')
+                .text(d => d.data.text)
+                .call(wrapText, 180);
+        }
+
+        // 文本换行
+        function wrapText(text, width) {
+            text.each(function() {
+                const text = d3.select(this);
+                const words = text.text().split(/\s+/).reverse();
+                let word;
+                let line = [];
+                let lineNumber = 0;
+                const lineHeight = 1.2;
+                const y = text.attr('y');
+                const dy = parseFloat(text.attr('dy'));
+                let tspan = text.text(null).append('tspan').attr('x', text.attr('x')).attr('y', y).attr('dy', dy + 'em');
+
+                while (word = words.pop()) {
+                    line.push(word);
+                    tspan.text(line.join(' '));
+                    if (tspan.node().getComputedTextLength() > width) {
+                        line.pop();
+                        tspan.text(line.join(' '));
+                        line = [word];
+                        tspan = text.append('tspan').attr('x', text.attr('x')).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word);
+                    }
+                }
+            });
+        }
+
+        // 适应视图
+        function fitToView() {
+            const bounds = g.node().getBBox();
+            const fullWidth = svg.node().clientWidth;
+            const fullHeight = svg.node().clientHeight;
+            const width = bounds.width;
+            const height = bounds.height;
+            const midX = bounds.x + width / 2;
+            const midY = bounds.y + height / 2;
+
+            const scale = Math.min(fullWidth / width, fullHeight / height) * 0.8;
+            const translate = [fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY];
+
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+            );
+        }
+
+        // 导出 PNG
+        function exportPNG() {
+            const svgNode = document.getElementById('mindmapSvg');
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgNode);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            img.onload = function() {
+                canvas.width = img.width * 2;
+                canvas.height = img.height * 2;
+                ctx.scale(2, 2);
+                ctx.drawImage(img, 0, 0);
+                
+                const pngUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `思维导图_${new Date().getTime()}.png`;
+                link.href = pngUrl;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                showToast('PNG 导出成功');
+            };
+
+            img.src = url;
+        }
+
+        // 导出 SVG
+        function exportSVG() {
+            const svgNode = document.getElementById('mindmapSvg');
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgNode);
+            const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.download = `思维导图_${new Date().getTime()}.svg`;
+            link.href = url;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            showToast('SVG 导出成功');
+        }
+
+        // 导出 Markdown
+        function exportMarkdown() {
+            const content = editor.value;
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.download = `思维导图_${new Date().getTime()}.md`;
+            link.href = url;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            showToast('Markdown 导出成功');
+        }
+
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            localStorage.setItem('mindmapContent', editor.value);
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

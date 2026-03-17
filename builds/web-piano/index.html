@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎹 Web Piano 网页钢琴</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#38bdf8;--green:#34d399;--yellow:#fbbf24;--pink:#f472b6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;user-select:none;-webkit-user-select:none}
+.header{text-align:center;margin-bottom:16px}
+.header h1{font-size:22px}.header p{color:var(--text2);font-size:13px;margin-top:4px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;align-items:center}
+.ctrl-group{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px}
+.ctrl-group label{font-size:11px;color:var(--text2);white-space:nowrap}
+.ctrl-group select,.ctrl-group input{background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-size:12px;outline:none}
+.ctrl-group input[type=range]{width:80px;height:4px;padding:0;-webkit-appearance:none;background:var(--border);border:none;border-radius:2px}
+.ctrl-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent);background:#1e293b}
+.btn.active{background:var(--accent);color:#0f172a;border-color:var(--accent)}
+.btn.rec{background:#ef4444;border-color:#ef4444;color:#fff}
+.piano-wrap{position:relative;display:inline-block;margin-bottom:16px}
+.piano{display:flex;position:relative;border-radius:0 0 8px 8px;overflow:visible}
+.key{position:relative;cursor:pointer;transition:background .08s,box-shadow .08s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px}
+.white{width:52px;height:200px;background:linear-gradient(180deg,#e8e8e8,#fff);border:1px solid #bbb;border-top:none;z-index:1;border-radius:0 0 5px 5px}
+.white:hover{background:linear-gradient(180deg,#d8d8d8,#f0f0f0)}
+.white.pressed{background:linear-gradient(180deg,#b8d8f8,#d0e8ff);box-shadow:inset 0 2px 8px rgba(56,189,248,.3)}
+.white.hint-key{background:linear-gradient(180deg,#a7f3d0,#d1fae5);border-color:#34d399;animation:hintPulse 1s infinite}
+.white .label{color:#999;font-size:10px;font-family:monospace}
+.black{width:32px;height:130px;background:linear-gradient(180deg,#222,#444);border:1px solid #111;border-top:none;margin-left:-16px;margin-right:-16px;z-index:2;border-radius:0 0 4px 4px}
+.black:hover{background:linear-gradient(180deg,#333,#555)}
+.black.pressed{background:linear-gradient(180deg,#1a4a6a,#2a6a9a);box-shadow:inset 0 2px 8px rgba(56,189,248,.4)}
+.black.hint-key{background:linear-gradient(180deg,#065f46,#047857);border-color:#34d399;animation:hintPulse 1s infinite}
+.black .label{color:#666;font-size:9px;font-family:monospace;padding-bottom:6px}
+@keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.75}}
+.note-display{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 20px;text-align:center;margin-bottom:12px;min-width:200px}
+.note-name{font-size:28px;font-weight:700;color:var(--accent)}
+.note-freq{font-size:12px;color:var(--text2)}
+.record-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.rec-indicator{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.rec-time{font-family:monospace;font-size:13px;color:var(--text2)}
+.keyboard-hint{color:var(--text2);font-size:11px;text-align:center;margin-top:8px}
+.keyboard-hint kbd{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:monospace;font-size:10px}
+.song-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;width:100%;max-width:780px}
+.song-panel h3{font-size:14px;margin-bottom:10px;color:var(--accent)}
+.song-list{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.song-chip{padding:5px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s}
+.song-chip:hover{border-color:var(--accent);color:var(--accent)}
+.song-chip.active{background:rgba(56,189,248,.15);border-color:var(--accent);color:var(--accent)}
+.song-info{margin-bottom:10px}
+.song-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.song-desc{font-size:12px;color:var(--text2)}
+.song-controls{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.song-progress{display:flex;gap:3px;flex-wrap:wrap;margin-top:8px}
+.note-dot{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:var(--bg);border:1px solid var(--border);color:var(--text2);transition:all .2s;font-family:monospace}
+.note-dot.current{background:rgba(52,211,153,.2);border-color:var(--green);color:var(--green);transform:scale(1.15)}
+.note-dot.played{background:rgba(56,189,248,.15);border-color:var(--accent);color:var(--accent)}
+.note-dot.wrong{background:rgba(248,113,113,.15);border-color:#f87171;color:#f87171}
+.song-status{font-size:13px;color:var(--text2);margin-top:8px;min-height:20px}
+.song-status .good{color:var(--green)}.song-status .info{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>🎹 Web Piano</h1>
+<p>网页钢琴 — 鼠标/触屏/键盘演奏 + 曲谱教学 — Build #55 by 旺仔</p>
+</div>
+<div class="controls">
+<div class="ctrl-group"><label>音色</label><select id="waveform"><option value="triangle">🎹 钢琴</option><option value="sine">🎵 柔和</option><option value="square">🎮 8-bit</option><option value="sawtooth">🎸 合成器</option></select></div>
+<div class="ctrl-group"><label>八度</label><select id="octave"><option value="3">C3-B4</option><option value="4" selected>C4-B5</option><option value="5">C5-B6</option></select></div>
+<div class="ctrl-group"><label>音量</label><input type="range" id="volume" min="0" max="100" value="60"></div>
+<div class="ctrl-group"><label>延音</label><input type="range" id="sustain" min="1" max="30" value="8"></div>
+</div>
+<div class="note-display">
+<div class="note-name" id="noteName">—</div>
+<div class="note-freq" id="noteFreq">按下琴键开始演奏</div>
+</div>
+<div class="song-panel">
+<h3>🎵 曲谱教学</h3>
+<div class="song-list" id="songList"></div>
+<div class="song-info" id="songInfo" style="display:none">
+<div class="song-title" id="songTitle"></div>
+<div class="song-desc" id="songDesc"></div>
+</div>
+<div class="song-controls" id="songControls" style="display:none">
+<button class="btn" id="demoBtn" onclick="demoSong()">🎵 演示</button>
+<button class="btn" id="practiceBtn" onclick="startPractice()">🎯 跟弹练习</button>
+<button class="btn" id="stopSongBtn" onclick="stopSong()">⏹️ 停止</button>
+<button class="btn" onclick="resetSong()">🔄 重来</button>
+</div>
+<div class="song-progress" id="songProgress"></div>
+<div class="song-status" id="songStatus"></div>
+</div>
+<div class="record-bar" id="recBar" style="display:none">
+<div class="rec-indicator"></div>
+<span style="color:#ef4444;font-size:13px;font-weight:600">录制中</span>
+<span class="rec-time" id="recTime">0:00</span>
+</div>
+<div class="controls">
+<button class="btn" id="recBtn" onclick="toggleRecord()">⏺️ 录制</button>
+<button class="btn" id="playBtn" onclick="playRecording()" disabled>▶️ 回放</button>
+<button class="btn" id="clearBtn" onclick="clearRecording()" disabled>🗑️ 清除</button>
+</div>
+<div class="piano-wrap">
+<div class="piano" id="piano"></div>
+</div>
+<div class="keyboard-hint">
+键盘映射：<kbd>A</kbd><kbd>W</kbd><kbd>S</kbd><kbd>E</kbd><kbd>D</kbd><kbd>F</kbd><kbd>T</kbd><kbd>G</kbd><kbd>Y</kbd><kbd>H</kbd><kbd>U</kbd><kbd>J</kbd><kbd>K</kbd><kbd>O</kbd><kbd>L</kbd><kbd>P</kbd><kbd>;</kbd> = C到E（两个八度）
+</div>
+<script>
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const KEY_MAP={a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,o:13,l:14,p:15,';':16,"'":17,'[':18,']':19,'\\':20};
+
+let audioCtx=null,activeOscs={};
+let recording=false,recorded=[],recStart=0,recTimer=null;
+let songMode=null,currentSong=null,songIndex=0,demoTimer=null,practiceMode=false;
+
+// Songs: note index relative to C4 (0=C4, 2=D4, 4=E4, etc), duration in beats
+const SONGS=[
+  {
+    name:'⭐ 小星星',
+    desc:'Twinkle Twinkle Little Star — 最经典的入门曲',
+    difficulty:'⭐',
+    notes:[
+      {n:0,d:1},{n:0,d:1},{n:7,d:1},{n:7,d:1},{n:9,d:1},{n:9,d:1},{n:7,d:2},
+      {n:5,d:1},{n:5,d:1},{n:4,d:1},{n:4,d:1},{n:2,d:1},{n:2,d:1},{n:0,d:2},
+      {n:7,d:1},{n:7,d:1},{n:5,d:1},{n:5,d:1},{n:4,d:1},{n:4,d:1},{n:2,d:2},
+      {n:7,d:1},{n:7,d:1},{n:5,d:1},{n:5,d:1},{n:4,d:1},{n:4,d:1},{n:2,d:2},
+      {n:0,d:1},{n:0,d:1},{n:7,d:1},{n:7,d:1},{n:9,d:1},{n:9,d:1},{n:7,d:2},
+      {n:5,d:1},{n:5,d:1},{n:4,d:1},{n:4,d:1},{n:2,d:1},{n:2,d:1},{n:0,d:2}
+    ]
+  },
+  {
+    name:'🎵 欢乐颂',
+    desc:'贝多芬第九交响曲 — 经典旋律',
+    difficulty:'⭐⭐',
+    notes:[
+      {n:4,d:1},{n:4,d:1},{n:5,d:1},{n:7,d:1},{n:7,d:1},{n:5,d:1},{n:4,d:1},{n:2,d:1},
+      {n:0,d:1},{n:0,d:1},{n:2,d:1},{n:4,d:1},{n:4,d:1.5},{n:2,d:.5},{n:2,d:2},
+      {n:4,d:1},{n:4,d:1},{n:5,d:1},{n:7,d:1},{n:7,d:1},{n:5,d:1},{n:4,d:1},{n:2,d:1},
+      {n:0,d:1},{n:0,d:1},{n:2,d:1},{n:4,d:1},{n:2,d:1.5},{n:0,d:.5},{n:0,d:2}
+    ]
+  },
+  {
+    name:'🌙 两只老虎',
+    desc:'经典儿歌 — 简单好学',
+    difficulty:'⭐',
+    notes:[
+      {n:0,d:1},{n:2,d:1},{n:4,d:1},{n:0,d:1},
+      {n:0,d:1},{n:2,d:1},{n:4,d:1},{n:0,d:1},
+      {n:4,d:1},{n:5,d:1},{n:7,d:2},
+      {n:4,d:1},{n:5,d:1},{n:7,d:2},
+      {n:7,d:.5},{n:9,d:.5},{n:7,d:.5},{n:5,d:.5},{n:4,d:1},{n:0,d:1},
+      {n:7,d:.5},{n:9,d:.5},{n:7,d:.5},{n:5,d:.5},{n:4,d:1},{n:0,d:1},
+      {n:0,d:1},{n:7,d:1},{n:0,d:2},
+      {n:0,d:1},{n:7,d:1},{n:0,d:2}
+    ]
+  },
+  {
+    name:'🎹 致爱丽丝',
+    desc:'贝多芬名曲开头 — 稍有难度',
+    difficulty:'⭐⭐⭐',
+    notes:[
+      {n:16,d:.5},{n:15,d:.5},{n:16,d:.5},{n:15,d:.5},{n:16,d:.5},{n:11,d:.5},{n:14,d:.5},{n:12,d:.5},
+      {n:9,d:1},{n:0,d:.5},{n:4,d:.5},{n:9,d:.5},{n:11,d:1},
+      {n:4,d:.5},{n:8,d:.5},{n:11,d:.5},{n:12,d:1},
+      {n:4,d:.5},{n:16,d:.5},{n:15,d:.5},{n:16,d:.5},{n:15,d:.5},{n:16,d:.5},{n:11,d:.5},{n:14,d:.5},{n:12,d:.5},
+      {n:9,d:1},{n:0,d:.5},{n:4,d:.5},{n:9,d:.5},{n:11,d:1},
+      {n:4,d:.5},{n:12,d:.5},{n:11,d:.5},{n:9,d:1.5}
+    ]
+  },
+  {
+    name:'🎄 生日快乐',
+    desc:'Happy Birthday — 必学曲目',
+    difficulty:'⭐',
+    notes:[
+      {n:0,d:.75},{n:0,d:.25},{n:2,d:1},{n:0,d:1},{n:5,d:1},{n:4,d:2},
+      {n:0,d:.75},{n:0,d:.25},{n:2,d:1},{n:0,d:1},{n:7,d:1},{n:5,d:2},
+      {n:0,d:.75},{n:0,d:.25},{n:12,d:1},{n:9,d:1},{n:5,d:1},{n:4,d:1},{n:2,d:1},
+      {n:11,d:.75},{n:11,d:.25},{n:9,d:1},{n:5,d:1},{n:7,d:1},{n:5,d:2}
+    ]
+  },
+  {
+    name:'🌊 沧海一声笑',
+    desc:'经典武侠配乐 — 中国风',
+    difficulty:'⭐⭐',
+    notes:[
+      {n:12,d:2},{n:9,d:1},{n:7,d:1},{n:5,d:1},{n:4,d:1},{n:0,d:2},
+      {n:0,d:1},{n:4,d:1},{n:5,d:1},{n:7,d:1},{n:9,d:2},{n:12,d:2},
+      {n:12,d:2},{n:9,d:1},{n:7,d:1},{n:5,d:1},{n:4,d:1},{n:0,d:2},
+      {n:0,d:1},{n:4,d:1},{n:5,d:1},{n:4,d:1},{n:0,d:2}
+    ]
+  }
+];
+
+function getCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+
+function noteFreq(noteIndex){
+  const oct=parseInt(document.getElementById('octave').value);
+  const midi=(oct+Math.floor(noteIndex/12))*12+noteIndex%12+12;
+  return 440*Math.pow(2,(midi-69)/12);
+}
+
+function noteName(noteIndex){
+  const oct=parseInt(document.getElementById('octave').value);
+  return NOTES[noteIndex%12]+(oct+Math.floor(noteIndex/12));
+}
+
+function playNote(noteIndex){
+  if(activeOscs[noteIndex])return;
+  const ctx=getCtx();
+  const freq=noteFreq(noteIndex);
+  const vol=document.getElementById('volume').value/100;
+  const wave=document.getElementById('waveform').value;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type=wave;osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0,ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(vol*0.4,ctx.currentTime+0.01);
+  gain.gain.exponentialRampToValueAtTime(vol*0.2+0.001,ctx.currentTime+0.1);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start();
+  activeOscs[noteIndex]={osc,gain,startTime:ctx.currentTime};
+  document.getElementById('noteName').textContent=noteName(noteIndex);
+  document.getElementById('noteFreq').textContent=freq.toFixed(1)+' Hz';
+  const key=document.querySelector('[data-note="'+noteIndex+'"]');
+  if(key)key.classList.add('pressed');
+  if(recording)recorded.push({note:noteIndex,time:Date.now()-recStart,type:'on'});
+  // Practice mode check
+  if(practiceMode&&currentSong&&songIndex<currentSong.notes.length){
+    const expected=currentSong.notes[songIndex].n;
+    const dots=document.querySelectorAll('.note-dot');
+    if(noteIndex===expected){
+      if(dots[songIndex])dots[songIndex].classList.add('played');
+      songIndex++;
+      highlightNextNote();
+      if(songIndex>=currentSong.notes.length){
+        document.getElementById('songStatus').innerHTML='<span class="good">🎉 太棒了！完美演奏！</span>';
+        practiceMode=false;clearHints();
+      }
+    }else{
+      if(dots[songIndex])dots[songIndex].classList.add('wrong');
+      setTimeout(()=>{if(dots[songIndex])dots[songIndex].classList.remove('wrong')},300);
+    }
+  }
+}
+
+function stopNote(noteIndex){
+  const o=activeOscs[noteIndex];if(!o)return;
+  const ctx=getCtx();const sustain=document.getElementById('sustain').value/10;
+  o.gain.gain.cancelScheduledValues(ctx.currentTime);
+  o.gain.gain.setValueAtTime(o.gain.gain.value,ctx.currentTime);
+  o.gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+sustain);
+  o.osc.stop(ctx.currentTime+sustain+0.1);
+  delete activeOscs[noteIndex];
+  const key=document.querySelector('[data-note="'+noteIndex+'"]');
+  if(key)key.classList.remove('pressed');
+  if(recording)recorded.push({note:noteIndex,time:Date.now()-recStart,type:'off'});
+}
+
+function buildPiano(){
+  const piano=document.getElementById('piano');piano.innerHTML='';
+  const totalNotes=25;const whiteNotes=[],blackNotes=[];
+  for(let i=0;i<totalNotes;i++){
+    if(NOTES[i%12].includes('#'))blackNotes.push(i);else whiteNotes.push(i);
+  }
+  const whiteWidth=52;
+  whiteNotes.forEach(i=>{
+    const key=document.createElement('div');key.className='key white';key.dataset.note=i;
+    const kbKey=Object.entries(KEY_MAP).find(([k,v])=>v===i);
+    key.innerHTML='<span class="label">'+NOTES[i%12]+parseInt(document.getElementById('octave').value+Math.floor(i/12))+(kbKey?'<br>'+kbKey[0].toUpperCase():'')+'</span>';
+    key.addEventListener('mousedown',e=>{e.preventDefault();playNote(i)});
+    key.addEventListener('mouseup',()=>stopNote(i));
+    key.addEventListener('mouseleave',()=>stopNote(i));
+    key.addEventListener('touchstart',e=>{e.preventDefault();playNote(i)});
+    key.addEventListener('touchend',e=>{e.preventDefault();stopNote(i)});
+    piano.appendChild(key);
+  });
+  blackNotes.forEach(i=>{
+    const whitesBefore=whiteNotes.filter(w=>w<i).length;
+    const key=document.createElement('div');key.className='key black';key.dataset.note=i;
+    key.style.position='absolute';key.style.left=(whitesBefore*whiteWidth-16)+'px';
+    const kbKey=Object.entries(KEY_MAP).find(([k,v])=>v===i);
+    key.innerHTML='<span class="label">'+(kbKey?kbKey[0].toUpperCase():'')+'</span>';
+    key.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();playNote(i)});
+    key.addEventListener('mouseup',e=>{e.stopPropagation();stopNote(i)});
+    key.addEventListener('mouseleave',()=>stopNote(i));
+    key.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();playNote(i)});
+    key.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();stopNote(i)});
+    piano.appendChild(key);
+  });
+  piano.style.position='relative';piano.style.width=(whiteNotes.length*whiteWidth)+'px';piano.style.height='200px';
+}
+
+// Keyboard
+const pressedKeys={};
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;const k=e.key.toLowerCase();
+  if(KEY_MAP[k]!==undefined&&!pressedKeys[k]){pressedKeys[k]=true;playNote(KEY_MAP[k])}
+});
+document.addEventListener('keyup',e=>{
+  const k=e.key.toLowerCase();
+  if(KEY_MAP[k]!==undefined){delete pressedKeys[k];stopNote(KEY_MAP[k])}
+});
+
+// Recording
+function toggleRecord(){
+  if(!recording){recording=true;recorded=[];recStart=Date.now();
+    document.getElementById('recBtn').classList.add('rec');document.getElementById('recBtn').textContent='⏹️ 停止';
+    document.getElementById('recBar').style.display='flex';
+    recTimer=setInterval(()=>{const s=Math.floor((Date.now()-recStart)/1000);document.getElementById('recTime').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},200);
+  }else{recording=false;clearInterval(recTimer);
+    document.getElementById('recBtn').classList.remove('rec');document.getElementById('recBtn').textContent='⏺️ 录制';
+    document.getElementById('recBar').style.display='none';
+    document.getElementById('playBtn').disabled=recorded.length===0;
+    document.getElementById('clearBtn').disabled=recorded.length===0;
+  }
+}
+function playRecording(){
+  if(!recorded.length)return;document.getElementById('playBtn').disabled=true;
+  let i=0;const start=Date.now();
+  const tick=()=>{
+    while(i<recorded.length&&recorded[i].time<=Date.now()-start){
+      const ev=recorded[i];if(ev.type==='on')playNote(ev.note);else stopNote(ev.note);i++;
+    }
+    if(i<recorded.length)requestAnimationFrame(tick);else document.getElementById('playBtn').disabled=false;
+  };tick();
+}
+function clearRecording(){recorded=[];document.getElementById('playBtn').disabled=true;document.getElementById('clearBtn').disabled=true}
+
+// Song system
+function buildSongList(){
+  const el=document.getElementById('songList');
+  SONGS.forEach((s,i)=>{
+    const chip=document.createElement('span');chip.className='song-chip';
+    chip.textContent=s.name+' '+s.difficulty;
+    chip.onclick=()=>selectSong(i);
+    el.appendChild(chip);
+  });
+}
+
+function selectSong(idx){
+  stopSong();currentSong=SONGS[idx];songIndex=0;
+  document.querySelectorAll('.song-chip').forEach((c,i)=>c.classList.toggle('active',i===idx));
+  document.getElementById('songInfo').style.display='';
+  document.getElementById('songControls').style.display='flex';
+  document.getElementById('songTitle').textContent=currentSong.name;
+  document.getElementById('songDesc').textContent=currentSong.desc;
+  renderProgress();
+  document.getElementById('songStatus').innerHTML='<span class="info">点击「演示」听一遍，或「跟弹练习」开始弹</span>';
+}
+
+function renderProgress(){
+  const el=document.getElementById('songProgress');el.innerHTML='';
+  if(!currentSong)return;
+  currentSong.notes.forEach((n,i)=>{
+    const dot=document.createElement('span');dot.className='note-dot'+(i===songIndex?' current':'');
+    dot.textContent=NOTES[n.n%12];
+    dot.title=noteName(n.n);
+    el.appendChild(dot);
+  });
+}
+
+function highlightNextNote(){
+  if(!currentSong)return;
+  clearHints();
+  const dots=document.querySelectorAll('.note-dot');
+  dots.forEach((d,i)=>{
+    d.classList.remove('current');
+    if(i===songIndex)d.classList.add('current');
+  });
+  if(songIndex<currentSong.notes.length){
+    const nextNote=currentSong.notes[songIndex].n;
+    const key=document.querySelector('[data-note="'+nextNote+'"]');
+    if(key)key.classList.add('hint-key');
+    const kbKey=Object.entries(KEY_MAP).find(([k,v])=>v===nextNote);
+    document.getElementById('songStatus').innerHTML='<span class="info">按 '+(kbKey?'<kbd style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:monospace">'+kbKey[0].toUpperCase()+'</kbd> 或':'')+'点击 '+noteName(nextNote)+' 键</span>';
+  }
+}
+
+function clearHints(){document.querySelectorAll('.hint-key').forEach(k=>k.classList.remove('hint-key'))}
+
+function startPractice(){
+  stopSong();songIndex=0;practiceMode=true;
+  renderProgress();highlightNextNote();
+  document.getElementById('songStatus').innerHTML='<span class="info">跟着绿色高亮的琴键弹奏吧！</span>';
+}
+
+async function demoSong(){
+  if(!currentSong)return;
+  stopSong();songIndex=0;practiceMode=false;renderProgress();
+  document.getElementById('songStatus').innerHTML='<span class="info">🎵 演示播放中...</span>';
+  const bpm=120;const beatMs=60000/bpm;
+  for(let i=0;i<currentSong.notes.length;i++){
+    if(songMode==='stopped')break;
+    songMode='demo';
+    const n=currentSong.notes[i];
+    const dots=document.querySelectorAll('.note-dot');
+    dots.forEach((d,j)=>{d.classList.remove('current');if(j===i)d.classList.add('current')});
+    if(dots[i])dots[i].classList.add('played');
+    playNote(n.n);
+    await new Promise(r=>demoTimer=setTimeout(r,n.d*beatMs*0.9));
+    stopNote(n.n);
+    await new Promise(r=>demoTimer=setTimeout(r,n.d*beatMs*0.1));
+  }
+  if(songMode!=='stopped')document.getElementById('songStatus').innerHTML='<span class="good">✅ 演示完成！试试「跟弹练习」吧</span>';
+  songMode=null;
+}
+
+function stopSong(){
+  songMode='stopped';practiceMode=false;clearTimeout(demoTimer);clearHints();
+  Object.keys(activeOscs).forEach(k=>stopNote(parseInt(k)));
+}
+
+function resetSong(){
+  stopSong();songIndex=0;renderProgress();
+  document.getElementById('songStatus').innerHTML='<span class="info">已重置，准备好了就开始吧</span>';
+}
+
+document.getElementById('octave').addEventListener('change',buildPiano);
+buildPiano();buildSongList();
+</script>
+</body>
+</html>

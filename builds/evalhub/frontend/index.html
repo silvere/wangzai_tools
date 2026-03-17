@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EvalHub 评测工坊</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0d14;--surface:#12141f;--card:#181b28;--border:#252840;--text:#e0e2f0;--dim:#5a5e78;--accent:#6366f1;--accent2:#818cf8;--green:#22c55e;--red:#ef4444;--yellow:#eab308}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:24px}
+header h1{font-size:22px;font-weight:700}
+header h1 span{color:var(--accent)}
+.version{font-size:11px;color:var(--dim);background:var(--card);padding:3px 8px;border-radius:6px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{padding:10px 18px;cursor:pointer;font-size:13px;color:var(--dim);border-bottom:2px solid transparent;transition:.2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.form-row label{font-size:12px;color:var(--dim);display:block;margin-bottom:4px}
+.form-row .field{flex:1;min-width:150px}
+input,select{width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-danger{background:var(--red);color:#fff;font-size:11px;padding:4px 10px}
+.btn-sm{padding:5px 12px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-green{background:#22c55e20;color:#22c55e}
+.badge-yellow{background:#eab30820;color:#eab308}
+.badge-red{background:#ef444420;color:#ef4444}
+.badge-blue{background:#6366f120;color:#818cf8}
+.badge-gray{background:#5a5e7820;color:#5a5e78}
+.score{font-size:28px;font-weight:700;color:var(--accent)}
+.score-label{font-size:11px;color:var(--dim)}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+.empty{text-align:center;padding:40px;color:var(--dim);font-size:13px}
+.stats-row{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.stat-card{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-val{font-size:24px;font-weight:700;color:var(--accent)}
+.stat-label{font-size:11px;color:var(--dim);margin-top:2px}
+.chart-wrap{max-width:500px;margin:16px auto}
+.result-item{padding:12px;border-bottom:1px solid var(--border);font-size:13px}
+.result-item:last-child{border-bottom:none}
+.result-q{font-weight:500;margin-bottom:6px}
+.result-choices{display:flex;flex-direction:column;gap:3px;margin:6px 0}
+.choice{padding:4px 8px;border-radius:4px;font-size:12px}
+.choice.correct{background:#22c55e15;color:#22c55e}
+.choice.wrong{background:#ef444415;color:#ef4444}
+.choice.neutral{color:var(--dim)}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.mt-12{margin-top:12px}
+.mb-8{margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>📊 <span>EvalHub</span> 评测工坊</h1>
+  <span class="version">V0.1</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('models')">🤖 模型管理</div>
+  <div class="tab" onclick="switchTab('eval')">🧪 评测任务</div>
+  <div class="tab" onclick="switchTab('board')">🏆 排行榜</div>
+  <div class="tab" onclick="switchTab('detail')">📋 详情</div>
+</div>
+
+<!-- Models Panel -->
+<div class="panel active" id="panel-models">
+  <div class="card">
+    <h3>➕ 添加模型</h3>
+    <div class="form-row">
+      <div class="field"><label>模型名称</label><input id="mName" placeholder="如: GPT-4o"></div>
+      <div class="field"><label>模型 ID</label><input id="mModelId" placeholder="如: gpt-4o"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>API Base URL</label><input id="mBase" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1"></div>
+      <div class="field"><label>API Key</label><input id="mKey" type="password" placeholder="sk-..."></div>
+    </div>
+    <button class="btn btn-primary mt-12" onclick="addModel()">添加模型</button>
+  </div>
+  <div class="card">
+    <h3>📋 已添加模型</h3>
+    <div id="modelsList"><div class="empty">暂无模型，请先添加</div></div>
+  </div>
+</div>
+
+<!-- Eval Panel -->
+<div class="panel" id="panel-eval">
+  <div class="card">
+    <h3>🚀 发起评测</h3>
+    <div class="form-row">
+      <div class="field"><label>选择模型</label><select id="eModel"></select></div>
+      <div class="field"><label>选择评测集</label><select id="eDataset"></select></div>
+    </div>
+    <button class="btn btn-primary mt-12" onclick="startEval()">开始评测</button>
+  </div>
+  <div class="card">
+    <h3>📋 评测任务</h3>
+    <div id="tasksList"><div class="empty">暂无任务</div></div>
+  </div>
+</div>
+
+<!-- Leaderboard Panel -->
+<div class="panel" id="panel-board">
+  <div class="card">
+    <h3>🏆 排行榜</h3>
+    <div id="boardContent"><div class="empty">暂无评测结果</div></div>
+  </div>
+  <div class="card">
+    <h3>📊 得分对比</h3>
+    <div class="chart-wrap"><canvas id="boardChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="panel" id="panel-detail">
+  <div id="detailContent"><div class="empty">请从评测任务中选择一个查看详情</div></div>
+</div>
+</div>
+
+<script>
+var API = window.location.origin + '/api';
+var pollTimer = null;
+var boardChart = null;
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    t.classList.toggle('active', t.textContent.indexOf(
+      name==='models'?'模型':name==='eval'?'评测任务':name==='board'?'排行':name==='detail'?'详情':''
+    )>=0);
+  });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='eval'){loadModelsSelect();loadDatasets();loadTasks();}
+  if(name==='board')loadBoard();
+}
+
+async function api(path, opts) {
+  var resp = await fetch(API + path, opts);
+  if (!resp.ok) throw new Error(resp.statusText);
+  return resp.json();
+}
+
+// --- Models ---
+async function addModel() {
+  var name = document.getElementById('mName').value.trim();
+  var modelId = document.getElementById('mModelId').value.trim();
+  var base = document.getElementById('mBase').value.trim();
+  var key = document.getElementById('mKey').value.trim();
+  if (!name || !modelId || !base || !key) return alert('请填写所有字段');
+  await api('/models', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({name:name, model_id:modelId, api_base:base, api_key:key})});
+  document.getElementById('mName').value='';
+  document.getElementById('mModelId').value='';
+  document.getElementById('mKey').value='';
+  loadModels();
+}
+
+async function loadModels() {
+  var models = await api('/models');
+  var el = document.getElementById('modelsList');
+  if (!models.length) { el.innerHTML='<div class="empty">暂无模型，请先添加</div>'; return; }
+  el.innerHTML = '<table><tr><th>名称</th><th>模型ID</th><th>API Base</th><th>操作</th></tr>'
+    + models.map(function(m){
+      return '<tr><td>'+m.name+'</td><td><code>'+m.model_id+'</code></td><td>'+m.api_base+'</td>'
+        +'<td><button class="btn btn-danger" onclick="delModel(\''+m.id+'\')">删除</button></td></tr>';
+    }).join('') + '</table>';
+}
+
+async function delModel(id) {
+  await api('/models/'+id, {method:'DELETE'});
+  loadModels();
+}
+
+// --- Eval ---
+async function loadModelsSelect() {
+  var models = await api('/models');
+  var sel = document.getElementById('eModel');
+  sel.innerHTML = models.map(function(m){ return '<option value="'+m.id+'">'+m.name+' ('+m.model_id+')</option>'; }).join('');
+}
+
+async function loadDatasets() {
+  var ds = await api('/datasets');
+  var sel = document.getElementById('eDataset');
+  sel.innerHTML = ds.map(function(d){ return '<option value="'+d.id+'">'+d.name+' — '+d.num_questions+'题</option>'; }).join('');
+}
+
+async function startEval() {
+  var modelId = document.getElementById('eModel').value;
+  var datasetId = document.getElementById('eDataset').value;
+  if (!modelId || !datasetId) return alert('请选择模型和评测集');
+  await api('/eval', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({model_id:modelId, dataset_id:datasetId})});
+  loadTasks();
+  startPoll();
+}
+
+async function loadTasks() {
+  var tasks = await api('/tasks');
+  var el = document.getElementById('tasksList');
+  if (!tasks.length) { el.innerHTML='<div class="empty">暂无任务</div>'; return; }
+  el.innerHTML = '<table><tr><th>模型</th><th>评测集</th><th>状态</th><th>进度</th><th>得分</th><th>操作</th></tr>'
+    + tasks.map(function(t){
+      var badge = t.status==='completed'?'green':t.status==='running'?'yellow':t.status==='failed'?'red':'gray';
+      var statusText = t.status==='completed'?'完成':t.status==='running'?'运行中':t.status==='failed'?'失败':'等待中';
+      return '<tr><td>'+t.model_name+'</td><td>'+t.dataset_id+'</td>'
+        +'<td><span class="badge badge-'+badge+'">'+statusText+'</span></td>'
+        +'<td><div class="progress-bar"><div class="progress-fill" style="width:'+t.progress+'%"></div></div></td>'
+        +'<td>'+(t.status==='completed'?t.score+'%':'-')+'</td>'
+        +'<td><button class="btn btn-sm btn-primary" onclick="viewDetail(\''+t.id+'\')">详情</button></td></tr>';
+    }).join('') + '</table>';
+  // Auto-poll if any running
+  if (tasks.some(function(t){return t.status==='running'||t.status==='pending';})) startPoll();
+  else stopPoll();
+}
+
+function startPoll() { if(!pollTimer) pollTimer = setInterval(loadTasks, 2000); }
+function stopPoll() { if(pollTimer){clearInterval(pollTimer);pollTimer=null;} }
+
+// --- Detail ---
+async function viewDetail(taskId) {
+  switchTab('detail');
+  var t = await api('/tasks/'+taskId);
+  var el = document.getElementById('detailContent');
+  if (t.status !== 'completed') {
+    el.innerHTML = '<div class="card"><div class="empty">任务尚未完成 ('+t.status+')</div></div>';
+    return;
+  }
+  // Category stats
+  var cats = {};
+  (t.results||[]).forEach(function(r){
+    if(!cats[r.category]) cats[r.category]={total:0,correct:0};
+    cats[r.category].total++;
+    if(r.is_correct) cats[r.category].correct++;
+  });
+
+  var html = '<div class="stats-row">'
+    +'<div class="stat-card"><div class="stat-val">'+t.score+'%</div><div class="stat-label">总分</div></div>'
+    +'<div class="stat-card"><div class="stat-val">'+t.correct+'/'+t.total+'</div><div class="stat-label">正确/总数</div></div>'
+    +'<div class="stat-card"><div class="stat-val">'+t.model_name+'</div><div class="stat-label">模型</div></div>'
+    +'</div>';
+
+  // Category breakdown
+  html += '<div class="card"><h3>📊 分类得分</h3><table><tr><th>类别</th><th>正确</th><th>总数</th><th>准确率</th></tr>';
+  Object.keys(cats).forEach(function(c){
+    var acc = Math.round(cats[c].correct/cats[c].total*100);
+    html += '<tr><td>'+c+'</td><td>'+cats[c].correct+'</td><td>'+cats[c].total+'</td><td>'+acc+'%</td></tr>';
+  });
+  html += '</table></div>';
+
+  // Per-question results
+  html += '<div class="card"><h3>📝 逐题详情</h3>';
+  (t.results||[]).forEach(function(r, i){
+    var labels = 'ABCD';
+    html += '<div class="result-item"><div class="result-q">'+(i+1)+'. '+r.question
+      +' <span class="badge badge-'+(r.is_correct?'green':'red')+'">'+(r.is_correct?'✓ 正确':'✗ 错误')+'</span></div>'
+      +'<div class="result-choices">';
+    r.choices.forEach(function(c, ci){
+      var cls = 'neutral';
+      if(ci===r.correct_idx) cls='correct';
+      else if(ci===r.model_answer_idx && !r.is_correct) cls='wrong';
+      html += '<div class="choice '+cls+'">'+labels[ci]+'. '+c
+        +(ci===r.correct_idx?' ✓':'')
+        +(ci===r.model_answer_idx && ci!==r.correct_idx?' ← 模型选择':'')
+        +(ci===r.model_answer_idx && ci===r.correct_idx?' ← 模型选择':'')
+        +'</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// --- Leaderboard ---
+async function loadBoard() {
+  var board = await api('/leaderboard');
+  var el = document.getElementById('boardContent');
+  if (!board.length) { el.innerHTML='<div class="empty">暂无评测结果</div>'; return; }
+  el.innerHTML = '<table><tr><th>#</th><th>模型</th><th>评测集</th><th>得分</th><th>正确率</th></tr>'
+    + board.map(function(b, i){
+      return '<tr><td>'+(i+1)+'</td><td>'+b.model_name+'</td><td>'+b.dataset_id+'</td>'
+        +'<td><strong>'+b.score+'%</strong></td><td>'+b.correct+'/'+b.total+'</td></tr>';
+    }).join('') + '</table>';
+
+  // Chart
+  if(boardChart) boardChart.destroy();
+  var ctx = document.getElementById('boardChart').getContext('2d');
+  boardChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: board.map(function(b){return b.model_name;}),
+      datasets: [{label:'得分 %', data: board.map(function(b){return b.score;}),
+        backgroundColor: board.map(function(_,i){
+          var colors=['#6366f1','#22c55e','#eab308','#ef4444','#06b6d4','#a855f7'];
+          return colors[i%colors.length]+'80';
+        }),
+        borderColor: board.map(function(_,i){
+          var colors=['#6366f1','#22c55e','#eab308','#ef4444','#06b6d4','#a855f7'];
+          return colors[i%colors.length];
+        }),
+        borderWidth:1, borderRadius:6}]
+    },
+    options: {
+      responsive:true, plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,max:100,grid:{color:'#252840'},ticks:{color:'#5a5e78'}},
+              x:{grid:{display:false},ticks:{color:'#5a5e78'}}}
+    }
+  });
+}
+
+// Init
+loadModels();
+</script>
+</body>
+</html>

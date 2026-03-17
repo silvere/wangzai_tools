@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💡 项目灵感生成器 - AI创业与开源项目</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        select, input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .project-title {
+            font-size: 1.8rem;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .project-emoji {
+            font-size: 2rem;
+        }
+
+        .project-tagline {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-content {
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .tech-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .monetization-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .monetization-item {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            border: 2px solid #ffc107;
+        }
+
+        .difficulty-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .difficulty-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .difficulty-easy { background: linear-gradient(90deg, #28a745, #20c997); }
+        .difficulty-medium { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+        .difficulty-hard { background: linear-gradient(90deg, #fd7e14, #dc3545); }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .save-btn {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .regenerate-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .history-section.show {
+            display: block;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: #f8f9fa;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .control-panel, .result-card {
+                padding: 20px;
+            }
+
+            .project-title {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💡 项目灵感生成器</h1>
+            <p class="subtitle">AI创业与开源项目创意工厂</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label>🎯 项目方向</label>
+                    <select id="projectDirection">
+                        <option value="all">随机方向</option>
+                        <option value="ai-tools">AI 工具</option>
+                        <option value="saas">SaaS 服务</option>
+                        <option value="opensource">开源项目</option>
+                        <option value="automation">自动化工具</option>
+                        <option value="content">内容创作</option>
+                        <option value="education">教育学习</option>
+                        <option value="productivity">生产力工具</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>💪 难度偏好</label>
+                    <select id="difficulty">
+                        <option value="all">随机难度</option>
+                        <option value="easy">简单（MVP 1-2周）</option>
+                        <option value="medium">中等（1-2个月）</option>
+                        <option value="hard">困难（长期项目）</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>💰  monetization</label>
+                    <select id="monetization">
+                        <option value="all">不限</option>
+                        <option value="subscription">订阅制</option>
+                        <option value="freemium">免费增值</option>
+                        <option value="one-time">一次性付费</option>
+                        <option value="opensource">开源捐赠</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>🏷️ 技术栈</label>
+                    <select id="techStack">
+                        <option value="all">随机技术栈</option>
+                        <option value="python">Python 优先</option>
+                        <option value="javascript">JavaScript/Node.js</option>
+                        <option value="fullstack">全栈</option>
+                        <option value="mobile">移动端</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="generate-btn" onclick="generateIdea()">
+                🚀 生成项目灵感
+            </button>
+        </div>
+
+        <div class="result-card" id="resultCard">
+            <div class="project-title">
+                <span class="project-emoji" id="projectEmoji">🤖</span>
+                <span id="projectName">项目名称</span>
+            </div>
+            <p class="project-tagline" id="projectTagline">一句话描述项目</p>
+
+            <div class="section">
+                <div class="section-title">🎯 核心理念</div>
+                <div class="section-content" id="coreIdea">
+                    项目的核心价值和解决的痛点
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">✨ 核心功能</div>
+                <div class="section-content">
+                    <ul class="feature-list" id="featureList">
+                        <li>功能1</li>
+                        <li>功能2</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🛠️ 技术选型</div>
+                <div class="section-content">
+                    <div class="tech-stack" id="techStackTags">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">FastAPI</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">💰 商业化方案</div>
+                <div class="section-content">
+                    <div class="monetization-grid" id="monetizationGrid">
+                        <div class="monetization-item">订阅制</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📊 项目评估</div>
+                <div class="section-content">
+                    <div class="stats-grid" id="projectStats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="difficultyValue">3/10</div>
+                            <div class="stat-label">实现难度</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="marketValue">8/10</div>
+                            <div class="stat-label">市场潜力</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="monetizationValue">7/10</div>
+                            <div class="stat-label">商业化可行性</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="competitionValue">5/10</div>
+                            <div class="stat-label">竞争程度</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🚀 实施路线图</div>
+                <div class="section-content" id="roadmap">
+                    <p><strong>Week 1:</strong> MVP 核心功能</p>
+                    <p><strong>Week 2-4:</strong> 完善功能 + 用户测试</p>
+                    <p><strong>Month 2:</strong> 正式发布 + 推广</p>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-btn copy-btn" onclick="copyToClipboard()">📋 复制完整方案</button>
+                <button class="action-btn save-btn" onclick="saveToHistory()">💾 保存灵感</button>
+                <button class="action-btn regenerate-btn" onclick="generateIdea()">🔄 再来一个</button>
+            </div>
+        </div>
+
+        <div class="history-section" id="historySection">
+            <div class="section-title">📜 灵感历史</div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板！</div>
+
+    <script>
+        const projectIdeas = {
+            ai_tools: [
+                {
+                    name: "Prompt 优化大师",
+                    emoji: "🎯",
+                    tagline: "AI时代的Prompt工程师助手",
+                    coreIdea: "帮助用户优化和测试Prompt，提供A/B测试、自动优化建议、Prompt模板库等功能，解决Prompt engineering门槛高的问题。",
+                    features: [
+                        "Prompt A/B对比测试",
+                        "自动优化建议（基于成功率）",
+                        "多模型对比测试",
+                        "Prompt模板库 + 分类管理",
+                        "Token优化建议",
+                        "成功率追踪与分析"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "OpenAI API", "Redis"],
+                    monetization: ["Freemium", "API订阅", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 5, market: 9, monetization: 8, competition: 6 },
+                    roadmap: "Week 1: 基础Prompt管理 + A/B测试\nWeek 2-3: 自动优化 + 多模型对比\nMonth 2: 企业版功能 + API"
+                },
+                {
+                    name: "文档智能摘要器",
+                    emoji: "📚",
+                    tagline: "长文档变摘要，阅读效率提升10倍",
+                    coreIdea: "上传PDF、Word、网页等长文档，自动生成结构化摘要、关键要点、思维导图，支持多语言、自定义摘要长度。",
+                    features: [
+                        "多格式支持（PDF/Word/EPUB/网页）",
+                        "多级摘要（简短/详细/自定义）",
+                        "关键要点提取 + 引用溯源",
+                        "思维导图生成",
+                        "多语言翻译摘要",
+                        "批量处理"
+                    ],
+                    tech: ["Python", "LangChain", "Streamlit", "FAISS", "PyPDF"],
+                    monetization: ["Freemium", "订阅制", "API服务"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 8, monetization: 7, competition: 7 },
+                    roadmap: "Week 1: 单文档摘要基础版\nWeek 2-3: 多格式 + 思维导图\nMonth 2: 批量处理 + API"
+                },
+                {
+                    name: "代码审查助手",
+                    emoji: "🔍",
+                    tagline: "AI驱动的代码审查，发现隐藏问题",
+                    coreIdea: "集成到GitHub/GitLab，自动审查PR，提供代码质量评估、安全漏洞检测、性能优化建议、最佳实践指引。",
+                    features: [
+                        "Git集成（自动审查PR）",
+                        "安全漏洞扫描",
+                        "代码质量评分",
+                        "性能优化建议",
+                        "风格一致性检查",
+                        "自动生成审查评论"
+                    ],
+                    tech: ["Python", "GitHub Actions", "CodeQL", "FastAPI"],
+                    monetization: ["Freemium", "按仓库订阅", "企业版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 7, monetization: 9, competition: 5 },
+                    roadmap: "Week 1-2: 基础规则引擎\nMonth 2: 深度集成 + AI建议\nMonth 3-4: 企业版功能"
+                },
+                {
+                    name: "智能客服机器人",
+                    emoji: "🤖",
+                    tagline: "5分钟搭建AI客服，7x24小时在线",
+                    coreIdea: "上传FAQ文档、产品说明，自动训练客服机器人，支持多渠道接入（网站/微信/飞书），无缝转接人工。",
+                    features: [
+                        "无代码训练（上传文档即可）",
+                        "多渠道接入",
+                        "智能路由（复杂问题转人工）",
+                        "对话分析 + 优化建议",
+                        "多语言支持",
+                        "自定义外观"
+                    ],
+                    tech: ["Python", "LangChain", "RAG", "WebSocket"],
+                    monetization: ["订阅制", "按对话量计费", "私有化部署"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 9, monetization: 9, competition: 7 },
+                    roadmap: "Week 1-2: 基础对话 + RAG\nMonth 2: 多渠道接入\nMonth 3-4: 企业版功能"
+                },
+                {
+                    name: "测试用例生成器",
+                    emoji: "🧪",
+                    tagline: "自动生成测试用例，代码质量有保障",
+                    coreIdea: "分析代码自动生成单元测试、集成测试，支持多种编程语言，覆盖率可视化，CI/CD集成。",
+                    features: [
+                        "多语言支持（Python/JS/Java/Go）",
+                        "自动生成单元测试",
+                        "覆盖率可视化",
+                        "CI/CD集成",
+                        "Edge case智能发现",
+                        "测试代码优化建议"
+                    ],
+                    tech: ["Python", "AST分析", "pytest", "GitHub Actions"],
+                    monetization: ["Freemium", "按项目订阅", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 7, market: 6, monetization: 7, competition: 4 },
+                    roadmap: "Week 1: Python支持基础版\nWeek 2-3: 多语言 + 覆盖率\nMonth 2: CI集成 + 优化建议"
+                }
+            ],
+            saas: [
+                {
+                    name: "会议纪要助手 Pro",
+                    emoji: "📝",
+                    tagline: "会议结束，纪要已写好",
+                    coreIdea: "接入Zoom/腾讯会议，实时转录、智能提取议题、决策、待办事项，自动生成专业会议纪要，支持多格式导出。",
+                    features: [
+                        "会议平台集成",
+                        "实时语音转录",
+                        "议题/决策/待办自动提取",
+                        "参会人识别",
+                        "多格式导出（Markdown/PDF/Word）",
+                        "任务追踪 + 提醒"
+                    ],
+                    tech: ["Python", "FastAPI", "Whisper", "React", "PostgreSQL"],
+                    monetization: ["订阅制", "按会议时长", "企业版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 9, monetization: 9, competition: 6 },
+                    roadmap: "Week 1-2: 音频上传 + 基础转录\nMonth 2: 会议平台集成\nMonth 3-4: 企业版功能"
+                },
+                {
+                    name: "社交媒体内容管家",
+                    emoji: "📱",
+                    tagline: "一个后台管理所有社交平台",
+                    coreIdea: "统一管理微信公众号、小红书、微博、抖音等平台，内容创作、定时发布、数据分析、互动管理一站式搞定。",
+                    features: [
+                        "多平台统一发布",
+                        "AI内容生成",
+                        "定时发布日历",
+                        "数据分析仪表盘",
+                        "评论/私信统一管理",
+                        "竞品监测"
+                    ],
+                    tech: ["Node.js", "React", "MongoDB", "各平台API"],
+                    monetization: ["订阅制", "按平台数", "企业版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 9, market: 8, monetization: 8, competition: 7 },
+                    roadmap: "Week 1-2: 内容管理基础\nMonth 2: 3-4个平台集成\nMonth 3-4: 数据分析 + AI生成"
+                },
+                {
+                    name: "在线表单大师",
+                    emoji: "📋",
+                    tagline: "漂亮的表单，强大的数据",
+                    coreIdea: "拖拽式创建精美表单、问卷、报名表，支持条件逻辑、支付集成、数据分析、自动化流程。",
+                    features: [
+                        "拖拽式表单设计",
+                        "条件逻辑跳转",
+                        "支付集成",
+                        "实时数据分析",
+                        "自动化通知",
+                        "API/Webhook"
+                    ],
+                    tech: ["React", "Node.js", "PostgreSQL", "Stripe"],
+                    monetization: ["Freemium", "订阅制", "按响应量"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 9, monetization: 8, competition: 8 },
+                    roadmap: "Week 1: 基础表单创建\nWeek 2-3: 条件逻辑 + 数据分析\nMonth 2: 支付 + 高级功能"
+                },
+                {
+                    name: "项目管理轻量级",
+                    emoji: "📊",
+                    tagline: "简单好用，不搞复杂",
+                    coreIdea: "极简项目管理工具，看板、任务、时间追踪、团队协作，去除冗余功能，专注于核心体验。",
+                    features: [
+                        "看板视图",
+                        "任务分配 + 追踪",
+                        "时间追踪",
+                        "团队协作",
+                        "文件共享",
+                        "简单报表"
+                    ],
+                    tech: ["Vue.js", "Python", "FastAPI", "PostgreSQL"],
+                    monetization: ["Freemium", "按用户订阅", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 7, market: 8, monetization: 7, competition: 9 },
+                    roadmap: "Week 1-2: 看板 + 任务\nMonth 2: 团队协作\nMonth 3: 高级功能"
+                },
+                {
+                    name: "客户成功平台",
+                    emoji: "💝",
+                    tagline: "留住客户，让收入增长",
+                    coreIdea: "客户健康度追踪、流失预警、自动触达、续约管理，帮助SaaS公司降低流失率，提升LTV。",
+                    features: [
+                        "客户健康度评分",
+                        "流失风险预警",
+                        "自动触达序列",
+                        "续约管理",
+                        "NPS调查",
+                        "健康仪表盘"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "ML模型"],
+                    monetization: ["订阅制", "按客户数", "企业版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 7, monetization: 9, competition: 4 },
+                    roadmap: "Week 1-2: 健康度基础\nMonth 2: 预警模型\nMonth 3-4: 完整平台"
+                }
+            ],
+            opensource: [
+                {
+                    name: "LLM评测框架",
+                    emoji: "🧪",
+                    tagline: "大模型评测的瑞士军刀",
+                    coreIdea: "开源的大语言模型评测框架，支持多个Benchmark、自动评测、可视化报告、对比分析，降低评测门槛。",
+                    features: [
+                        "多Benchmark支持",
+                        "自动评测流程",
+                        "可视化报告",
+                        "模型对比分析",
+                        "插件化架构",
+                        "丰富的文档"
+                    ],
+                    tech: ["Python", "Click", "Plotly", "HuggingFace"],
+                    monetization: ["GitHub Sponsors", "企业支持", "咨询服务"],
+                    difficulty: "medium",
+                    stats: { difficulty: 7, market: 8, monetization: 5, competition: 5 },
+                    roadmap: "Week 1: 核心框架 + 1个Benchmark\nWeek 2-3: 更多Benchmark + 可视化\nMonth 2: 插件系统 + 文档"
+                },
+                {
+                    name: "本地AI助手",
+                    emoji: "🏠",
+                    tagline: "私有化部署的AI助手，数据安全",
+                    coreIdea: "可在本地运行的AI助手，支持多种开源模型（LLaMA/Qwen/Mistral），RAG、Agent、多模态，完全私有化。",
+                    features: [
+                        "多模型支持",
+                        "RAG知识库",
+                        "Agent能力",
+                        "多模态（图文）",
+                        "Web界面",
+                        "API接口"
+                    ],
+                    tech: ["Python", "LangChain", "Gradio", "Ollama"],
+                    monetization: ["GitHub Sponsors", "企业支持", "定制开发"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 9, monetization: 6, competition: 6 },
+                    roadmap: "Week 1-2: 基础对话 + RAG\nMonth 2: Agent + 多模态\nMonth 3-4: 优化 + 企业版"
+                },
+                {
+                    name: "API模拟服务器",
+                    emoji: "🎭",
+                    tagline: "前端开发必备，后端还没好？先用这个",
+                    coreIdea: "快速创建Mock API服务器，支持REST/GraphQL，动态响应、延迟模拟、认证模拟，提升前后端分离开发效率。",
+                    features: [
+                        "REST/GraphQL支持",
+                        "动态响应模板",
+                        "延迟模拟",
+                        "认证模拟",
+                        "请求记录",
+                        "配置文件热加载"
+                    ],
+                    tech: ["Node.js", "Express", "GraphQL"],
+                    monetization: ["GitHub Sponsors", "企业支持"],
+                    difficulty: "easy",
+                    stats: { difficulty: 4, market: 7, monetization: 3, competition: 6 },
+                    roadmap: "Week 1: 基础REST Mock\nWeek 2: GraphQL + 高级功能\nMonth 2: 优化 + 文档"
+                },
+                {
+                    name: "数据库版本控制",
+                    emoji: "🗄️",
+                    tagline: "像管理代码一样管理数据库",
+                    coreIdea: "数据库Schema版本控制工具，自动生成迁移脚本、回滚、分支管理、CI集成，解决数据库变更混乱问题。",
+                    features: [
+                        "自动迁移生成",
+                        "版本管理",
+                        "回滚支持",
+                        "多数据库支持",
+                        "CI集成",
+                        "冲突检测"
+                    ],
+                    tech: ["Python", "SQLAlchemy", "Click"],
+                    monetization: ["GitHub Sponsors", "企业支持", "SaaS版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 6, monetization: 5, competition: 4 },
+                    roadmap: "Week 1: 核心功能 + Postgres\nWeek 2-3: 多数据库 + CI\nMonth 2: 高级功能"
+                },
+                {
+                    name: "CLI工具脚手架",
+                    emoji: "⚡",
+                    tagline: "快速创建漂亮的命令行工具",
+                    coreIdea: "CLI工具开发框架，自动生成脚手架、参数解析、帮助文档、彩色输出、进度条、配置管理，让CLI开发更简单。",
+                    features: [
+                        "项目脚手架生成",
+                        "参数解析",
+                        "自动帮助文档",
+                        "彩色输出",
+                        "进度条组件",
+                        "配置管理"
+                    ],
+                    tech: ["Python", "Rich", "Typer"],
+                    monetization: ["GitHub Sponsors"],
+                    difficulty: "easy",
+                    stats: { difficulty: 3, market: 5, monetization: 2, competition: 5 },
+                    roadmap: "Week 1: 核心框架\nWeek 2: 组件库\nMonth 2: 文档 + 示例"
+                }
+            ],
+            automation: [
+                {
+                    name: "浏览器自动化助手",
+                    emoji: "🌐",
+                    tagline: "把重复操作自动化，解放双手",
+                    coreIdea: "可视化录制浏览器操作，自动生成脚本，支持定时执行、条件判断、数据提取，零代码也能用。",
+                    features: [
+                        "可视化录制",
+                        "脚本生成",
+                        "定时执行",
+                        "数据提取",
+                        "条件逻辑",
+                        "错误重试"
+                    ],
+                    tech: ["Python", "Playwright", "FastAPI", "React"],
+                    monetization: ["Freemium", "订阅制", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 8, monetization: 7, competition: 5 },
+                    roadmap: "Week 1-2: 录制 + 基础回放\nMonth 2: 定时 + 数据提取\nMonth 3: 高级功能"
+                },
+                {
+                    name: "数据同步管道",
+                    emoji: "🔄",
+                    tagline: "在不同服务间同步数据，简单可靠",
+                    coreIdea: "可视化配置数据同步管道，支持多种数据源（数据库/API/文件/云存储），定时同步、增量同步、错误重试。",
+                    features: [
+                        "多数据源支持",
+                        "可视化配置",
+                        "增量同步",
+                        "定时执行",
+                        "错误处理 + 重试",
+                        "监控告警"
+                    ],
+                    tech: ["Python", "Airflow", "FastAPI", "React"],
+                    monetization: ["订阅制", "按数据量", "企业版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 7, monetization: 8, competition: 4 },
+                    roadmap: "Week 1-2: 核心框架 + 3个数据源\nMonth 2: 更多数据源 + 监控\nMonth 3-4: 企业版功能"
+                },
+                {
+                    name: "邮件自动化处理",
+                    emoji: "📧",
+                    tagline: "让AI帮你处理邮件，Inbox Zero不是梦",
+                    coreIdea: "连接邮箱，自动分类、摘要、回复、归档，支持自定义规则，学习用户偏好，让邮箱管理自动化。",
+                    features: [
+                        "智能分类",
+                        "自动摘要",
+                        "智能回复建议",
+                        "自定义规则",
+                        "批量处理",
+                        "统计报告"
+                    ],
+                    tech: ["Python", "IMAP/SMTP", "FastAPI", "React"],
+                    monetization: ["订阅制", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 8, monetization: 7, competition: 5 },
+                    roadmap: "Week 1: 基础连接 + 分类\nWeek 2-3: 摘要 + 回复建议\nMonth 2: 学习 + 高级功能"
+                },
+                {
+                    name: "报告自动生成器",
+                    emoji: "📊",
+                    tagline: "数据进去，漂亮报告出来",
+                    coreIdea: "连接数据源（Excel/CSV/数据库/API），配置模板，自动生成定期报告（日报/周报/月报），支持多格式导出。",
+                    features: [
+                        "多数据源支持",
+                        "可视化模板设计",
+                        "定时生成",
+                        "多格式导出",
+                        "自动分发",
+                        "历史版本管理"
+                    ],
+                    tech: ["Python", "Jinja2", "Plotly", "FastAPI"],
+                    monetization: ["Freemium", "订阅制", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 5, market: 7, monetization: 7, competition: 4 },
+                    roadmap: "Week 1: 基础模板 + Excel\nWeek 2-3: 更多数据源 + 定时\nMonth 2: 高级模板 + 分发"
+                },
+                {
+                    name: "社交媒体监控",
+                    emoji: "👀",
+                    tagline: "监控品牌提及，不错过任何讨论",
+                    coreIdea: "监控微博、小红书、知乎、抖音等平台的品牌提及、关键词，情感分析、告警通知、竞品监测。",
+                    features: [
+                        "多平台监控",
+                        "关键词追踪",
+                        "情感分析",
+                        "实时告警",
+                        "竞品监测",
+                        "趋势报告"
+                    ],
+                    tech: ["Python", "爬虫", "FastAPI", "React"],
+                    monetization: ["订阅制", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 7, market: 7, monetization: 8, competition: 6 },
+                    roadmap: "Week 1-2: 1-2个平台 + 基础监控\nMonth 2: 更多平台 + 情感分析\nMonth 3: 竞品监测 + 报告"
+                }
+            ],
+            content: [
+                {
+                    name: "爆款标题生成器 Pro",
+                    emoji: "🔥",
+                    tagline: "好标题，点击率翻倍",
+                    coreIdea: "输入内容主题，AI生成10个吸睛标题，评分系统、A/B测试建议、历史数据追踪，帮你找到最佳标题。",
+                    features: [
+                        "多平台标题生成",
+                        "标题评分系统",
+                        "A/B测试建议",
+                        "历史效果追踪",
+                        "标题库管理",
+                        "趋势分析"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "LLM"],
+                    monetization: ["Freemium", "订阅制", "API"],
+                    difficulty: "easy",
+                    stats: { difficulty: 4, market: 9, monetization: 7, competition: 7 },
+                    roadmap: "Week 1: 基础生成 + 评分\nWeek 2-3: 多平台 + 历史追踪\nMonth 2: A/B测试 + API"
+                },
+                {
+                    name: "内容日历管理器",
+                    emoji: "📅",
+                    tagline: "内容创作有计划，输出稳定不焦虑",
+                    coreIdea: "可视化内容日历，选题管理、创作流程追踪、发布计划、团队协作，让内容创作系统化。",
+                    features: [
+                        "可视化日历",
+                        "选题库管理",
+                        "流程追踪",
+                        "发布计划",
+                        "团队协作",
+                        "数据分析"
+                    ],
+                    tech: ["React", "Node.js", "PostgreSQL"],
+                    monetization: ["Freemium", "订阅制", "团队版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 5, market: 8, monetization: 6, competition: 6 },
+                    roadmap: "Week 1: 日历 + 选题\nWeek 2-3: 流程追踪 + 协作\nMonth 2: 数据分析 + 高级功能"
+                },
+                {
+                    name: "视频脚本生成器",
+                    emoji: "🎬",
+                    tagline: "从想法到视频脚本，5分钟搞定",
+                    coreIdea: "输入视频主题，自动生成脚本（分镜头、台词、画面描述），支持多种风格，模板库，一键导出。",
+                    features: [
+                        "智能脚本生成",
+                        "分镜头设计",
+                        "多种风格",
+                        "模板库",
+                        "一键导出",
+                        "AI配图建议"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "LLM"],
+                    monetization: ["Freemium", "订阅制"],
+                    difficulty: "easy",
+                    stats: { difficulty: 4, market: 8, monetization: 6, competition: 5 },
+                    roadmap: "Week 1: 基础脚本生成\nWeek 2-3: 分镜头 + 模板\nMonth 2: 高级功能 + 导出"
+                },
+                {
+                    name: "文章改写助手",
+                    emoji: "✍️",
+                    tagline: "一篇变多篇，原创度UP",
+                    coreIdea: "输入原文，AI生成多个改写版本，保持核心意思，变换表达，原创度检测，SEO优化建议。",
+                    features: [
+                        "多版本改写",
+                        "原创度检测",
+                        "SEO优化建议",
+                        "语气调整",
+                        "批量处理",
+                        "对比视图"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "LLM"],
+                    monetization: ["Freemium", "订阅制", "API"],
+                    difficulty: "easy",
+                    stats: { difficulty: 4, market: 7, monetization: 6, competition: 8 },
+                    roadmap: "Week 1: 基础改写\nWeek 2-3: 原创度 + SEO\nMonth 2: 批量 + API"
+                },
+                {
+                    name: "播客制作助手",
+                    emoji: "🎙️",
+                    tagline: "播客制作，从想法到发布",
+                    coreIdea: "选题规划、脚本生成、音频剪辑建议、Shownotes自动生成、发布计划，一站式播客制作工具。",
+                    features: [
+                        "选题规划",
+                        "脚本生成",
+                        "音频转文字",
+                        "Shownotes生成",
+                        "发布管理",
+                        "跨平台分发"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "Whisper"],
+                    monetization: ["订阅制", "Pro版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 6, monetization: 6, competition: 3 },
+                    roadmap: "Week 1-2: 脚本 + 转文字\nMonth 2: Shownotes + 发布\nMonth 3: 分发 + 高级功能"
+                }
+            ],
+            education: [
+                {
+                    name: "智能题库生成器",
+                    emoji: "📝",
+                    tagline: "输入知识点，自动生成练习题",
+                    coreIdea: "输入知识点、教材内容，自动生成多种题型（选择/填空/判断/问答），难度分级，答案解析，组卷功能。",
+                    features: [
+                        "多题型生成",
+                        "难度分级",
+                        "答案解析",
+                        "智能组卷",
+                        "错题本",
+                        "知识点图谱"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "LLM"],
+                    monetization: ["Freemium", "订阅制", "机构版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 8, monetization: 7, competition: 5 },
+                    roadmap: "Week 1: 基础题型生成\nWeek 2-3: 难度分级 + 解析\nMonth 2: 组卷 + 错题本"
+                },
+                {
+                    name: "语言学习搭档",
+                    emoji: "🗣️",
+                    tagline: "AI语言陪练，随时随地对话",
+                    coreIdea: "AI语言学习搭档，情景对话、语法纠正、词汇扩展、发音指导，支持多语言，个性化学习路径。",
+                    features: [
+                        "情景对话",
+                        "实时语法纠正",
+                        "词汇扩展",
+                        "发音指导",
+                        "学习进度追踪",
+                        "个性化路径"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "Whisper", "TTS"],
+                    monetization: ["Freemium", "订阅制"],
+                    difficulty: "medium",
+                    stats: { difficulty: 7, market: 9, monetization: 8, competition: 7 },
+                    roadmap: "Week 1-2: 对话 + 语法纠正\nMonth 2: 发音 + 进度追踪\nMonth 3: 个性化 + 高级功能"
+                },
+                {
+                    name: "编程练习场",
+                    emoji: "💻",
+                    tagline: "从入门到进阶，编程实战",
+                    coreIdea: "交互式编程学习平台，题目分级、在线评测、代码高亮、Hint提示、学习路径、社区讨论。",
+                    features: [
+                        "在线IDE",
+                        "自动评测",
+                        "题目分级",
+                        "Hint提示",
+                        "学习路径",
+                        "讨论社区"
+                    ],
+                    tech: ["Python", "Docker", "FastAPI", "React", "Monaco"],
+                    monetization: ["Freemium", "订阅制", "企业版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 8, market: 8, monetization: 7, competition: 8 },
+                    roadmap: "Week 1-2: 基础IDE + 评测\nMonth 2: 题目 + 路径\nMonth 3-4: 社区 + 高级功能"
+                },
+                {
+                    name: "知识卡片生成器",
+                    emoji: "🃏",
+                    tagline: "把书变薄，高效记忆",
+                    coreIdea: "输入教材、笔记，自动生成知识卡片（Anki风格），智能间隔重复，知识点关联，记忆追踪。",
+                    features: [
+                        "自动卡片生成",
+                        "间隔重复",
+                        "知识点关联",
+                        "记忆追踪",
+                        "导入导出",
+                        "多格式支持"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "LLM"],
+                    monetization: ["Freemium", "订阅制"],
+                    difficulty: "easy",
+                    stats: { difficulty: 4, market: 7, monetization: 6, competition: 5 },
+                    roadmap: "Week 1: 基础卡片生成\nWeek 2-3: 间隔重复 + 关联\nMonth 2: 高级功能 + 导入导出"
+                },
+                {
+                    name: "论文阅读助手",
+                    emoji: "📄",
+                    tagline: "读论文不再难，AI帮你拆解",
+                    coreIdea: "上传论文PDF，自动生成摘要、核心观点、方法论、创新点、相关工作推荐，支持问答。",
+                    features: [
+                        "论文摘要",
+                        "核心观点提取",
+                        "方法论拆解",
+                        "创新点分析",
+                        "相关工作推荐",
+                        "论文问答"
+                    ],
+                    tech: ["Python", "LangChain", "Streamlit", "GROBID"],
+                    monetization: ["Freemium", "订阅制", "学术版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 6, monetization: 6, competition: 4 },
+                    roadmap: "Week 1: 基础摘要 + 问答\nWeek 2-3: 核心观点 + 方法论\nMonth 2: 推荐 + 高级功能"
+                }
+            ],
+            productivity: [
+                {
+                    name: "番茄钟 Pro",
+                    emoji: "🍅",
+                    tagline: "专注工作，高效休息",
+                    coreIdea: "番茄工作法计时器，任务管理、时间追踪、数据统计、习惯养成、团队协作，让专注更简单。",
+                    features: [
+                        "番茄钟计时",
+                        "任务管理",
+                        "时间统计",
+                        "习惯追踪",
+                        "数据可视化",
+                        "团队协作"
+                    ],
+                    tech: ["React", "Node.js", "PostgreSQL", "PWA"],
+                    monetization: ["Freemium", "订阅制", "团队版"],
+                    difficulty: "easy",
+                    stats: { difficulty: 3, market: 9, monetization: 6, competition: 9 },
+                    roadmap: "Week 1: 基础番茄钟\nWeek 2-3: 任务 + 统计\nMonth 2: 团队 + 高级功能"
+                },
+                {
+                    name: "第二大脑",
+                    emoji: "🧠",
+                    tagline: "记录一切，永不遗忘",
+                    coreIdea: "个人知识库，笔记、剪藏、PDF标注、双向链接、知识图谱、全文搜索，构建你的第二大脑。",
+                    features: [
+                        "Markdown笔记",
+                        "网页剪藏",
+                        "PDF标注",
+                        "双向链接",
+                        "知识图谱",
+                        "全文搜索"
+                    ],
+                    tech: ["TypeScript", "React", "Electron", "SQLite"],
+                    monetization: ["一次性付费", "订阅制", "Cloud版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 9, market: 8, monetization: 7, competition: 7 },
+                    roadmap: "Week 1-2: 基础笔记\nMonth 2: 链接 + 图谱\nMonth 3-4: 高级功能"
+                },
+                {
+                    name: "密码管理助手",
+                    emoji: "🔐",
+                    tagline: "一个主密码，管理所有密码",
+                    coreIdea: "安全的密码管理器，端到端加密、密码生成、自动填充、安全分享、密码审计、跨平台同步。",
+                    features: [
+                        "端到端加密",
+                        "密码生成",
+                        "自动填充",
+                        "安全分享",
+                        "密码审计",
+                        "跨平台同步"
+                    ],
+                    tech: ["Rust", "React", "SQLite", "WebCrypto"],
+                    monetization: ["Freemium", "订阅制", "家庭版"],
+                    difficulty: "hard",
+                    stats: { difficulty: 9, market: 9, monetization: 8, competition: 8 },
+                    roadmap: "Week 1-2: 核心加密 + 存储\nMonth 2: 生成 + 填充\nMonth 3-4: 同步 + 高级功能"
+                },
+                {
+                    name: "习惯追踪社区",
+                    emoji: "🎯",
+                    tagline": "一群人走得更远，习惯养成不孤单",
+                    coreIdea: "习惯追踪 + 社区 accountability，设定目标、打卡记录、数据统计、伙伴激励、挑战活动。",
+                    features: [
+                        "习惯设定",
+                        "打卡记录",
+                        "数据统计",
+                        "伙伴系统",
+                        "挑战活动",
+                        "社区分享"
+                    ],
+                    tech: ["React Native", "Node.js", "PostgreSQL"],
+                    monetization: ["Freemium", "订阅制", "Premium"],
+                    difficulty: "medium",
+                    stats: { difficulty: 6, market: 8, monetization: 6, competition: 6 },
+                    roadmap: "Week 1-2: 基础追踪\nMonth 2: 社区 + 伙伴\nMonth 3: 挑战 + 高级功能"
+                },
+                {
+                    name: "智能日程助理",
+                    emoji: "📆",
+                    tagline": "AI帮你安排时间，最优日程",
+                    coreIdea: "连接日历，AI智能排程、优先级管理、时间块建议、冲突检测、会议摘要、通勤估算。",
+                    features: [
+                        "智能排程",
+                        "优先级管理",
+                        "时间块建议",
+                        "冲突检测",
+                        "会议摘要",
+                        "通勤估算"
+                    ],
+                    tech: ["Python", "FastAPI", "React", "LLM"],
+                    monetization: ["Freemium", "订阅制", "企业版"],
+                    difficulty: "medium",
+                    stats: { difficulty: 7, market: 8, monetization: 7, competition: 5 },
+                    roadmap: "Week 1: 日历连接 + 基础排程\nWeek 2-3: AI建议 + 冲突检测\nMonth 2: 会议摘要 + 高级功能"
+                }
+            ]
+        };
+
+        let currentIdea = null;
+        let history = JSON.parse(localStorage.getItem('ideaHistory') || '[]');
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function getDifficultyClass(difficulty) {
+            switch(difficulty) {
+                case 'easy': return 'difficulty-easy';
+                case 'medium': return 'difficulty-medium';
+                case 'hard': return 'difficulty-hard';
+                default: return 'difficulty-medium';
+            }
+        }
+
+        function generateIdea() {
+            const direction = document.getElementById('projectDirection').value;
+            const difficultyPref = document.getElementById('difficulty').value;
+            const monetizationPref = document.getElementById('monetization').value;
+            const techStackPref = document.getElementById('techStack').value;
+
+            let categories = Object.keys(projectIdeas);
+            if (direction !== 'all') {
+                const directionMap = {
+                    'ai-tools': 'ai_tools',
+                    'saas': 'saas',
+                    'opensource': 'opensource',
+                    'automation': 'automation',
+                    'content': 'content',
+                    'education': 'education',
+                    'productivity': 'productivity'
+                };
+                categories = [directionMap[direction] || 'ai_tools'];
+            }
+
+            let filteredIdeas = [];
+            categories.forEach(cat => {
+                const ideas = projectIdeas[cat] || [];
+                ideas.forEach(idea => {
+                    let match = true;
+                    if (difficultyPref !== 'all' && idea.difficulty !== difficultyPref) {
+                        match = false;
+                    }
+                    if (match) {
+                        filteredIdeas.push({...idea, category: cat});
+                    }
+                });
+            });
+
+            if (filteredIdeas.length === 0) {
+                const cat = getRandomItem(categories);
+                filteredIdeas = (projectIdeas[cat] || []).map(i => ({...i, category: cat}));
+            }
+
+            currentIdea = getRandomItem(filteredIdeas);
+            displayIdea(currentIdea);
+        }
+
+        function displayIdea(idea) {
+            document.getElementById('projectEmoji').textContent = idea.emoji;
+            document.getElementById('projectName').textContent = idea.name;
+            document.getElementById('projectTagline').textContent = idea.tagline;
+            document.getElementById('coreIdea').textContent = idea.coreIdea;
+
+            const featureList = document.getElementById('featureList');
+            featureList.innerHTML = idea.features.map(f => `<li>${f}</li>`).join('');
+
+            const techStackTags = document.getElementById('techStackTags');
+            techStackTags.innerHTML = idea.tech.map(t => `<span class="tech-tag">${t}</span>`).join('');
+
+            const monetizationGrid = document.getElementById('monetizationGrid');
+            monetizationGrid.innerHTML = idea.monetization.map(m => `<div class="monetization-item">${m}</div>`).join('');
+
+            document.getElementById('difficultyValue').textContent = `${idea.stats.difficulty}/10`;
+            document.getElementById('marketValue').textContent = `${idea.stats.market}/10`;
+            document.getElementById('monetizationValue').textContent = `${idea.stats.monetization}/10`;
+            document.getElementById('competitionValue').textContent = `${idea.stats.competition}/10`;
+
+            document.getElementById('roadmap').innerHTML = idea.roadmap.split('\n').map(line => 
+                `<p>${line.replace(/^(Week \d+|Month \d+):/, '<strong>$1:</strong>')}</p>`
+            ).join('');
+
+            const resultCard = document.getElementById('resultCard');
+            resultCard.classList.add('show');
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function copyToClipboard() {
+            if (!currentIdea) return;
+
+            const text = `# ${currentIdea.emoji} ${currentIdea.name}
+
+${currentIdea.tagline}
+
+## 🎯 核心理念
+${currentIdea.coreIdea}
+
+## ✨ 核心功能
+${currentIdea.features.map(f => '- ' + f).join('\n')}
+
+## 🛠️ 技术选型
+${currentIdea.tech.join(', ')}
+
+## 💰 商业化方案
+${currentIdea.monetization.join(', ')}
+
+## 📊 项目评估
+- 实现难度: ${currentIdea.stats.difficulty}/10
+- 市场潜力: ${currentIdea.stats.market}/10
+- 商业化可行性: ${currentIdea.stats.monetization}/10
+- 竞争程度: ${currentIdea.stats.competition}/10
+
+## 🚀 实施路线图
+${currentIdea.roadmap}`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板！');
+            });
+        }
+
+        function saveToHistory() {
+            if (!currentIdea) return;
+
+            const historyItem = {
+                ...currentIdea,
+                savedAt: new Date().toISOString()
+            };
+
+            history.unshift(historyItem);
+            if (history.length > 20) history = history.slice(0, 20);
+
+            localStorage.setItem('ideaHistory', JSON.stringify(history));
+            updateHistoryDisplay();
+            showToast('灵感已保存！');
+        }
+
+        function updateHistoryDisplay() {
+            const historySection = document.getElementById('historySection');
+            const historyList = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                historySection.classList.remove('show');
+                return;
+            }
+
+            historySection.classList.add('show');
+            historyList.innerHTML = history.map((item, index) => `
+                <div class="history-item" onclick="loadFromHistory(${index})">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 1.5rem; margin-right: 10px;">${item.emoji}</span>
+                            <strong>${item.name}</strong>
+                        </div>
+                        <small style="color: #999;">${new Date(item.savedAt).toLocaleDateString('zh-CN')}</small>
+                    </div>
+                    <p style="margin: 8px 0 0 0; color: #666; font-size: 0.9rem;">${item.tagline}</p>
+                </div>
+            `).join('');
+        }
+
+        function loadFromHistory(index) {
+            currentIdea = history[index];
+            displayIdea(currentIdea);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        updateHistoryDisplay();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target === document.body) {
+                e.preventDefault();
+                generateIdea();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离线密码管理器 🔒</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        dark: '#0F172A',
+                        darker: '#0B1120',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-image: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .password-strength-bar {
+                transition: width 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-darker font-inter text-slate-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold mb-3">
+                <span class="text-gradient">离线密码管理器</span> 🔒
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                完全本地运行的密码管理工具，端到端AES加密，自动生成强密码，密码强度评估，所有数据加密存储在本地
+            </p>
+        </div>
+
+        <!-- Lock Screen -->
+        <div id="lockScreen" class="max-w-md mx-auto bg-dark rounded-2xl p-8 border border-slate-700/50 shadow-xl">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">请输入主密码</h2>
+                <p class="text-slate-400 text-sm">所有数据使用主密码加密，忘记密码无法恢复</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <input type="password" id="masterPassword" placeholder="输入主密码..." class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                <button id="unlockBtn" class="w-full bg-gradient-primary hover:opacity-90 text-white font-semibold py-3 rounded-xl transition-all">
+                    解锁
+                </button>
+                <div id="lockError" class="hidden text-danger text-sm text-center mt-2">密码错误，请重试</div>
+                <div class="text-center text-xs text-slate-500 mt-4">
+                    首次使用请设置主密码，后续使用相同密码解锁
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="app" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Panel: Password List -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Toolbar -->
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl">
+                        <div class="flex flex-wrap gap-3 items-center justify-between">
+                            <div class="flex flex-1 gap-3">
+                                <input type="text" id="searchInput" placeholder="搜索密码..." class="flex-1 bg-darker border border-slate-700 rounded-xl px-4 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                <select id="categoryFilter" class="bg-darker border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                    <option value="all">所有分类</option>
+                                    <option value="工作">工作</option>
+                                    <option value="个人">个人</option>
+                                    <option value="金融">金融</option>
+                                    <option value="社交">社交</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            <button id="addBtn" class="bg-gradient-primary hover:opacity-90 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                添加密码
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Password List -->
+                    <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+                        <div class="bg-slate-800/50 px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                            <h3 class="font-semibold text-white">密码列表</h3>
+                            <span id="passwordCount" class="text-sm text-slate-400">0 条记录</span>
+                        </div>
+                        <div id="passwordList" class="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
+                            <div class="p-6 text-center text-slate-400">
+                                暂无密码记录，点击右上角添加
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Tools -->
+                <div class="space-y-6">
+                    <!-- Password Generator -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <h3 class="text-xl font-semibold text-white mb-4">🔑 密码生成器</h3>
+                        
+                        <div class="relative mb-4">
+                            <input type="text" id="generatedPassword" readonly class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 font-mono text-white pr-12 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <button id="copyGeneratedBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Password Strength -->
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span id="strengthText" class="text-slate-400">强度：中等</span>
+                                <span id="lengthDisplay" class="text-slate-400">16 位</span>
+                            </div>
+                            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div id="strengthBar" class="password-strength-bar h-full bg-warning w-2/3"></div>
+                            </div>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="space-y-3 mb-4">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm text-slate-300">密码长度</label>
+                                <input type="range" id="lengthSlider" min="8" max="32" value="16" class="w-32 accent-primary">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="includeUppercase" checked class="w-4 h-4 accent-primary">
+                                <label class="text-sm text-slate-300">包含大写字母 (A-Z)</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="includeLowercase" checked class="w-4 h-4 accent-primary">
+                                <label class="text-sm text-slate-300">包含小写字母 (a-z)</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="includeNumbers" checked class="w-4 h-4 accent-primary">
+                                <label class="text-sm text-slate-300">包含数字 (0-9)</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="includeSymbols" class="w-4 h-4 accent-primary">
+                                <label class="text-sm text-slate-300">包含特殊字符 (!@#$%^&*)</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="avoidAmbiguous" class="w-4 h-4 accent-primary">
+                                <label class="text-sm text-slate-300">避免易混淆字符 (l,1,O,0)</label>
+                            </div>
+                        </div>
+
+                        <button id="generateBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-xl transition-all">
+                            重新生成
+                        </button>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                            <div class="text-3xl font-bold text-primary mb-1" id="totalCount">0</div>
+                            <div class="text-xs text-slate-400">总密码数</div>
+                        </div>
+                        <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                            <div class="text-3xl font-bold text-secondary mb-1" id="weakCount">0</div>
+                            <div class="text-xs text-slate-400">弱密码</div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="exportBtn" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <span class="text-sm font-medium">导出备份</span>
+                        </button>
+                        <button id="importBtn" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <span class="text-sm font-medium">导入恢复</span>
+                        </button>
+                        <button id="changePasswordBtn" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50 col-span-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                            </svg>
+                            <span class="text-sm font-medium">修改主密码</span>
+                        </button>
+                    </div>
+
+                    <!-- Security Tips -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <h3 class="text-xl font-semibold text-white mb-4">💡 安全提示</h3>
+                        <ul class="space-y-2 text-sm text-slate-400">
+                            <li>• 所有数据加密存储在浏览器本地</li>
+                            <li>• 不会上传任何数据到服务器</li>
+                            <li>• 定期导出备份，防止数据丢失</li>
+                            <li>• 主密码请设置足够复杂并牢记</li>
+                            <li>• 不同网站使用不同的密码</li>
+                        </ul>
+                    </div>
+
+                    <button id="lockBtn" class="w-full bg-danger hover:bg-red-600 text-white py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        锁定
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Modal -->
+        <div id="editModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-2xl w-full max-w-md">
+                <div class="bg-slate-800/50 px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+                    <h3 id="modalTitle" class="text-xl font-semibold text-white">添加密码</h3>
+                    <button id="closeModal" class="text-slate-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <form id="editForm" class="space-y-4">
+                        <input type="hidden" id="editId">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">网站/应用名称</label>
+                            <input type="text" id="editName" required class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="例如：GitHub">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">用户名/邮箱</label>
+                            <input type="text" id="editUsername" required class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="user@example.com">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">密码</label>
+                            <div class="relative">
+                                <input type="password" id="editPassword" required class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 pr-12">
+                                <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">网址（可选）</label>
+                            <input type="url" id="editUrl" class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="https://github.com">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">分类</label>
+                            <select id="editCategory" class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                <option value="工作">工作</option>
+                                <option value="个人">个人</option>
+                                <option value="金融">金融</option>
+                                <option value="社交">社交</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">备注（可选）</label>
+                            <textarea id="editNotes" rows="2" class="w-full bg-darker border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="添加备注信息..."></textarea>
+                        </div>
+                        
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" id="fillGeneratedBtn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition-all text-sm">
+                                填入生成的密码
+                            </button>
+                            <button type="submit" class="flex-1 bg-gradient-primary hover:opacity-90 text-white py-3 rounded-xl transition-all font-semibold">
+                                保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            masterPassword: '',
+            passwords: [],
+            editingId: null,
+            isLocked: true
+        };
+
+        // Storage keys
+        const STORAGE_KEY = 'password_manager_encrypted';
+        const SALT_KEY = 'password_manager_salt';
+
+        // Generate random salt
+        function generateSalt() {
+            return CryptoJS.lib.WordArray.random(128/8).toString();
+        }
+
+        // Get or create salt
+        function getSalt() {
+            let salt = localStorage.getItem(SALT_KEY);
+            if (!salt) {
+                salt = generateSalt();
+                localStorage.setItem(SALT_KEY, salt);
+            }
+            return salt;
+        }
+
+        // Encrypt data
+        function encrypt(data, password) {
+            const salt = getSalt();
+            const key = CryptoJS.PBKDF2(password, salt, { keySize: 256/32, iterations: 1000 });
+            const iv = CryptoJS.lib.WordArray.random(128/8);
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key, { iv: iv });
+            return iv.toString() + ':' + encrypted.toString();
+        }
+
+        // Decrypt data
+        function decrypt(encryptedData, password) {
+            const salt = getSalt();
+            const [ivStr, encryptedStr] = encryptedData.split(':');
+            const iv = CryptoJS.enc.Hex.parse(ivStr);
+            const key = CryptoJS.PBKDF2(password, salt, { keySize: 256/32, iterations: 1000 });
+            
+            try {
+                const decrypted = CryptoJS.AES.decrypt(encryptedStr, key, { iv: iv });
+                return JSON.parse(decrypted.toString(CryptoJS.enc.Utf8));
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // Generate password
+        function generatePassword() {
+            const length = parseInt(document.getElementById('lengthSlider').value);
+            const includeUppercase = document.getElementById('includeUppercase').checked;
+            const includeLowercase = document.getElementById('includeLowercase').checked;
+            const includeNumbers = document.getElementById('includeNumbers').checked;
+            const includeSymbols = document.getElementById('includeSymbols').checked;
+            const avoidAmbiguous = document.getElementById('avoidAmbiguous').checked;
+
+            let charset = '';
+            if (includeLowercase) charset += avoidAmbiguous ? 'abcdefghjkmnpqrstuvwxyz' : 'abcdefghijklmnopqrstuvwxyz';
+            if (includeUppercase) charset += avoidAmbiguous ? 'ABCDEFGHJKMNPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            if (includeNumbers) charset += avoidAmbiguous ? '23456789' : '0123456789';
+            if (includeSymbols) charset += '!@#$%^&*()_+-=[]{}|;:,.?';
+
+            if (charset === '') return '';
+
+            let password = '';
+            const array = new Uint32Array(length);
+            crypto.getRandomValues(array);
+            
+            for (let i = 0; i < length; i++) {
+                password += charset[array[i] % charset.length];
+            }
+
+            return password;
+        }
+
+        // Check password strength
+        function checkPasswordStrength(password) {
+            let score = 0;
+            
+            // Length
+            if (password.length >= 12) score += 2;
+            else if (password.length >= 8) score += 1;
+            
+            // Complexity
+            if (/[a-z]/.test(password)) score += 1;
+            if (/[A-Z]/.test(password)) score += 1;
+            if (/[0-9]/.test(password)) score += 1;
+            if (/[^a-zA-Z0-9]/.test(password)) score += 2;
+            
+            // Patterns
+            if (!/(.)\1{2,}/.test(password)) score += 1; // No repeated characters
+            if (!/012|123|234|345|456|567|678|789|890/.test(password)) score += 1; // No sequential numbers
+            if (!/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(password)) score += 1; // No sequential letters
+
+            if (score >= 7) return { level: '强', color: 'bg-success', width: '100%' };
+            if (score >= 4) return { level: '中等', color: 'bg-warning', width: '66%' };
+            return { level: '弱', color: 'bg-danger', width: '33%' };
+        }
+
+        // Update generated password
+        function updateGeneratedPassword() {
+            const password = generatePassword();
+            document.getElementById('generatedPassword').value = password;
+            
+            const strength = checkPasswordStrength(password);
+            document.getElementById('strengthText').textContent = `强度：${strength.level}`;
+            document.getElementById('strengthBar').className = `password-strength-bar h-full ${strength.color}`;
+            document.getElementById('strengthBar').style.width = strength.width;
+            document.getElementById('lengthDisplay').textContent = `${document.getElementById('lengthSlider').value} 位`;
+        }
+
+        // Save passwords to storage
+        function savePasswords() {
+            const encrypted = encrypt(state.passwords, state.masterPassword);
+            localStorage.setItem(STORAGE_KEY, encrypted);
+            updatePasswordList();
+            updateStats();
+        }
+
+        // Load passwords from storage
+        function loadPasswords() {
+            const encrypted = localStorage.getItem(STORAGE_KEY);
+            if (!encrypted) {
+                state.passwords = [];
+                return true;
+            }
+            
+            const data = decrypt(encrypted, state.masterPassword);
+            if (data) {
+                state.passwords = data;
+                return true;
+            }
+            return false;
+        }
+
+        // Update password list display
+        function updatePasswordList() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            
+            const filtered = state.passwords.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchQuery) || 
+                                     item.username.toLowerCase().includes(searchQuery) ||
+                                     (item.notes && item.notes.toLowerCase().includes(searchQuery));
+                const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            const container = document.getElementById('passwordList');
+            document.getElementById('passwordCount').textContent = `${filtered.length} 条记录`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="p-6 text-center text-slate-400">没有找到匹配的密码记录</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => `
+                <div class="p-4 hover:bg-slate-800/50 transition-colors">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-semibold text-white text-lg">${item.name}</h4>
+                                <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">${item.category}</span>
+                            </div>
+                            <div class="text-sm text-slate-400 mb-2">${item.username}</div>
+                            ${item.url ? `<a href="${item.url}" target="_blank" class="text-xs text-primary hover:text-purple-400 underline mb-2 block">${item.url}</a>` : ''}
+                            ${item.notes ? `<div class="text-xs text-slate-500 mt-1">${item.notes}</div>` : ''}
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button class="copy-password-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg transition-all" data-id="${item.id}" title="复制密码">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                            </button>
+                            <button class="edit-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg transition-all" data-id="${item.id}" title="编辑">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button class="delete-btn bg-slate-800 hover:bg-red-600 text-slate-200 p-2 rounded-lg transition-all" data-id="${item.id}" title="删除">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            document.querySelectorAll('.copy-password-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const password = state.passwords.find(p => p.id === id).password;
+                    navigator.clipboard.writeText(password).then(() => {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                        btn.classList.add('bg-green-600');
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.classList.remove('bg-green-600');
+                        }, 2000);
+                    });
+                });
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    openEditModal(id);
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    if (confirm('确定要删除这个密码吗？')) {
+                        state.passwords = state.passwords.filter(p => p.id !== id);
+                        savePasswords();
+                    }
+                });
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalCount').textContent = state.passwords.length;
+            
+            const weakCount = state.passwords.filter(p => checkPasswordStrength(p.password).level === '弱').length;
+            document.getElementById('weakCount').textContent = weakCount;
+        }
+
+        // Open edit modal
+        function openEditModal(id = null) {
+            state.editingId = id;
+            const modal = document.getElementById('editModal');
+            
+            if (id) {
+                const item = state.passwords.find(p => p.id === id);
+                document.getElementById('modalTitle').textContent = '编辑密码';
+                document.getElementById('editId').value = item.id;
+                document.getElementById('editName').value = item.name;
+                document.getElementById('editUsername').value = item.username;
+                document.getElementById('editPassword').value = item.password;
+                document.getElementById('editUrl').value = item.url || '';
+                document.getElementById('editCategory').value = item.category;
+                document.getElementById('editNotes').value = item.notes || '';
+            } else {
+                document.getElementById('modalTitle').textContent = '添加密码';
+                document.getElementById('editForm').reset();
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            state.editingId = null;
+        }
+
+        // Unlock app
+        function unlock() {
+            const password = document.getElementById('masterPassword').value;
+            if (!password) return;
+            
+            state.masterPassword = password;
+            
+            const success = loadPasswords();
+            if (success) {
+                state.isLocked = false;
+                document.getElementById('lockScreen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                updatePasswordList();
+                updateStats();
+                updateGeneratedPassword();
+            } else {
+                document.getElementById('lockError').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('lockError').classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Lock app
+        function lock() {
+            state.isLocked = true;
+            state.masterPassword = '';
+            state.passwords = [];
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('lockScreen').classList.remove('hidden');
+            document.getElementById('masterPassword').value = '';
+        }
+
+        // Export data
+        function exportData() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                data: encrypt(state.passwords, state.masterPassword)
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `password-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Import data
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const backup = JSON.parse(event.target.result);
+                        const passwords = decrypt(backup.data, state.masterPassword);
+                        
+                        if (passwords && Array.isArray(passwords)) {
+                            if (confirm(`找到 ${passwords.length} 条密码记录，确定要导入吗？这会覆盖当前所有数据。`)) {
+                                state.passwords = passwords;
+                                savePasswords();
+                                alert('导入成功！');
+                            }
+                        } else {
+                            alert('导入失败：文件格式错误或密码不正确');
+                        }
+                    } catch (error) {
+                        alert('导入失败：文件损坏');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // Change master password
+        function changeMasterPassword() {
+            const newPassword = prompt('请输入新的主密码：');
+            if (!newPassword) return;
+            
+            const confirmPassword = prompt('请再次输入新的主密码：');
+            if (newPassword !== confirmPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+            
+            if (confirm('确定要修改主密码吗？请牢记新密码，否则数据将无法恢复！')) {
+                state.masterPassword = newPassword;
+                savePasswords();
+                alert('主密码修改成功！');
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if there are existing passwords
+            const hasData = localStorage.getItem(STORAGE_KEY) !== null;
+            if (!hasData) {
+                document.querySelector('#lockScreen p').textContent = '首次使用，请设置主密码，后续使用该密码解锁';
+            }
+
+            // Lock screen
+            document.getElementById('unlockBtn').addEventListener('click', unlock);
+            document.getElementById('masterPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') unlock();
+            });
+
+            // Password generator
+            document.getElementById('generateBtn').addEventListener('click', updateGeneratedPassword);
+            document.getElementById('lengthSlider').addEventListener('input', updateGeneratedPassword);
+            document.querySelectorAll('#includeUppercase, #includeLowercase, #includeNumbers, #includeSymbols, #avoidAmbiguous').forEach(el => {
+                el.addEventListener('change', updateGeneratedPassword);
+            });
+            
+            document.getElementById('copyGeneratedBtn').addEventListener('click', () => {
+                const password = document.getElementById('generatedPassword').value;
+                navigator.clipboard.writeText(password).then(() => {
+                    const btn = document.getElementById('copyGeneratedBtn');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                    }, 2000);
+                });
+            });
+
+            // Password list
+            document.getElementById('addBtn').addEventListener('click', () => openEditModal());
+            document.getElementById('searchInput').addEventListener('input', updatePasswordList);
+            document.getElementById('categoryFilter').addEventListener('change', updatePasswordList);
+
+            // Edit modal
+            document.getElementById('closeModal').addEventListener('click', closeEditModal);
+            document.getElementById('togglePassword').addEventListener('click', () => {
+                const input = document.getElementById('editPassword');
+                const type = input.type === 'password' ? 'text' : 'password';
+                input.type = type;
+            });
+            
+            document.getElementById('fillGeneratedBtn').addEventListener('click', () => {
+                const password = document.getElementById('generatedPassword').value;
+                document.getElementById('editPassword').value = password;
+            });
+            
+            document.getElementById('editForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = {
+                    id: state.editingId || crypto.randomUUID(),
+                    name: document.getElementById('editName').value,
+                    username: document.getElementById('editUsername').value,
+                    password: document.getElementById('editPassword').value,
+                    url: document.getElementById('editUrl').value,
+                    category: document.getElementById('editCategory').value,
+                    notes: document.getElementById('editNotes').value,
+                    createdAt: state.editingId ? state.passwords.find(p => p.id === state.editingId).createdAt : new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (state.editingId) {
+                    const index = state.passwords.findIndex(p => p.id === state.editingId);
+                    state.passwords[index] = formData;
+                } else {
+                    state.passwords.push(formData);
+                }
+                
+                savePasswords();
+                closeEditModal();
+            });
+
+            // Actions
+            document.getElementById('lockBtn').addEventListener('click', lock);
+            document.getElementById('exportBtn').addEventListener('click', exportData);
+            document.getElementById('importBtn').addEventListener('click', importData);
+            document.getElementById('changePasswordBtn').addEventListener('click', changeMasterPassword);
+
+            // Close modal on outside click
+            document.getElementById('editModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('editModal')) {
+                    closeEditModal();
+                }
+            });
+
+            // Initial password generation
+            updateGeneratedPassword();
+        });
+    </script>
+</body>
+</html>

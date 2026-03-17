@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📸 Code Snapshot 代码截图美化</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#38bdf8}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
+.container{max-width:1100px;margin:0 auto}
+.header{text-align:center;margin-bottom:20px}
+.header h1{font-size:22px}.header p{color:var(--text2);font-size:13px;margin-top:4px}
+.main{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.left{display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 100px);overflow-y:auto}
+label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'SF Mono',Monaco,Consolas,monospace;font-size:13px;padding:10px;resize:vertical;outline:none;height:180px}
+textarea:focus{border-color:var(--accent)}
+select,input[type=text],input[type=number],input[type=range]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;outline:none}
+select:focus,input:focus{border-color:var(--accent)}
+input[type=range]{padding:0;height:6px;-webkit-appearance:none;background:var(--surface2);border:none;border-radius:3px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
+.row{display:flex;gap:8px}.row>div{flex:1}
+.colors{display:flex;gap:6px;flex-wrap:wrap}
+.color-dot{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.color-dot:hover{transform:scale(1.1)}.color-dot.active{border-color:#fff;transform:scale(1.1)}
+.btn-row{display:flex;gap:8px}
+.btn{flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:all .2s;text-align:center}
+.btn:hover{background:var(--surface2);border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#0f172a;border-color:var(--accent);font-weight:600}
+.right{display:flex;align-items:center;justify-content:center;min-height:400px;overflow:auto}
+#preview{display:inline-block;padding:40px;border-radius:12px;position:relative}
+.window{border-radius:10px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);min-width:480px;max-width:720px}
+.titlebar{height:36px;display:flex;align-items:center;padding:0 14px;gap:8px;background:rgba(0,0,0,.3)}
+.dot{width:12px;height:12px;border-radius:50%}
+.dot-r{background:#ff5f57}.dot-y{background:#febc2e}.dot-g{background:#28c840}
+.titlebar-text{flex:1;text-align:center;font-size:12px;color:rgba(255,255,255,.5);font-family:system-ui}
+.code-body{padding:16px 20px;overflow-x:auto}
+.code-body pre{margin:0;padding:0;background:transparent!important}
+.code-body code{font-family:'SF Mono',Monaco,'Cascadia Code',Consolas,monospace!important;background:transparent!important;padding:0!important}
+.watermark{text-align:right;padding:4px 12px 6px;font-size:10px;color:rgba(255,255,255,.2);font-family:system-ui}
+@media(max-width:800px){.main{grid-template-columns:1fr}.right{min-height:300px}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>📸 Code Snapshot</h1>
+<p>把代码变成好看的截图 — Build #54 by 旺仔</p>
+</div>
+<div class="main">
+<div class="panel left">
+<div>
+<label>代码</label>
+<textarea id="codeInput" placeholder="粘贴你的代码...">function fibonacci(n) {
+  if (n <= 1) return n;
+  let a = 0, b = 1;
+  for (let i = 2; i <= n; i++) {
+    [a, b] = [b, a + b];
+  }
+  return b;
+}
+
+console.log(fibonacci(10)); // 55</textarea>
+</div>
+<div class="row">
+<div>
+<label>语言</label>
+<select id="langSelect">
+<option value="javascript">JavaScript</option>
+<option value="python">Python</option>
+<option value="typescript">TypeScript</option>
+<option value="java">Java</option>
+<option value="cpp">C++</option>
+<option value="go">Go</option>
+<option value="rust">Rust</option>
+<option value="sql">SQL</option>
+<option value="bash">Bash</option>
+<option value="json">JSON</option>
+<option value="html">HTML</option>
+<option value="css">CSS</option>
+<option value="yaml">YAML</option>
+<option value="markdown">Markdown</option>
+</select>
+</div>
+<div>
+<label>主题</label>
+<select id="themeSelect">
+<option value="atom-one-dark">Atom One Dark</option>
+<option value="github-dark">GitHub Dark</option>
+<option value="monokai">Monokai</option>
+<option value="dracula">Dracula</option>
+<option value="nord">Nord</option>
+<option value="tokyo-night-dark">Tokyo Night</option>
+<option value="vs2015">VS Dark</option>
+<option value="a11y-dark">A11y Dark</option>
+</select>
+</div>
+</div>
+<div>
+<label>🎨 背景色</label>
+<div class="colors" id="bgColors"></div>
+</div>
+<div>
+<label>窗口标题</label>
+<input type="text" id="titleInput" placeholder="index.js">
+</div>
+<div class="row">
+<div>
+<label>字号 <span id="fsVal">14</span>px</label>
+<input type="range" id="fontSize" min="10" max="24" value="14">
+</div>
+<div>
+<label>内边距 <span id="padVal">40</span>px</label>
+<input type="range" id="padding" min="16" max="80" value="40">
+</div>
+</div>
+<div class="row">
+<div>
+<label>行号</label>
+<select id="lineNumbers"><option value="on">显示</option><option value="off">隐藏</option></select>
+</div>
+<div>
+<label>水印</label>
+<select id="watermark"><option value="on">显示</option><option value="off" selected>隐藏</option></select>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn primary" onclick="exportPNG()">📥 导出 PNG</button>
+<button class="btn" onclick="copyImage()">📋 复制图片</button>
+</div>
+</div>
+<div class="panel right" id="previewPanel">
+<div id="preview">
+<div class="window" id="window">
+<div class="titlebar">
+<span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+<span class="titlebar-text" id="titlebarText"></span>
+</div>
+<div class="code-body" id="codeBody">
+<pre><code id="codeDisplay"></code></pre>
+</div>
+<div class="watermark" id="wmText" style="display:none">Code Snapshot by 旺仔</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+const BG_COLORS=[
+  {name:'渐变蓝紫',bg:'linear-gradient(135deg,#667eea,#764ba2)'},
+  {name:'渐变青蓝',bg:'linear-gradient(135deg,#0ea5e9,#6366f1)'},
+  {name:'渐变粉橙',bg:'linear-gradient(135deg,#f472b6,#fb923c)'},
+  {name:'渐变绿青',bg:'linear-gradient(135deg,#34d399,#06b6d4)'},
+  {name:'渐变红粉',bg:'linear-gradient(135deg,#ef4444,#ec4899)'},
+  {name:'渐变黄橙',bg:'linear-gradient(135deg,#fbbf24,#f97316)'},
+  {name:'深空灰',bg:'linear-gradient(135deg,#1e293b,#0f172a)'},
+  {name:'午夜蓝',bg:'linear-gradient(135deg,#1e3a5f,#0d1b2a)'},
+  {name:'森林',bg:'linear-gradient(135deg,#064e3b,#022c22)'},
+  {name:'纯黑',bg:'#000000'},
+  {name:'纯白',bg:'#ffffff'},
+  {name:'透明',bg:'transparent'}
+];
+const THEME_URLS={
+  'atom-one-dark':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css',
+  'github-dark':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css',
+  'monokai':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/monokai.min.css',
+  'dracula':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/dracula.min.css',
+  'nord':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/nord.min.css',
+  'tokyo-night-dark':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/tokyo-night-dark.min.css',
+  'vs2015':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/vs2015.min.css',
+  'a11y-dark':'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/a11y-dark.min.css'
+};
+let currentBg=0;
+
+// Build BG color dots
+const bgEl=document.getElementById('bgColors');
+BG_COLORS.forEach((c,i)=>{
+  const d=document.createElement('div');
+  d.className='color-dot'+(i===0?' active':'');
+  d.title=c.name;
+  d.style.background=c.bg.startsWith('linear')?c.bg:c.bg;
+  if(c.bg==='transparent')d.style.background='repeating-conic-gradient(#808080 0% 25%, #fff 0% 50%) 50%/16px 16px';
+  if(c.bg==='#ffffff')d.style.border='2px solid #475569';
+  d.onclick=()=>{
+    document.querySelectorAll('.color-dot').forEach(x=>x.classList.remove('active'));
+    d.classList.add('active');currentBg=i;render();
+  };
+  bgEl.appendChild(d);
+});
+
+function render(){
+  const code=document.getElementById('codeInput').value;
+  const lang=document.getElementById('langSelect').value;
+  const fontSize=document.getElementById('fontSize').value;
+  const padding=document.getElementById('padding').value;
+  const title=document.getElementById('titleInput').value;
+  const showLines=document.getElementById('lineNumbers').value==='on';
+  const showWm=document.getElementById('watermark').value==='on';
+
+  document.getElementById('fsVal').textContent=fontSize;
+  document.getElementById('padVal').textContent=padding;
+
+  // Background
+  const preview=document.getElementById('preview');
+  const bg=BG_COLORS[currentBg].bg;
+  preview.style.background=bg;
+  preview.style.padding=padding+'px';
+
+  // Title
+  document.getElementById('titlebarText').textContent=title||lang;
+
+  // Code highlight
+  const display=document.getElementById('codeDisplay');
+  display.className=`language-${lang}`;
+  let codeText=code;
+  if(showLines){
+    const lines=code.split('\n');
+    const pad=String(lines.length).length;
+    codeText=lines.map((l,i)=>`${String(i+1).padStart(pad,' ')}  ${l}`).join('\n');
+  }
+  display.textContent=codeText;
+  display.style.fontSize=fontSize+'px';
+  display.style.lineHeight='1.6';
+  hljs.highlightElement(display);
+
+  // Watermark
+  document.getElementById('wmText').style.display=showWm?'':'none';
+}
+
+// Theme switching
+document.getElementById('themeSelect').onchange=function(){
+  const link=document.querySelector('link[rel=stylesheet]');
+  link.href=THEME_URLS[this.value];
+  setTimeout(render,200);
+};
+
+// Bind all inputs
+['codeInput','langSelect','fontSize','padding','titleInput','lineNumbers','watermark'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',render);
+  document.getElementById(id).addEventListener('change',render);
+});
+
+async function exportPNG(){
+  const el=document.getElementById('preview');
+  try{
+    const{default:h2c}=await import('https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/+esm');
+    const canvas=await h2c(el,{backgroundColor:null,scale:2,useCORS:true,logging:false});
+    const link=document.createElement('a');
+    link.download='code-snapshot.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    // Fallback
+    alert('导出需要 html2canvas 库加载完成，请稍后重试');
+  }
+}
+
+async function copyImage(){
+  const el=document.getElementById('preview');
+  try{
+    const{default:h2c}=await import('https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/+esm');
+    const canvas=await h2c(el,{backgroundColor:null,scale:2,useCORS:true,logging:false});
+    canvas.toBlob(blob=>{
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>alert('✅ 图片已复制到剪贴板'));
+    },'image/png');
+  }catch(e){
+    alert('复制需要 html2canvas 库加载完成，请稍后重试');
+  }
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Diff 文本对比</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--add:#166534;--add-bg:#052e16;--add-line:#14532d;--del:#991b1b;--del-bg:#450a0a;--del-line:#7f1d1d;--accent:#3b82f6;--accent2:#8b5cf6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+.header h1 span{font-size:24px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2563eb}
+.main{display:flex;flex-direction:column;height:calc(100vh - 60px)}
+.input-area{display:grid;grid-template-columns:1fr auto 1fr;gap:0;border-bottom:1px solid var(--border)}
+.input-panel{display:flex;flex-direction:column}
+.input-label{padding:8px 16px;background:var(--surface);font-size:13px;font-weight:600;color:var(--text2);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.input-label .char-count{font-weight:400;font-size:12px}
+.input-panel textarea{flex:1;background:var(--bg);color:var(--text);border:none;padding:12px 16px;font-family:'SF Mono',Monaco,'Cascadia Code','Fira Code',Consolas,monospace;font-size:13px;line-height:1.6;resize:none;outline:none;min-height:180px}
+.input-panel textarea::placeholder{color:var(--text2)}
+.swap-col{display:flex;align-items:center;justify-content:center;background:var(--surface);width:44px}
+.swap-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s}
+.swap-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(180deg)}
+.stats-bar{padding:8px 24px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:20px;align-items:center;font-size:13px;flex-wrap:wrap}
+.stat{display:flex;align-items:center;gap:5px}
+.stat-dot{width:8px;height:8px;border-radius:50%}
+.stat-dot.add{background:#22c55e}
+.stat-dot.del{background:#ef4444}
+.stat-dot.mod{background:#f59e0b}
+.stat-dot.eq{background:var(--text2)}
+.similarity{margin-left:auto;display:flex;align-items:center;gap:8px}
+.sim-bar{width:100px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.sim-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e);border-radius:3px;transition:width .3s}
+.diff-view{flex:1;overflow:auto;position:relative}
+.diff-table{width:100%;border-collapse:collapse;font-family:'SF Mono',Monaco,'Cascadia Code','Fira Code',Consolas,monospace;font-size:13px;line-height:1.6}
+.diff-table td{padding:0 12px;vertical-align:top;white-space:pre-wrap;word-break:break-all}
+.diff-table .line-num{width:50px;min-width:50px;text-align:right;color:var(--text2);user-select:none;padding-right:12px;border-right:1px solid var(--border);opacity:.6;font-size:12px}
+.diff-table .line-content{padding-left:12px}
+.diff-table tr.add{background:var(--add-bg)}
+.diff-table tr.add .line-num{color:#4ade80}
+.diff-table tr.add .line-content{color:#86efac}
+.diff-table tr.del{background:var(--del-bg)}
+.diff-table tr.del .line-num{color:#fca5a5}
+.diff-table tr.del .line-content{color:#fca5a5}
+.diff-table tr.mod-old{background:var(--del-bg)}
+.diff-table tr.mod-old .line-num{color:#fca5a5}
+.diff-table tr.mod-new{background:var(--add-bg)}
+.diff-table tr.mod-new .line-num{color:#4ade80}
+.diff-table .highlight-del{background:#991b1b;border-radius:2px;padding:0 1px}
+.diff-table .highlight-add{background:#166534;border-radius:2px;padding:0 1px}
+.diff-table tr.sep td{background:var(--surface);color:var(--text2);font-style:italic;padding:4px 12px;font-size:12px;text-align:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+/* Side by side */
+.side-by-side{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
+.side-panel{overflow:auto;border-right:1px solid var(--border)}
+.side-panel:last-child{border-right:none}
+.side-panel .diff-table .line-num{width:40px;min-width:40px}
+/* Inline word diff in side-by-side */
+.empty-line{background:var(--surface);opacity:.4}
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text2);gap:12px;padding:40px}
+.placeholder .icon{font-size:48px;opacity:.4}
+.placeholder p{font-size:14px;text-align:center;max-width:400px;line-height:1.6}
+.mode-tabs{display:flex;gap:2px;background:var(--surface2);border-radius:6px;padding:2px}
+.mode-tab{padding:4px 12px;border-radius:4px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;transition:all .15s}
+.mode-tab.active{background:var(--accent);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+@media(max-width:768px){
+  .input-area{grid-template-columns:1fr;}.swap-col{width:100%;height:36px;flex-direction:row}
+  .side-by-side{grid-template-columns:1fr}
+  .stats-bar{gap:10px;padding:8px 12px}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span>📝</span> Text Diff 文本对比</h1>
+  <div class="controls">
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="unified" onclick="setMode('unified')">统一视图</button>
+      <button class="mode-tab" data-mode="split" onclick="setMode('split')">并排视图</button>
+    </div>
+    <button class="btn" onclick="loadSample()">📋 示例</button>
+    <button class="btn" onclick="swapTexts()">🔄 交换</button>
+    <button class="btn" onclick="copyDiff()">📑 复制差异</button>
+    <button class="btn primary" onclick="runDiff()">⚡ 对比</button>
+  </div>
+</div>
+<div class="main">
+  <div class="input-area">
+    <div class="input-panel">
+      <div class="input-label">原始文本 (A) <span class="char-count" id="countA">0 字符 · 0 行</span></div>
+      <textarea id="textA" placeholder="粘贴原始文本..." oninput="updateCount('A')"></textarea>
+    </div>
+    <div class="swap-col"><button class="swap-btn" onclick="swapTexts()" title="交换">⇄</button></div>
+    <div class="input-panel">
+      <div class="input-label">修改文本 (B) <span class="char-count" id="countB">0 字符 · 0 行</span></div>
+      <textarea id="textB" placeholder="粘贴修改后的文本..." oninput="updateCount('B')"></textarea>
+    </div>
+  </div>
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat"><span class="stat-dot add"></span><span id="statAdd">0</span> 新增行</div>
+    <div class="stat"><span class="stat-dot del"></span><span id="statDel">0</span> 删除行</div>
+    <div class="stat"><span class="stat-dot mod"></span><span id="statMod">0</span> 修改行</div>
+    <div class="stat"><span class="stat-dot eq"></span><span id="statEq">0</span> 相同行</div>
+    <div class="similarity">
+      相似度 <span id="simPct">100%</span>
+      <div class="sim-bar"><div class="sim-fill" id="simFill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div class="diff-view" id="diffView">
+    <div class="placeholder">
+      <div class="icon">📝</div>
+      <p>在上方粘贴两段文本，点击「⚡ 对比」查看差异<br>支持代码、文章、Prompt、模型输出等任意文本对比</p>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let currentMode='unified';
+let lastDiffResult=null;
+
+function updateCount(which){
+  const ta=document.getElementById('text'+which);
+  const el=document.getElementById('count'+which);
+  const v=ta.value;
+  const chars=v.length;
+  const lines=v?v.split('\n').length:0;
+  el.textContent=`${chars} 字符 · ${lines} 行`;
+}
+
+function setMode(m){
+  currentMode=m;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));
+  if(lastDiffResult)renderDiff(lastDiffResult);
+}
+
+function swapTexts(){
+  const a=document.getElementById('textA');
+  const b=document.getElementById('textB');
+  [a.value,b.value]=[b.value,a.value];
+  updateCount('A');updateCount('B');
+  if(lastDiffResult)runDiff();
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// --- LCS-based diff algorithm ---
+function lcs(a,b){
+  const m=a.length,n=b.length;
+  // Optimize: use 2-row DP for backtracking info
+  const dp=Array.from({length:m+1},()=>new Uint16Array(n+1));
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]+1:Math.max(dp[i-1][j],dp[i][j-1]);
+  // Backtrack
+  const result=[];
+  let i=m,j=n;
+  while(i>0&&j>0){
+    if(a[i-1]===b[j-1]){result.unshift({type:'eq',a:i-1,b:j-1});i--;j--;}
+    else if(dp[i-1][j]>=dp[i][j-1])i--;
+    else j--;
+  }
+  return result;
+}
+
+function diffLines(textA,textB){
+  const linesA=textA.split('\n');
+  const linesB=textB.split('\n');
+  if(linesA.length>5000||linesB.length>5000){
+    return simpleDiff(linesA,linesB);
+  }
+  const matches=lcs(linesA,linesB);
+  const ops=[];
+  let ai=0,bi=0,mi=0;
+  while(mi<matches.length){
+    const m=matches[mi];
+    // Deletions before this match
+    while(ai<m.a){ops.push({type:'del',lineA:ai,text:linesA[ai]});ai++;}
+    // Additions before this match
+    while(bi<m.b){ops.push({type:'add',lineB:bi,text:linesB[bi]});bi++;}
+    ops.push({type:'eq',lineA:ai,lineB:bi,text:linesA[ai]});
+    ai++;bi++;mi++;
+  }
+  while(ai<linesA.length){ops.push({type:'del',lineA:ai,text:linesA[ai]});ai++;}
+  while(bi<linesB.length){ops.push({type:'add',lineB:bi,text:linesB[bi]});bi++;}
+
+  // Post-process: pair adjacent del+add as modifications
+  const result=[];
+  let idx=0;
+  while(idx<ops.length){
+    if(ops[idx].type==='del'){
+      // Collect consecutive dels
+      const dels=[];
+      while(idx<ops.length&&ops[idx].type==='del'){dels.push(ops[idx]);idx++;}
+      const adds=[];
+      while(idx<ops.length&&ops[idx].type==='add'){adds.push(ops[idx]);idx++;}
+      const pairs=Math.min(dels.length,adds.length);
+      for(let p=0;p<pairs;p++){
+        result.push({type:'mod',lineA:dels[p].lineA,lineB:adds[p].lineB,textA:dels[p].text,textB:adds[p].text});
+      }
+      for(let p=pairs;p<dels.length;p++)result.push(dels[p]);
+      for(let p=pairs;p<adds.length;p++)result.push(adds[p]);
+    } else {
+      result.push(ops[idx]);idx++;
+    }
+  }
+  return result;
+}
+
+function simpleDiff(linesA,linesB){
+  // Fallback for very large files
+  const result=[];
+  const max=Math.max(linesA.length,linesB.length);
+  for(let i=0;i<max;i++){
+    if(i>=linesA.length)result.push({type:'add',lineB:i,text:linesB[i]});
+    else if(i>=linesB.length)result.push({type:'del',lineA:i,text:linesA[i]});
+    else if(linesA[i]===linesB[i])result.push({type:'eq',lineA:i,lineB:i,text:linesA[i]});
+    else result.push({type:'mod',lineA:i,lineB:i,textA:linesA[i],textB:linesB[i]});
+  }
+  return result;
+}
+
+// Word-level diff within a line
+function diffWords(a,b){
+  const wa=tokenize(a),wb=tokenize(b);
+  const m=lcs(wa,wb);
+  const partsA=[],partsB=[];
+  let ai=0,bi=0,mi=0;
+  while(mi<m.length){
+    const match=m[mi];
+    let delBuf='',addBuf='';
+    while(ai<match.a){delBuf+=wa[ai];ai++;}
+    while(bi<match.b){addBuf+=wb[bi];bi++;}
+    if(delBuf)partsA.push({type:'del',text:delBuf});
+    if(addBuf)partsB.push({type:'add',text:addBuf});
+    partsA.push({type:'eq',text:wa[ai]});
+    partsB.push({type:'eq',text:wb[bi]});
+    ai++;bi++;mi++;
+  }
+  let delBuf='',addBuf='';
+  while(ai<wa.length){delBuf+=wa[ai];ai++;}
+  while(bi<wb.length){addBuf+=wb[bi];bi++;}
+  if(delBuf)partsA.push({type:'del',text:delBuf});
+  if(addBuf)partsB.push({type:'add',text:addBuf});
+  return {partsA,partsB};
+}
+
+function tokenize(s){
+  // Split into words and whitespace tokens
+  return s.match(/\S+|\s+/g)||[];
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderWordDiff(parts,hlClass){
+  return parts.map(p=>{
+    if(p.type==='eq')return escHtml(p.text);
+    return `<span class="${hlClass}">${escHtml(p.text)}</span>`;
+  }).join('');
+}
+
+function runDiff(){
+  const textA=document.getElementById('textA').value;
+  const textB=document.getElementById('textB').value;
+  if(!textA&&!textB){showToast('请输入文本');return;}
+  lastDiffResult=diffLines(textA,textB);
+  renderDiff(lastDiffResult);
+  // Stats
+  let adds=0,dels=0,mods=0,eqs=0;
+  lastDiffResult.forEach(op=>{
+    if(op.type==='add')adds++;
+    else if(op.type==='del')dels++;
+    else if(op.type==='mod')mods++;
+    else eqs++;
+  });
+  document.getElementById('statAdd').textContent=adds;
+  document.getElementById('statDel').textContent=dels;
+  document.getElementById('statMod').textContent=mods;
+  document.getElementById('statEq').textContent=eqs;
+  const total=adds+dels+mods+eqs;
+  const sim=total?Math.round((eqs/(total))*100):100;
+  document.getElementById('simPct').textContent=sim+'%';
+  document.getElementById('simFill').style.width=sim+'%';
+  document.getElementById('statsBar').style.display='flex';
+}
+
+function renderDiff(ops){
+  const view=document.getElementById('diffView');
+  if(currentMode==='unified')renderUnified(ops,view);
+  else renderSplit(ops,view);
+}
+
+function renderUnified(ops,container){
+  let html='<table class="diff-table">';
+  let numA=0,numB=0;
+  // Context folding: show 3 lines around changes
+  const isChange=op=>op.type!=='eq';
+  const contextSize=3;
+  // Mark which ops to show
+  const show=new Uint8Array(ops.length);
+  ops.forEach((op,i)=>{
+    if(isChange(op)){
+      for(let j=Math.max(0,i-contextSize);j<=Math.min(ops.length-1,i+contextSize);j++)show[j]=1;
+    }
+  });
+  // If all equal and short, show all
+  if(!ops.some(isChange)){show.fill(1);}
+
+  let lastShown=-1;
+  ops.forEach((op,i)=>{
+    if(!show[i]){
+      if(op.type==='eq'){numA++;numB++;}
+      return;
+    }
+    if(lastShown>=0&&i-lastShown>1){
+      const skipped=i-lastShown-1;
+      html+=`<tr class="sep"><td colspan="3">··· ${skipped} 行相同内容已折叠 ···</td></tr>`;
+    }
+    lastShown=i;
+    if(op.type==='eq'){
+      numA++;numB++;
+      html+=`<tr><td class="line-num">${numA}</td><td class="line-num">${numB}</td><td class="line-content">${escHtml(op.text)}</td></tr>`;
+    } else if(op.type==='del'){
+      numA++;
+      html+=`<tr class="del"><td class="line-num">${numA}</td><td class="line-num"></td><td class="line-content">- ${escHtml(op.text)}</td></tr>`;
+    } else if(op.type==='add'){
+      numB++;
+      html+=`<tr class="add"><td class="line-num"></td><td class="line-num">${numB}</td><td class="line-content">+ ${escHtml(op.text)}</td></tr>`;
+    } else if(op.type==='mod'){
+      numA++;numB++;
+      const wd=diffWords(op.textA,op.textB);
+      html+=`<tr class="mod-old"><td class="line-num">${numA}</td><td class="line-num"></td><td class="line-content">- ${renderWordDiff(wd.partsA,'highlight-del')}</td></tr>`;
+      html+=`<tr class="mod-new"><td class="line-num"></td><td class="line-num">${numB}</td><td class="line-content">+ ${renderWordDiff(wd.partsB,'highlight-add')}</td></tr>`;
+    }
+  });
+  html+='</table>';
+  container.innerHTML=html;
+  container.className='diff-view';
+}
+
+function renderSplit(ops,container){
+  let leftHtml='<table class="diff-table">';
+  let rightHtml='<table class="diff-table">';
+  let numA=0,numB=0;
+
+  const contextSize=3;
+  const isChange=op=>op.type!=='eq';
+  const show=new Uint8Array(ops.length);
+  ops.forEach((op,i)=>{
+    if(isChange(op)){
+      for(let j=Math.max(0,i-contextSize);j<=Math.min(ops.length-1,i+contextSize);j++)show[j]=1;
+    }
+  });
+  if(!ops.some(isChange)){show.fill(1);}
+
+  let lastShown=-1;
+  ops.forEach((op,i)=>{
+    if(!show[i]){
+      if(op.type==='eq'){numA++;numB++;}
+      return;
+    }
+    if(lastShown>=0&&i-lastShown>1){
+      const skipped=i-lastShown-1;
+      leftHtml+=`<tr class="sep"><td colspan="2">··· ${skipped} 行折叠 ···</td></tr>`;
+      rightHtml+=`<tr class="sep"><td colspan="2">··· ${skipped} 行折叠 ···</td></tr>`;
+    }
+    lastShown=i;
+    if(op.type==='eq'){
+      numA++;numB++;
+      leftHtml+=`<tr><td class="line-num">${numA}</td><td class="line-content">${escHtml(op.text)}</td></tr>`;
+      rightHtml+=`<tr><td class="line-num">${numB}</td><td class="line-content">${escHtml(op.text)}</td></tr>`;
+    } else if(op.type==='del'){
+      numA++;
+      leftHtml+=`<tr class="del"><td class="line-num">${numA}</td><td class="line-content">${escHtml(op.text)}</td></tr>`;
+      rightHtml+=`<tr class="empty-line"><td class="line-num"></td><td class="line-content"></td></tr>`;
+    } else if(op.type==='add'){
+      numB++;
+      leftHtml+=`<tr class="empty-line"><td class="line-num"></td><td class="line-content"></td></tr>`;
+      rightHtml+=`<tr class="add"><td class="line-num">${numB}</td><td class="line-content">${escHtml(op.text)}</td></tr>`;
+    } else if(op.type==='mod'){
+      numA++;numB++;
+      const wd=diffWords(op.textA,op.textB);
+      leftHtml+=`<tr class="mod-old"><td class="line-num">${numA}</td><td class="line-content">${renderWordDiff(wd.partsA,'highlight-del')}</td></tr>`;
+      rightHtml+=`<tr class="mod-new"><td class="line-num">${numB}</td><td class="line-content">${renderWordDiff(wd.partsB,'highlight-add')}</td></tr>`;
+    }
+  });
+  leftHtml+='</table>';
+  rightHtml+='</table>';
+
+  container.className='diff-view';
+  container.innerHTML=`<div class="side-by-side"><div class="side-panel" id="sideL">${leftHtml}</div><div class="side-panel" id="sideR">${rightHtml}</div></div>`;
+
+  // Sync scroll
+  const l=document.getElementById('sideL'),r=document.getElementById('sideR');
+  let syncing=false;
+  l.addEventListener('scroll',()=>{if(syncing)return;syncing=true;r.scrollTop=l.scrollTop;r.scrollLeft=l.scrollLeft;syncing=false;});
+  r.addEventListener('scroll',()=>{if(syncing)return;syncing=true;l.scrollTop=r.scrollTop;l.scrollLeft=r.scrollLeft;syncing=false;});
+}
+
+function copyDiff(){
+  if(!lastDiffResult){showToast('请先执行对比');return;}
+  let text='';
+  let numA=0,numB=0;
+  lastDiffResult.forEach(op=>{
+    if(op.type==='eq'){numA++;numB++;text+=`  ${op.text}\n`;}
+    else if(op.type==='del'){numA++;text+=`- ${op.text}\n`;}
+    else if(op.type==='add'){numB++;text+=`+ ${op.text}\n`;}
+    else if(op.type==='mod'){numA++;numB++;text+=`- ${op.textA}\n+ ${op.textB}\n`;}
+  });
+  navigator.clipboard.writeText(text).then(()=>showToast('✅ 差异已复制'));
+}
+
+function loadSample(){
+  document.getElementById('textA').value=`def evaluate_model(model, dataset, metrics):
+    """评估模型在数据集上的表现"""
+    results = {}
+    for metric in metrics:
+        score = metric.compute(model, dataset)
+        results[metric.name] = score
+    
+    # 打印结果
+    for name, score in results.items():
+        print(f"{name}: {score:.4f}")
+    
+    return results
+
+# 运行评估
+results = evaluate_model(gpt4, mmlu, [accuracy, f1])`;
+
+  document.getElementById('textB').value=`def evaluate_model(model, dataset, metrics, verbose=True):
+    """评估模型在数据集上的表现，支持多种输出格式"""
+    results = {}
+    for metric in metrics:
+        score = metric.compute(model, dataset)
+        results[metric.name] = round(score, 4)
+    
+    # 打印结果
+    if verbose:
+        for name, score in results.items():
+            print(f"  {name}: {score:.4f}")
+        print(f"  平均分: {sum(results.values())/len(results):.4f}")
+    
+    return results
+
+# 运行评估
+models = [gpt4, claude, gemini]
+for m in models:
+    results = evaluate_model(m, mmlu, [accuracy, f1, bleu])`;
+
+  updateCount('A');updateCount('B');
+  runDiff();
+}
+
+// Auto-diff on Ctrl+Enter
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();runDiff();}
+});
+</script>
+</body>
+</html>

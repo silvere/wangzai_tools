@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS 渐变生成器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:1.5em;margin-bottom:16px;background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.container{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:900px;width:100%}
+.preview{width:100%;max-width:420px;height:300px;border-radius:12px;border:2px solid #333;transition:all .3s}
+.controls{flex:1;min-width:280px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row label{font-size:13px;color:#aaa;min-width:60px}
+.row select,.row input[type=number]{padding:5px 8px;border:1px solid #333;border-radius:6px;background:#16213e;color:#e0e0e0;font-size:13px}
+.row input[type=range]{flex:1;accent-color:#4d96ff}
+.btn{padding:6px 14px;border:2px solid #333;border-radius:8px;background:#16213e;color:#e0e0e0;cursor:pointer;font-size:13px;transition:all .2s}
+.btn:hover{background:#0f3460;border-color:#4d96ff}
+.btn.active{background:#4d96ff;border-color:#4d96ff;color:#fff}
+.stops{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.stop-row{display:flex;align-items:center;gap:6px;padding:4px;background:#16213e;border-radius:6px}
+.stop-row input[type=color]{width:36px;height:28px;border:none;border-radius:4px;cursor:pointer;background:none}
+.stop-row input[type=number]{width:55px;padding:3px 6px;border:1px solid #333;border-radius:4px;background:#0f3460;color:#e0e0e0;font-size:12px}
+.stop-row .del{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;padding:0 4px}
+.stop-row .del:hover{color:#ff6b6b}
+.code-box{background:#0d1117;border:1px solid #333;border-radius:8px;padding:12px;font-family:'Fira Code',monospace;font-size:13px;color:#79c0ff;word-break:break-all;position:relative;min-height:60px;line-height:1.5}
+.code-box .copy{position:absolute;top:8px;right:8px;background:#16213e;border:1px solid #333;color:#e0e0e0;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px}
+.code-box .copy:hover{background:#4d96ff;color:#fff}
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
+.presets .swatch{height:40px;border-radius:6px;border:2px solid #333;cursor:pointer;transition:transform .15s}
+.presets .swatch:hover{transform:scale(1.08);border-color:#4d96ff}
+.section-title{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:#4d96ff;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;transition:transform .3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.shapes{display:flex;gap:8px;margin-top:8px}
+.shapes .shape{width:60px;height:60px;border-radius:6px;border:2px solid #333}
+.shapes .shape.circle{border-radius:50%}
+</style>
+</head>
+<body>
+<h1>CSS 渐变生成器</h1>
+<div class="container">
+  <div style="flex:1;min-width:300px">
+    <div class="preview" id="preview"></div>
+    <div class="shapes" id="shapes"></div>
+    <div style="margin-top:12px">
+      <div class="section-title">CSS 代码</div>
+      <div class="code-box" id="codeBox">
+        <button class="copy" onclick="copyCSS()">复制</button>
+        <span id="codeText"></span>
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <label>类型</label>
+      <button class="btn active" data-type="linear" onclick="setType('linear')">线性</button>
+      <button class="btn" data-type="radial" onclick="setType('radial')">径向</button>
+      <button class="btn" data-type="conic" onclick="setType('conic')">锥形</button>
+    </div>
+    <div class="row" id="angleRow">
+      <label>角度</label>
+      <input type="range" id="angle" min="0" max="360" value="135">
+      <span id="angleVal" style="font-size:13px;min-width:35px">135deg</span>
+    </div>
+    <div class="row" id="radialRow" style="display:none">
+      <label>形状</label>
+      <select id="radialShape"><option value="circle">圆形</option><option value="ellipse" selected>椭圆</option></select>
+      <select id="radialPos"><option value="center">中心</option><option value="top">上</option><option value="bottom">下</option><option value="left">左</option><option value="right">右</option><option value="top left">左上</option><option value="top right">右上</option><option value="bottom left">左下</option><option value="bottom right">右下</option></select>
+    </div>
+    <div class="section-title">色标 <button class="btn" onclick="addStop()" style="padding:2px 10px;font-size:11px">+ 添加</button></div>
+    <div class="stops" id="stops"></div>
+    <div class="section-title">预设渐变</div>
+    <div class="presets" id="presets"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let type='linear',angle=135;
+let stops=[{color:'#ff6b6b',pos:0},{color:'#4d96ff',pos:100}];
+const PRESETS=[
+[{color:'#ff6b6b',pos:0},{color:'#ffd93d',pos:100}],
+[{color:'#667eea',pos:0},{color:'#764ba2',pos:100}],
+[{color:'#f093fb',pos:0},{color:'#f5576c',pos:100}],
+[{color:'#4facfe',pos:0},{color:'#00f2fe',pos:100}],
+[{color:'#43e97b',pos:0},{color:'#38f9d7',pos:100}],
+[{color:'#fa709a',pos:0},{color:'#fee140',pos:100}],
+[{color:'#a18cd1',pos:0},{color:'#fbc2eb',pos:100}],
+[{color:'#fccb90',pos:0},{color:'#d57eeb',pos:100}],
+[{color:'#e0c3fc',pos:0},{color:'#8ec5fc',pos:100}],
+[{color:'#f5f7fa',pos:0},{color:'#c3cfe2',pos:100}],
+[{color:'#0c3483',pos:0},{color:'#a2b6df',pos:50},{color:'#6b8cce',pos:100}],
+[{color:'#ff0844',pos:0},{color:'#ffb199',pos:100}],
+[{color:'#00c6fb',pos:0},{color:'#005bea',pos:100}],
+[{color:'#fc5c7d',pos:0},{color:'#6a82fb',pos:100}],
+[{color:'#f7971e',pos:0},{color:'#ffd200',pos:100}],
+[{color:'#0ba360',pos:0},{color:'#3cba92',pos:100}],
+[{color:'#c471f5',pos:0},{color:'#fa71cd',pos:100}],
+[{color:'#48c6ef',pos:0},{color:'#6f86d6',pos:100}]
+];
+function getGradientCSS(){
+const s=stops.map(s=>s.color+' '+s.pos+'%').join(', ');
+if(type==='linear')return 'linear-gradient('+angle+'deg, '+s+')';
+if(type==='radial'){const sh=document.getElementById('radialShape').value;const p=document.getElementById('radialPos').value;return 'radial-gradient('+sh+' at '+p+', '+s+')';}
+return 'conic-gradient(from '+angle+'deg, '+s+')';
+}
+function render(){
+const css=getGradientCSS();
+document.getElementById('preview').style.background=css;
+document.getElementById('codeText').textContent='background: '+css+';';
+document.querySelectorAll('.shape').forEach(s=>s.style.background=css);
+}
+function renderStops(){
+const el=document.getElementById('stops');el.innerHTML='';
+stops.forEach((s,i)=>{
+const row=document.createElement('div');row.className='stop-row';
+row.innerHTML='<input type="color" value="'+s.color+'" onchange="stops['+i+'].color=this.value;render()"><input type="number" value="'+s.pos+'" min="0" max="100" onchange="stops['+i+'].pos=+this.value;render()"> %'+(stops.length>2?'<button class="del" onclick="stops.splice('+i+',1);renderStops();render()">x</button>':'');
+el.appendChild(row);
+});
+}
+function addStop(){
+const h=Math.floor(Math.random()*360);
+const t=document.createElement('div');t.style.color='hsl('+h+',70%,60%)';document.body.appendChild(t);
+const rgb=getComputedStyle(t).color;document.body.removeChild(t);
+const m=rgb.match(/\d+/g);
+const hex=m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):'#888888';
+stops.push({color:hex,pos:Math.round(100*stops.length/(stops.length+1))});
+renderStops();render();
+}
+function setType(t){
+type=t;
+document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t));
+document.getElementById('angleRow').style.display=t==='radial'?'none':'flex';
+document.getElementById('radialRow').style.display=t==='radial'?'flex':'none';
+render();
+}
+document.getElementById('angle').addEventListener('input',e=>{angle=+e.target.value;document.getElementById('angleVal').textContent=angle+'deg';render();});
+document.getElementById('radialShape').addEventListener('change',render);
+document.getElementById('radialPos').addEventListener('change',render);
+function copyCSS(){navigator.clipboard.writeText('background: '+getGradientCSS()+';').then(()=>showToast('已复制 CSS！'));}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+const presetsEl=document.getElementById('presets');
+PRESETS.forEach(p=>{const d=document.createElement('div');d.className='swatch';d.style.background='linear-gradient(135deg, '+p.map(s=>s.color+' '+s.pos+'%').join(', ')+')';d.onclick=()=>{stops=JSON.parse(JSON.stringify(p));renderStops();render();};presetsEl.appendChild(d);});
+const shapesEl=document.getElementById('shapes');
+[{cls:''},{cls:'circle'},{r:'12px 0 12px 0'},{clip:'polygon(50% 0%, 100% 100%, 0% 100%)'}].forEach(cfg=>{
+const d=document.createElement('div');d.className='shape'+(cfg.cls?' '+cfg.cls:'');
+if(cfg.r)d.style.borderRadius=cfg.r;
+if(cfg.clip){d.style.clipPath=cfg.clip;d.style.border='none';}
+shapesEl.appendChild(d);
+});
+renderStops();render();
+</script>
+</body>
+</html>

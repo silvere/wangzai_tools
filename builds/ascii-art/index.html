@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII Art 文字生成器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:1.5em;margin-bottom:14px;background:linear-gradient(135deg,#6bcb77,#ffd93d,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.container{width:100%;max-width:800px}
+.row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.row label{font-size:13px;color:#aaa;min-width:50px}
+.row input[type=text]{flex:1;padding:8px 12px;border:1px solid #333;border-radius:8px;background:#0d1117;color:#e0e0e0;font-size:16px}
+.row select{padding:6px 10px;border:1px solid #333;border-radius:6px;background:#16213e;color:#e0e0e0;font-size:13px}
+.btn{padding:6px 14px;border:2px solid #333;border-radius:8px;background:#16213e;color:#e0e0e0;cursor:pointer;font-size:13px;transition:all .2s}
+.btn:hover{background:#0f3460;border-color:#4d96ff}
+.btn.primary{background:#4d96ff;border-color:#4d96ff;color:#fff}
+.output{background:#0d1117;border:1px solid #333;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:1.2;white-space:pre;overflow-x:auto;color:#6bcb77;min-height:120px;position:relative}
+.output .copy{position:absolute;top:8px;right:8px;background:#16213e;border:1px solid #333;color:#e0e0e0;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px}
+.output .copy:hover{background:#4d96ff;color:#fff}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.presets .btn{font-size:11px;padding:4px 10px}
+.color-row{display:flex;gap:6px;flex-wrap:wrap}
+.color-row .dot{width:24px;height:24px;border-radius:4px;cursor:pointer;border:2px solid transparent}
+.color-row .dot:hover{border-color:#fff}
+.color-row .dot.active{border-color:#fff;box-shadow:0 0 6px rgba(255,255,255,.3)}
+.info{font-size:11px;color:#666;margin-top:8px;text-align:center}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:#4d96ff;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;transition:transform .3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<h1>ASCII Art 文字生成器</h1>
+<div class="container">
+  <div class="row">
+    <label>文字</label>
+    <input type="text" id="textInput" value="HELLO" maxlength="20" oninput="render()">
+  </div>
+  <div class="row">
+    <label>字体</label>
+    <select id="fontSelect" onchange="render()">
+      <option value="block">Block（方块）</option>
+      <option value="banner">Banner（横幅）</option>
+      <option value="slim">Slim（纤细）</option>
+      <option value="shadow">Shadow（阴影）</option>
+    </select>
+    <label>字符</label>
+    <select id="charSelect" onchange="render()">
+      <option value="#">#</option>
+      <option value="█">█</option>
+      <option value="*">*</option>
+      <option value="@">@</option>
+      <option value="0">0</option>
+      <option value="/">/ </option>
+    </select>
+    <button class="btn primary" onclick="copyArt()">复制</button>
+  </div>
+  <div class="row">
+    <label>颜色</label>
+    <div class="color-row" id="colors"></div>
+  </div>
+  <div class="presets">
+    <button class="btn" onclick="setPreset('HELLO')">HELLO</button>
+    <button class="btn" onclick="setPreset('PYTHON')">PYTHON</button>
+    <button class="btn" onclick="setPreset('AI')">AI</button>
+    <button class="btn" onclick="setPreset('LOVE')">LOVE</button>
+    <button class="btn" onclick="setPreset('2026')">2026</button>
+    <button class="btn" onclick="setPreset('CODE')">CODE</button>
+    <button class="btn" onclick="setPreset('EVAL')">EVAL</button>
+    <button class="btn" onclick="setPreset('LLM')">LLM</button>
+  </div>
+  <div class="output" id="output"><button class="copy" onclick="copyArt()">复制</button></div>
+  <div class="info">支持 A-Z 0-9 及部分符号 | 适合终端 Banner、README、代码注释</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const FONT_BLOCK={
+A:["  ##  ","  ##  "," #  # "," #### ","#    #","#    #"],
+B:["#### ","#   #","#### ","#   #","#   #","#### "],
+C:[" ####","#    ","#    ","#    ","#    "," ####"],
+D:["#### ","#   #","#   #","#   #","#   #","#### "],
+E:["#####","#    ","###  ","#    ","#    ","#####"],
+F:["#####","#    ","###  ","#    ","#    ","#    "],
+G:[" ####","#    ","# ###","#   #","#   #"," ####"],
+H:["#   #","#   #","#####","#   #","#   #","#   #"],
+I:["#####","  #  ","  #  ","  #  ","  #  ","#####"],
+J:["  ###","    #","    #","    #","#   #"," ### "],
+K:["#   #","#  # ","###  ","#  # ","#   #","#   #"],
+L:["#    ","#    ","#    ","#    ","#    ","#####"],
+M:["#   #","## ##","# # #","#   #","#   #","#   #"],
+N:["#   #","##  #","# # #","#  ##","#   #","#   #"],
+O:[" ### ","#   #","#   #","#   #","#   #"," ### "],
+P:["#### ","#   #","#### ","#    ","#    ","#    "],
+Q:[" ### ","#   #","#   #","# # #","#  # "," ## #"],
+R:["#### ","#   #","#### ","#  # ","#   #","#   #"],
+S:[" ####","#    "," ### ","    #","    #","#### "],
+T:["#####","  #  ","  #  ","  #  ","  #  ","  #  "],
+U:["#   #","#   #","#   #","#   #","#   #"," ### "],
+V:["#   #","#   #","#   #"," # # "," # # ","  #  "],
+W:["#   #","#   #","#   #","# # #","## ##","#   #"],
+X:["#   #"," # # ","  #  ","  #  "," # # ","#   #"],
+Y:["#   #"," # # ","  #  ","  #  ","  #  ","  #  "],
+Z:["#####","   # ","  #  "," #   ","#    ","#####"],
+"0":[" ### ","#   #","#  ##","# # #","##  #"," ### "],
+"1":["  #  "," ##  ","  #  ","  #  ","  #  ","#####"],
+"2":[" ### ","#   #","   # ","  #  "," #   ","#####"],
+"3":[" ### ","#   #","  ## ","    #","#   #"," ### "],
+"4":["#   #","#   #","#####","    #","    #","    #"],
+"5":["#####","#    ","#### ","    #","    #","#### "],
+"6":[" ### ","#    ","#### ","#   #","#   #"," ### "],
+"7":["#####","    #","   # ","  #  "," #   "," #   "],
+"8":[" ### ","#   #"," ### ","#   #","#   #"," ### "],
+"9":[" ### ","#   #"," ####","    #","    #"," ### "],
+" ":["     ","     ","     ","     ","     ","     "],
+"!":["  #  ","  #  ","  #  ","  #  ","     ","  #  "],
+"?":["#### ","    #","  ## ","  #  ","     ","  #  "],
+".":["     ","     ","     ","     ","     ","  #  "],
+"-":["     ","     ","#####","     ","     ","     "],
+"+":["     ","  #  ","#####","  #  ","     ","     "],
+"=":["     ","#####","     ","#####","     ","     "]
+};
+const FONT_BANNER={
+A:["   #   ","  # #  "," #   # ","#######","#     #","#     #"],
+B:["###### ","#     #","###### ","#     #","#     #","###### "],
+C:[" ##### ","#      ","#      ","#      ","#      "," ##### "],
+D:["#####  ","#    # ","#     #","#     #","#    # ","#####  "],
+E:["#######","#      ","####   ","#      ","#      ","#######"],
+F:["#######","#      ","####   ","#      ","#      ","#      "],
+G:[" ##### ","#      ","#  ####","#     #","#     #"," ##### "],
+H:["#     #","#     #","#######","#     #","#     #","#     #"],
+I:["#######","   #   ","   #   ","   #   ","   #   ","#######"],
+J:["    ###","      #","      #","      #","#     #"," ##### "],
+K:["#    # ","#   #  ","####   ","#   #  ","#    # ","#     #"],
+L:["#      ","#      ","#      ","#      ","#      ","#######"],
+M:["#     #","##   ##","# # # #","#  #  #","#     #","#     #"],
+N:["#     #","##    #","# #   #","#  #  #","#   # #","#    ##"],
+O:[" ##### ","#     #","#     #","#     #","#     #"," ##### "],
+P:["###### ","#     #","###### ","#      ","#      ","#      "],
+Q:[" ##### ","#     #","#     #","#   # #","#    # "," #### #"],
+R:["###### ","#     #","###### ","#   #  ","#    # ","#     #"],
+S:[" ##### ","#      "," ##### ","      #","      #"," ##### "],
+T:["#######","   #   ","   #   ","   #   ","   #   ","   #   "],
+U:["#     #","#     #","#     #","#     #","#     #"," ##### "],
+V:["#     #","#     #"," #   # "," #   # ","  # #  ","   #   "],
+W:["#     #","#     #","#  #  #","# # # #","##   ##","#     #"],
+X:["#     #"," #   # ","  # #  ","  # #  "," #   # ","#     #"],
+Y:["#     #"," #   # ","  # #  ","   #   ","   #   ","   #   "],
+Z:["#######","     # ","    #  ","  #    "," #     ","#######"]
+};
+const FONT_SLIM={
+A:[" /\\ ","/__\\","/  \\"],B:["|_ ","| )","|\\_"],C:[" _","/ ","\\_"],D:[" _ ","|  \\","|_/ "],E:[" _","|_","|_"],F:[" _","|_","|  "],G:[" _ ","/ _ ","\\__\\"],H:["| |","|_|","| |"],I:["_","| ","|_"],J:["  |"," _|","(_)"],K:["|/ ","|\\  ","|  \\"],L:["|  ","|  ","|__"],M:["|\\/|","|  |","|  |"],N:["|\\  |","| \\ |","|  \\|"],O:[" _ ","/ \\","\\_/"],P:[" _ ","| )","| "],Q:[" _ ","/ \\","\\_\\"],R:[" _ ","| )","| \\"],S:[" _","(_","_)"],T:["___"," | "," | "],U:["   ","| |","\\_/"],V:["   ","\\ /","\\/ "],W:["      ","|    |","\\_/\\_/"],X:["   ","\\_/","/ \\"],Y:["   ","\\_/"," | "],Z:["__"," /","/_"]};
+const FONT_SHADOW={
+A:["  __  ","  \\ \\ "," / _ \\","/ ___ \\","/_/  \\_\\","        "],
+B:[" ____ ","| __ )","| _ \\ ","| |_) |","| ____/","       "],
+C:[" ____ ","/ ___|","| |   ","| |___"," \\____|","       "],
+D:[" ____ ","| _ \\ ","| | | |","| |_| |","|____/ ","       "],
+H:[" _   _ ","| | | |","| |_| |","|  _  |","| | | |","|_| |_|"]
+};
+
+function getFont(name){
+  if(name==='banner')return FONT_BANNER;
+  if(name==='slim')return FONT_SLIM;
+  return FONT_BLOCK;
+}
+
+function render(){
+  const text=document.getElementById('textInput').value.toUpperCase();
+  const fontName=document.getElementById('fontSelect').value;
+  const ch=document.getElementById('charSelect').value;
+  const font=getFont(fontName);
+  const height=fontName==='slim'?3:6;
+  const lines=Array(height).fill('');
+  for(const c of text){
+    const glyph=font[c];
+    if(glyph){
+      for(let i=0;i<height;i++){
+        const row=glyph[i]||'';
+        lines[i]+=row.replace(/#/g,ch)+' ';
+      }
+    }else{
+      for(let i=0;i<height;i++)lines[i]+='  ';
+    }
+  }
+  const art=lines.map(l=>l.replace(/\s+$/,'')).join('\n');
+  const el=document.getElementById('output');
+  el.innerHTML='<button class="copy" onclick="copyArt()">复制</button>'+escHtml(art);
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function copyArt(){
+  const el=document.getElementById('output');
+  const text=el.textContent.replace('复制','').trim();
+  navigator.clipboard.writeText(text).then(()=>showToast('已复制 ASCII Art！'));
+}
+
+function setPreset(t){document.getElementById('textInput').value=t;render();}
+
+const COLORS_LIST=[
+  {name:'绿色',color:'#6bcb77'},{name:'蓝色',color:'#4d96ff'},
+  {name:'红色',color:'#ff6b6b'},{name:'黄色',color:'#ffd93d'},
+  {name:'紫色',color:'#9b59b6'},{name:'青色',color:'#1abc9c'},
+  {name:'白色',color:'#e0e0e0'},{name:'橙色',color:'#e67e22'}
+];
+const colorsEl=document.getElementById('colors');
+COLORS_LIST.forEach((c,i)=>{
+  const d=document.createElement('div');
+  d.className='dot'+(i===0?' active':'');
+  d.style.background=c.color;
+  d.title=c.name;
+  d.onclick=()=>{
+    document.querySelectorAll('.dot').forEach(x=>x.classList.remove('active'));
+    d.classList.add('active');
+    document.getElementById('output').style.color=c.color;
+  };
+  colorsEl.appendChild(d);
+});
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+render();
+</script>
+</body>
+</html>

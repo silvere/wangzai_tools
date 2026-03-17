@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API响应格式化工具 🎨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 500px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .output {
+            width: 100%;
+            min-height: 500px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            background: #f9f9f9;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .format-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .format-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .format-options input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #e74c3c;
+            padding: 10px;
+            background: #fee;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .success {
+            color: #27ae60;
+            padding: 10px;
+            background: #efe;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 API响应格式化工具</h1>
+            <p>美化JSON/XML，让API调试更轻松</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📥 输入原始数据</h2>
+                <textarea id="input" placeholder='粘贴你的JSON或XML数据...
+
+示例JSON:
+{"name":"张三","age":25,"skills":["Python","JavaScript"],"address":{"city":"上海","district":"浦东"}}
+
+示例XML:
+<user><name>张三</name><age>25</age></user>'></textarea>
+                
+                <div class="format-options">
+                    <label>
+                        缩进空格数:
+                        <input type="number" id="indent" value="2" min="0" max="8">
+                    </label>
+                    <label>
+                        <input type="checkbox" id="sortKeys">
+                        排序键名
+                    </label>
+                    <label>
+                        <input type="checkbox" id="compactMode">
+                        紧凑模式
+                    </label>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="formatData()">格式化</button>
+                    <button class="btn btn-secondary" onclick="minifyData()">压缩</button>
+                    <button class="btn btn-secondary" onclick="clearInput()">清空</button>
+                    <button class="btn btn-secondary" onclick="loadExample()">加载示例</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-label">原始大小</div>
+                        <div class="stat-value" id="inputSize">0 B</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">格式化后</div>
+                        <div class="stat-value" id="outputSize">0 B</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">压缩率</div>
+                        <div class="stat-value" id="compression">0%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">数据类型</div>
+                        <div class="stat-value" id="dataType">-</div>
+                    </div>
+                </div>
+
+                <div id="message"></div>
+            </div>
+
+            <div class="card">
+                <h2>📤 格式化输出</h2>
+                <div class="output" id="output">格式化后的数据将显示在这里...</div>
+                
+                <div class="controls" style="margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="copyOutput()">复制输出</button>
+                    <button class="btn btn-secondary" onclick="downloadOutput()">下载文件</button>
+                    <button class="btn btn-secondary" onclick="validateData()">验证数据</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let currentType = null;
+
+        function formatData() {
+            const input = document.getElementById('input').value.trim();
+            const indent = parseInt(document.getElementById('indent').value) || 2;
+            const sortKeys = document.getElementById('sortKeys').checked;
+            const compactMode = document.getElementById('compactMode').checked;
+            
+            if (!input) {
+                showMessage('请输入数据', 'error');
+                return;
+            }
+
+            try {
+                // 尝试解析JSON
+                let data = JSON.parse(input);
+                currentType = 'JSON';
+                
+                if (sortKeys) {
+                    data = sortObjectKeys(data);
+                }
+                
+                const formatted = compactMode 
+                    ? JSON.stringify(data)
+                    : JSON.stringify(data, null, indent);
+                
+                document.getElementById('output').textContent = formatted;
+                currentData = formatted;
+                updateStats(input, formatted, 'JSON');
+                showMessage('JSON格式化成功！', 'success');
+            } catch (jsonError) {
+                // 尝试解析XML
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(input, 'text/xml');
+                    
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        throw new Error('XML解析失败');
+                    }
+                    
+                    currentType = 'XML';
+                    const formatted = formatXML(input, indent);
+                    document.getElementById('output').textContent = formatted;
+                    currentData = formatted;
+                    updateStats(input, formatted, 'XML');
+                    showMessage('XML格式化成功！', 'success');
+                } catch (xmlError) {
+                    showMessage('数据格式错误：既不是有效的JSON也不是有效的XML', 'error');
+                }
+            }
+        }
+
+        function minifyData() {
+            const input = document.getElementById('input').value.trim();
+            
+            if (!input) {
+                showMessage('请输入数据', 'error');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(input);
+                const minified = JSON.stringify(data);
+                document.getElementById('output').textContent = minified;
+                currentData = minified;
+                updateStats(input, minified, 'JSON');
+                showMessage('JSON压缩成功！', 'success');
+            } catch (e) {
+                showMessage('压缩失败：数据格式错误', 'error');
+            }
+        }
+
+        function sortObjectKeys(obj) {
+            if (Array.isArray(obj)) {
+                return obj.map(sortObjectKeys);
+            } else if (obj !== null && typeof obj === 'object') {
+                return Object.keys(obj).sort().reduce((result, key) => {
+                    result[key] = sortObjectKeys(obj[key]);
+                    return result;
+                }, {});
+            }
+            return obj;
+        }
+
+        function formatXML(xml, indent) {
+            const PADDING = ' '.repeat(indent);
+            const reg = /(>)(<)(\/*)/g;
+            let formatted = '';
+            let pad = 0;
+
+            xml = xml.replace(reg, '$1\n$2$3');
+            xml.split('\n').forEach(node => {
+                let indent = 0;
+                if (node.match(/.+<\/\w[^>]*>$/)) {
+                    indent = 0;
+                } else if (node.match(/^<\/\w/)) {
+                    if (pad !== 0) {
+                        pad -= 1;
+                    }
+                } else if (node.match(/^<\w([^>]*[^\/])?>.*$/)) {
+                    indent = 1;
+                } else {
+                    indent = 0;
+                }
+
+                formatted += PADDING.repeat(pad) + node + '\n';
+                pad += indent;
+            });
+
+            return formatted.trim();
+        }
+
+        function updateStats(input, output, type) {
+            const inputSize = new Blob([input]).size;
+            const outputSize = new Blob([output]).size;
+            const compression = inputSize > 0 ? ((1 - outputSize / inputSize) * 100).toFixed(1) : 0;
+
+            document.getElementById('inputSize').textContent = formatBytes(inputSize);
+            document.getElementById('outputSize').textContent = formatBytes(outputSize);
+            document.getElementById('compression').textContent = compression + '%';
+            document.getElementById('dataType').textContent = type;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('output').textContent;
+            if (!output || output === '格式化后的数据将显示在这里...') {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(output).then(() => {
+                showMessage('已复制到剪贴板！', 'success');
+            });
+        }
+
+        function downloadOutput() {
+            if (!currentData) {
+                showMessage('没有可下载的内容', 'error');
+                return;
+            }
+
+            const blob = new Blob([currentData], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `formatted.${currentType === 'JSON' ? 'json' : 'xml'}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage('文件下载成功！', 'success');
+        }
+
+        function validateData() {
+            const input = document.getElementById('input').value.trim();
+            
+            if (!input) {
+                showMessage('请输入数据', 'error');
+                return;
+            }
+
+            try {
+                JSON.parse(input);
+                showMessage('✓ 有效的JSON数据', 'success');
+            } catch (e) {
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(input, 'text/xml');
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        throw new Error('XML解析失败');
+                    }
+                    showMessage('✓ 有效的XML数据', 'success');
+                } catch (xmlError) {
+                    showMessage('✗ 数据格式错误：' + e.message, 'error');
+                }
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').textContent = '格式化后的数据将显示在这里...';
+            currentData = null;
+            currentType = null;
+            updateStats('', '', '-');
+            document.getElementById('message').innerHTML = '';
+        }
+
+        function loadExample() {
+            const example = {
+                "user": {
+                    "id": 12345,
+                    "name": "张三",
+                    "email": "zhangsan@example.com",
+                    "roles": ["admin", "developer"],
+                    "profile": {
+                        "age": 28,
+                        "city": "上海",
+                        "skills": ["Python", "JavaScript", "Go"]
+                    },
+                    "active": true
+                },
+                "timestamp": "2026-03-05T08:00:00Z"
+            };
+            
+            document.getElementById('input').value = JSON.stringify(example);
+            formatData();
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = text;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // 自动格式化
+        document.getElementById('input').addEventListener('input', () => {
+            const input = document.getElementById('input').value.trim();
+            if (input) {
+                formatData();
+            }
+        });
+    </script>
+</body>
+</html>

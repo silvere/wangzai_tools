@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧧 2026 蛇年运势签</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a0a0a;--gold:#ffd700;--red:#cc0000;--dred:#8b0000;--text:#f5e6c8}
+body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(180,30,30,.15),transparent 70%);pointer-events:none}
+.app{text-align:center;padding:20px;max-width:420px;width:100%}
+h1{font-size:1.8em;color:var(--gold);text-shadow:0 0 30px rgba(255,215,0,.3);margin-bottom:4px;letter-spacing:6px}
+.sub{color:rgba(245,230,200,.5);font-size:.85em;margin-bottom:30px;letter-spacing:2px}
+
+/* Fortune tube */
+.tube{width:120px;height:200px;margin:0 auto 30px;position:relative;cursor:pointer;transition:transform .1s}
+.tube:active{transform:scale(.95)}
+.tube-body{width:100%;height:100%;background:linear-gradient(135deg,var(--dred),var(--red),var(--dred));border-radius:12px 12px 20px 20px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,255,255,.1)}
+.tube-body::before{content:'求签';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.4em;color:var(--gold);letter-spacing:8px;writing-mode:vertical-rl;text-shadow:0 0 10px rgba(255,215,0,.5)}
+.tube-rim{width:130px;height:20px;background:linear-gradient(to bottom,#8b6914,#daa520,#8b6914);border-radius:8px;margin:-5px auto 0;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tube.shaking{animation:shake .4s ease-in-out}
+@keyframes shake{0%,100%{transform:rotate(0)}15%{transform:rotate(-15deg)}30%{transform:rotate(12deg)}45%{transform:rotate(-10deg)}60%{transform:rotate(8deg)}75%{transform:rotate(-4deg)}}
+
+/* Stick popping out */
+.stick{position:absolute;width:8px;height:0;background:linear-gradient(to right,#deb887,#f5deb3,#deb887);left:50%;transform:translateX(-50%);bottom:100%;border-radius:2px;transition:height .5s cubic-bezier(.34,1.56,.64,1);z-index:3}
+.stick.pop{height:80px}
+.stick::after{content:attr(data-num);position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:.7em;color:var(--red);font-weight:bold;opacity:0;transition:opacity .3s .3s}
+.stick.pop::after{opacity:1}
+
+.draw-hint{color:rgba(245,230,200,.4);font-size:.82em;margin-bottom:24px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}
+
+/* Result card */
+.card{background:linear-gradient(135deg,rgba(139,0,0,.3),rgba(180,30,30,.2));border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:28px 24px;margin-top:20px;opacity:0;transform:translateY(20px) scale(.95);transition:all .5s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden}
+.card.show{opacity:1;transform:translateY(0) scale(1)}
+.card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(255,215,0,.08),transparent 60%);pointer-events:none}
+.card-rank{font-size:2.2em;margin-bottom:4px}
+.card-type{font-size:1.1em;color:var(--gold);letter-spacing:4px;margin-bottom:12px;text-shadow:0 0 15px rgba(255,215,0,.3)}
+.card-poem{font-size:.95em;line-height:2;color:rgba(245,230,200,.85);margin-bottom:16px;letter-spacing:2px}
+.card-explain{font-size:.82em;color:rgba(245,230,200,.6);line-height:1.8;text-align:left;padding:12px;background:rgba(0,0,0,.2);border-radius:10px;margin-bottom:14px}
+.card-aspects{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.aspect{background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.1);border-radius:8px;padding:8px;font-size:.8em}
+.aspect-label{color:var(--gold);font-size:.75em;margin-bottom:2px}
+.aspect-val{color:var(--text)}
+.card-lucky{font-size:.82em;color:rgba(245,230,200,.5);margin-top:8px}
+.btn-again{background:linear-gradient(135deg,var(--dred),var(--red));color:var(--gold);border:1px solid rgba(255,215,0,.3);padding:10px 28px;border-radius:24px;font-size:.9em;cursor:pointer;margin-top:16px;transition:all .2s;letter-spacing:2px}
+.btn-again:hover{box-shadow:0 0 20px rgba(255,215,0,.2);transform:scale(1.03)}
+.btn-again:active{transform:scale(.97)}
+
+/* Floating decorations */
+.deco{position:fixed;pointer-events:none;opacity:.15;font-size:2em;animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(10deg)}}
+</style>
+</head>
+<body>
+<div class="deco" style="top:10%;left:8%;animation-delay:0s">🏮</div>
+<div class="deco" style="top:15%;right:10%;animation-delay:2s">🧧</div>
+<div class="deco" style="bottom:20%;left:5%;animation-delay:4s">🎊</div>
+<div class="deco" style="bottom:15%;right:8%;animation-delay:1s">✨</div>
+
+<div class="app">
+<h1>🐍 蛇年运势签</h1>
+<div class="sub">丙午蛇年 · 2026</div>
+
+<div class="tube" id="tube">
+<div class="stick" id="stick"></div>
+<div class="tube-rim"></div>
+<div class="tube-body"></div>
+</div>
+<div class="draw-hint" id="hint">👆 点击签筒求签</div>
+
+<div class="card" id="card">
+<div class="card-rank" id="rank"></div>
+<div class="card-type" id="type"></div>
+<div class="card-poem" id="poem"></div>
+<div class="card-explain" id="explain"></div>
+<div class="card-aspects" id="aspects"></div>
+<div class="card-lucky" id="lucky"></div>
+<button class="btn-again" id="again">🔄 再求一签</button>
+</div>
+</div>
+
+<script>
+const FORTUNES=[
+{rank:'上上签',emoji:'🌟',type:'鸿运当头',poem:'金蛇起舞迎春到\n万事亨通福自来\n贵人相助前程远\n一帆风顺展宏才',explain:'蛇年大吉！今年运势极佳，事业上会遇到贵人相助，有望获得重大突破。财运亨通，投资理财皆有收获。感情方面桃花旺盛，单身者有望脱单。',career:'贵人助力，升职加薪',wealth:'财源广进，投资有利',love:'桃花旺盛，甜蜜美满',health:'精力充沛，身体康健',lucky:'幸运色：金色 | 幸运数：8'},
+{rank:'上上签',emoji:'🎯',type:'心想事成',poem:'灵蛇通慧智谋深\n所求皆遂称心意\n春风得意马蹄疾\n一日看尽长安花',explain:'心想事成之签！今年你的愿望大多能够实现。关键在于保持积极心态，勇于行动。学业和技术提升方面尤其顺利，适合考证、学习新技能。',career:'目标达成，能力认可',wealth:'稳中有升，意外之财',love:'心意相通，缘分天成',health:'心态平和，百病不侵',lucky:'幸运色：红色 | 幸运数：6'},
+{rank:'上签',emoji:'🌈',type:'渐入佳境',poem:'蛰龙初醒展新姿\n厚积薄发正当时\n莫道前路多坎坷\n柳暗花明又一村',explain:'渐入佳境之签！上半年可能会遇到一些挑战，但下半年运势会明显好转。坚持努力，积累的实力会在关键时刻发挥作用。适合做长期规划。',career:'先蓄后发，下半年突破',wealth:'先紧后松，年末丰收',love:'日久生情，细水长流',health:'注意休息，劳逸结合',lucky:'幸运色：绿色 | 幸运数：3'},
+{rank:'上签',emoji:'💪',type:'厚德载物',poem:'蛇行千里不辞远\n脚踏实地步步高\n但行好事莫问前\n功到自然成大器',explain:'厚德载物之签！今年适合踏实做事，不要急于求成。你的努力和善意会被看到，回报虽然不是立竿见影，但一定会来。人际关系是今年的关键。',career:'稳扎稳打，口碑积累',wealth:'勤劳致富，不宜投机',love:'真诚待人，自有回响',health:'规律作息，强身健体',lucky:'幸运色：蓝色 | 幸运数：5'},
+{rank:'上签',emoji:'🚀',type:'蓄势待发',poem:'卧龙在渊待风云\n一朝腾飞九万里\n蛇年蓄力正当时\n来年必定展宏图',explain:'蓄势待发之签！今年是积蓄能量的一年，适合学习充电、拓展人脉、打磨技能。虽然短期内可能看不到大的突破，但你正在为未来的腾飞做准备。',career:'学习充电，积累资源',wealth:'量入为出，储蓄为主',love:'提升自我，吸引力增强',health:'加强锻炼，储备体能',lucky:'幸运色：紫色 | 幸运数：9'},
+{rank:'中上签',emoji:'🌸',type:'春暖花开',poem:'冬去春来万物新\n蛇蜕旧皮换新身\n放下过往轻装行\n前方自有好风景',explain:'春暖花开之签！今年适合告别过去，开启新篇章。可能会有换工作、搬家、开始新项目等变化。拥抱变化，新的环境会带来新的机遇。',career:'适合跳槽或转型',wealth:'变中求财，新机遇多',love:'新的邂逅，旧的释怀',health:'换个环境，心情舒畅',lucky:'幸运色：粉色 | 幸运数：2'},
+{rank:'中上签',emoji:'🤝',type:'贵人相助',poem:'独行虽快众行远\n蛇年贵人在身边\n虚心请教多合作\n借力使力上青天',explain:'贵人相助之签！今年你身边会出现对你很重要的人。可能是导师、合作伙伴或朋友。关键是保持谦虚和开放的心态，主动寻求帮助和合作。',career:'团队协作，借力成事',wealth:'合作生财，共赢为上',love:'朋友介绍，缘分将至',health:'结伴运动，互相督促',lucky:'幸运色：橙色 | 幸运数：7'},
+{rank:'中签',emoji:'⚖️',type:'平稳安泰',poem:'蛇行曲折终向前\n平平淡淡才是真\n守住本心不浮躁\n岁月静好自安然',explain:'平稳安泰之签！今年不会有大起大落，生活和工作都比较平稳。这是一个适合沉淀和享受生活的年份。不必追求轰轰烈烈，平淡中自有幸福。',career:'稳定发展，不宜冒进',wealth:'收支平衡，小有盈余',love:'平淡温馨，相守相伴',health:'保持现状，定期体检',lucky:'幸运色：白色 | 幸运数：4'},
+{rank:'中签',emoji:'🔮',type:'静待时机',poem:'蛇伏草中待良机\n不鸣则已一鸣惊\n耐住寂寞修内功\n时来运转自然成',explain:'静待时机之签！今年上半年可能会感觉有些沉闷，但不要着急。利用这段时间提升自己，等待合适的时机。下半年开始，机会会逐渐增多。',career:'韬光养晦，等待机会',wealth:'节流为主，伺机而动',love:'不急不躁，缘分自来',health:'调养身体，养精蓄锐',lucky:'幸运色：灰色 | 幸运数：1'}
+];
+
+let drawing=false;
+const tube=document.getElementById('tube');
+const stick=document.getElementById('stick');
+const card=document.getElementById('card');
+const hint=document.getElementById('hint');
+
+function draw(){
+  if(drawing)return;
+  drawing=true;
+  card.classList.remove('show');
+  hint.style.display='none';
+  
+  // Shake animation
+  tube.classList.add('shaking');
+  stick.classList.remove('pop');
+  
+  const fortune=FORTUNES[Math.random()*FORTUNES.length|0];
+  const num=Math.floor(Math.random()*99)+1;
+  stick.dataset.num='第'+num+'签';
+  
+  setTimeout(()=>{
+    tube.classList.remove('shaking');
+    stick.classList.add('pop');
+  },500);
+  
+  setTimeout(()=>{
+    document.getElementById('rank').textContent=fortune.emoji+' '+fortune.rank;
+    document.getElementById('type').textContent='— '+fortune.type+' —';
+    document.getElementById('poem').innerHTML=fortune.poem.replace(/\n/g,'<br>');
+    document.getElementById('explain').textContent='📜 '+fortune.explain;
+    document.getElementById('aspects').innerHTML=`
+      <div class="aspect"><div class="aspect-label">💼 事业</div><div class="aspect-val">${fortune.career}</div></div>
+      <div class="aspect"><div class="aspect-label">💰 财运</div><div class="aspect-val">${fortune.wealth}</div></div>
+      <div class="aspect"><div class="aspect-label">❤️ 感情</div><div class="aspect-val">${fortune.love}</div></div>
+      <div class="aspect"><div class="aspect-label">🏥 健康</div><div class="aspect-val">${fortune.health}</div></div>`;
+    document.getElementById('lucky').textContent='🍀 '+fortune.lucky;
+    card.classList.add('show');
+    drawing=false;
+  },1200);
+}
+
+tube.addEventListener('click',draw);
+document.getElementById('again').addEventListener('click',e=>{
+  e.stopPropagation();
+  stick.classList.remove('pop');
+  card.classList.remove('show');
+  setTimeout(draw,300);
+});
+</script>
+</body>
+</html>

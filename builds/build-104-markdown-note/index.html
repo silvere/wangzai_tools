@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 笔记速记 📝</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .editor-bg {
+            background: #f8fafc;
+        }
+        
+        .preview-bg {
+            background: #ffffff;
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .editor-textarea {
+            font-family: 'Fira Code', monospace;
+            line-height: 1.6;
+            resize: none;
+        }
+        
+        .preview-content {
+            line-height: 1.7;
+        }
+        
+        .preview-content h1,
+        .preview-content h2,
+        .preview-content h3,
+        .preview-content h4,
+        .preview-content h5,
+        .preview-content h6 {
+            font-weight: 700;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            color: #1e293b;
+        }
+        
+        .preview-content h1 { font-size: 2em; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.3em; }
+        .preview-content h2 { font-size: 1.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }
+        .preview-content h3 { font-size: 1.25em; }
+        .preview-content h4 { font-size: 1.1em; }
+        
+        .preview-content p {
+            margin-bottom: 1em;
+            color: #334155;
+        }
+        
+        .preview-content ul,
+        .preview-content ol {
+            margin-bottom: 1em;
+            padding-left: 1.5em;
+        }
+        
+        .preview-content li {
+            margin-bottom: 0.3em;
+            color: #334155;
+        }
+        
+        .preview-content code {
+            font-family: 'Fira Code', monospace;
+            background: #f1f5f9;
+            padding: 0.2em 0.4em;
+            border-radius: 0.3em;
+            font-size: 0.9em;
+            color: #e11d48;
+        }
+        
+        .preview-content pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 1em;
+            border-radius: 0.5em;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+        
+        .preview-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        
+        .preview-content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1em;
+            margin: 1em 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        
+        .preview-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+        }
+        
+        .preview-content th,
+        .preview-content td {
+            border: 1px solid #e2e8f0;
+            padding: 0.5em;
+            text-align: left;
+        }
+        
+        .preview-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        
+        .preview-content a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .preview-content a:hover {
+            text-decoration: underline;
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .note-item {
+            transition: all 0.3s ease;
+        }
+        
+        .note-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .toolbar-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        @keyframes slide-in {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .slide-in {
+            animation: slide-in 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                <i class="fas fa-sticky-note mr-3"></i>Markdown 笔记速记
+            </h1>
+            <p class="text-lg text-white/90 font-light">
+                所见即所得的Markdown笔记工具，本地存储，一键导出
+            </p>
+        </div>
+
+        <!-- Main Editor -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Editor Panel -->
+            <div class="bg-white rounded-3xl card-shadow overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-edit text-purple-600"></i>
+                        <span class="font-semibold text-gray-700">编辑区</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm text-gray-500" id="wordCount">0 字</span>
+                    </div>
+                </div>
+                
+                <!-- Toolbar -->
+                <div class="border-b border-gray-200 px-4 py-2 flex flex-wrap gap-1">
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="粗体" onclick="insertFormatting('**', '**')">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="斜体" onclick="insertFormatting('*', '*')">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="删除线" onclick="insertFormatting('~~', '~~')">
+                        <i class="fas fa-strikethrough"></i>
+                    </button>
+                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="标题1" onclick="insertHeading(1)">
+                        H1
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="标题2" onclick="insertHeading(2)">
+                        H2
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="标题3" onclick="insertHeading(3)">
+                        H3
+                    </button>
+                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="无序列表" onclick="insertList('ul')">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="有序列表" onclick="insertList('ol')">
+                        <i class="fas fa-list-ol"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="任务列表" onclick="insertTaskList()">
+                        <i class="fas fa-check-square"></i>
+                    </button>
+                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="链接" onclick="insertLink()">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="图片" onclick="insertImage()">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="代码块" onclick="insertCodeBlock()">
+                        <i class="fas fa-code"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="引用" onclick="insertQuote()">
+                        <i class="fas fa-quote-left"></i>
+                    </button>
+                    <button class="toolbar-btn p-2 rounded text-gray-600 hover:text-white" title="表格" onclick="insertTable()">
+                        <i class="fas fa-table"></i>
+                    </button>
+                </div>
+                
+                <textarea 
+                    id="editor" 
+                    class="w-full h-[500px] p-6 editor-textarea outline-none editor-bg"
+                    placeholder="# 欢迎使用 Markdown 笔记速记
+
+在这里输入你的笔记，支持完整的 Markdown 语法：
+
+## 功能特性
+- ✅ 实时预览
+- ✅ 自动保存
+- ✅ 本地存储
+- ✅ 一键导出
+- ✅ 无任何网络请求
+
+```python
+def hello():
+    print('Hello World!')
+```
+
+> 好记性不如烂笔头 ~
+"
+                ></textarea>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="bg-white rounded-3xl card-shadow overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-eye text-purple-600"></i>
+                        <span class="font-semibold text-gray-700">预览区</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="toggleViewBtn" class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium md:hidden">
+                            <i class="fas fa-exchange-alt mr-1"></i>切换
+                        </button>
+                    </div>
+                </div>
+                <div id="preview" class="h-[550px] p-6 overflow-y-auto preview-content preview-bg"></div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="bg-white rounded-2xl p-6 mb-8 card-shadow">
+            <div class="flex flex-wrap gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <input 
+                        type="text" 
+                        id="noteTitle" 
+                        placeholder="笔记标题（可选）"
+                        class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 outline-none text-lg"
+                    >
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="saveBtn" class="btn-hover px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-save mr-2"></i>保存笔记
+                    </button>
+                    <button id="newBtn" class="btn-hover px-6 py-3 bg-green-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-plus mr-2"></i>新建笔记
+                    </button>
+                    <button id="exportMdBtn" class="btn-hover px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-file-download mr-2"></i>导出MD
+                    </button>
+                    <button id="exportHtmlBtn" class="btn-hover px-6 py-3 bg-orange-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-file-code mr-2"></i>导出HTML
+                    </button>
+                    <button id="copyBtn" class="btn-hover px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold">
+                        <i class="fas fa-copy mr-2"></i>复制内容
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes List -->
+        <div class="bg-white rounded-3xl card-shadow p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-archive mr-3 text-purple-600"></i>笔记历史
+                </h2>
+                <button id="clearAllBtn" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition">
+                    <i class="fas fa-trash mr-1"></i>清空全部
+                </button>
+            </div>
+
+            <div id="notesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="text-center py-12 text-gray-500 col-span-full">
+                    <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                    <p class="text-lg">还没有保存任何笔记</p>
+                    <p class="text-sm mt-1">保存的笔记会显示在这里，本地永久存储</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/70 text-sm">
+            <p>📝 所有笔记保存在浏览器本地，绝不会上传到任何服务器，隐私安全有保障</p>
+            <p class="mt-1">支持完整Markdown语法，打开就能用，无需注册登录</p>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let notes = JSON.parse(localStorage.getItem('markdownNotes') || '[]');
+        let currentNoteId = null;
+        let autoSaveTimer = null;
+        
+        // DOM Elements
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const wordCount = document.getElementById('wordCount');
+        const noteTitle = document.getElementById('noteTitle');
+        const saveBtn = document.getElementById('saveBtn');
+        const newBtn = document.getElementById('newBtn');
+        const exportMdBtn = document.getElementById('exportMdBtn');
+        const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const notesList = document.getElementById('notesList');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const toggleViewBtn = document.getElementById('toggleViewBtn');
+        
+        // Initialize
+        renderNotesList();
+        updatePreview();
+        updateWordCount();
+        
+        // Update preview
+        function updatePreview() {
+            preview.innerHTML = marked.parse(editor.value);
+            updateWordCount();
+            
+            // Auto save after typing stops
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                autoSave();
+            }, 1000);
+        }
+        
+        // Update word count
+        function updateWordCount() {
+            const text = editor.value.replace(/\s+/g, '');
+            wordCount.textContent = `${text.length} 字`;
+        }
+        
+        // Auto save draft
+        function autoSave() {
+            if (editor.value.trim() && !currentNoteId) {
+                localStorage.setItem('noteDraft', JSON.stringify({
+                    title: noteTitle.value || '未命名笔记',
+                    content: editor.value,
+                    updatedAt: new Date().toISOString()
+                }));
+            }
+        }
+        
+        // Load draft if exists
+        const draft = localStorage.getItem('noteDraft');
+        if (draft) {
+            const parsedDraft = JSON.parse(draft);
+            noteTitle.value = parsedDraft.title;
+            editor.value = parsedDraft.content;
+            updatePreview();
+        }
+        
+        // Insert formatting
+        function insertFormatting(prefix, suffix) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selectedText = editor.value.substring(start, end);
+            
+            editor.value = editor.value.substring(0, start) + prefix + selectedText + suffix + editor.value.substring(end);
+            editor.focus();
+            editor.selectionStart = start + prefix.length;
+            editor.selectionEnd = end + prefix.length;
+            updatePreview();
+        }
+        
+        // Insert heading
+        function insertHeading(level) {
+            const prefix = '#'.repeat(level) + ' ';
+            const lines = editor.value.split('\n');
+            const cursorPos = editor.selectionStart;
+            
+            let lineNum = 0;
+            let charCount = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                if (charCount + lines[i].length >= cursorPos) {
+                    lineNum = i;
+                    break;
+                }
+                charCount += lines[i].length + 1; // +1 for newline
+            }
+            
+            if (!lines[lineNum].startsWith('#')) {
+                lines[lineNum] = prefix + lines[lineNum];
+            } else {
+                lines[lineNum] = lines[lineNum].replace(/^#+\s/, prefix);
+            }
+            
+            editor.value = lines.join('\n');
+            editor.focus();
+            updatePreview();
+        }
+        
+        // Insert list
+        function insertList(type) {
+            const prefix = type === 'ul' ? '- ' : '1. ';
+            const lines = editor.value.split('\n');
+            const cursorPos = editor.selectionStart;
+            
+            let lineNum = 0;
+            let charCount = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                if (charCount + lines[i].length >= cursorPos) {
+                    lineNum = i;
+                    break;
+                }
+                charCount += lines[i].length + 1;
+            }
+            
+            if (!lines[lineNum].match(/^[-*+]\s/) && !lines[lineNum].match(/^\d+\.\s/)) {
+                lines[lineNum] = prefix + lines[lineNum];
+            }
+            
+            editor.value = lines.join('\n');
+            editor.focus();
+            updatePreview();
+        }
+        
+        // Insert task list
+        function insertTaskList() {
+            insertFormatting('- [ ] ', '');
+        }
+        
+        // Insert link
+        function insertLink() {
+            const url = prompt('请输入链接地址:', 'https://');
+            if (url) {
+                const text = prompt('请输入链接文本:', '链接文本');
+                insertFormatting(`[${text || '链接'}](${url})`, '');
+            }
+        }
+        
+        // Insert image
+        function insertImage() {
+            const url = prompt('请输入图片地址:', 'https://');
+            if (url) {
+                const alt = prompt('请输入图片描述:', '图片描述');
+                insertFormatting(`![${alt || '图片'}](${url})`, '');
+            }
+        }
+        
+        // Insert code block
+        function insertCodeBlock() {
+            const lang = prompt('请输入代码语言（可选）:', 'python');
+            insertFormatting(`\`\`\`${lang || ''}\n`, '\n```\n');
+        }
+        
+        // Insert quote
+        function insertQuote() {
+            insertFormatting('> ', '');
+        }
+        
+        // Insert table
+        function insertTable() {
+            const table = `| 表头1 | 表头2 | 表头3 |
+| --- | --- | --- |
+| 内容1 | 内容2 | 内容3 |
+| 内容4 | 内容5 | 内容6 |
+`;
+            insertFormatting(table, '');
+        }
+        
+        // Save note
+        saveBtn.addEventListener('click', () => {
+            const content = editor.value.trim();
+            if (!content) {
+                alert('笔记内容不能为空！');
+                return;
+            }
+            
+            const title = noteTitle.value.trim() || '未命名笔记';
+            const now = new Date().toISOString();
+            
+            if (currentNoteId) {
+                // Update existing note
+                const noteIndex = notes.findIndex(n => n.id === currentNoteId);
+                if (noteIndex !== -1) {
+                    notes[noteIndex].title = title;
+                    notes[noteIndex].content = content;
+                    notes[noteIndex].updatedAt = now;
+                }
+            } else {
+                // Create new note
+                const newNote = {
+                    id: Date.now().toString(),
+                    title: title,
+                    content: content,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                notes.unshift(newNote);
+                currentNoteId = newNote.id;
+            }
+            
+            localStorage.setItem('markdownNotes', JSON.stringify(notes));
+            localStorage.removeItem('noteDraft');
+            renderNotesList();
+            
+            // Show success
+            saveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已保存';
+            setTimeout(() => {
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存笔记';
+            }, 2000);
+        });
+        
+        // New note
+        newBtn.addEventListener('click', () => {
+            if (editor.value.trim() && !confirm('当前笔记未保存，确定要新建吗？')) {
+                return;
+            }
+            
+            currentNoteId = null;
+            noteTitle.value = '';
+            editor.value = '';
+            updatePreview();
+            localStorage.removeItem('noteDraft');
+        });
+        
+        // Export MD
+        exportMdBtn.addEventListener('click', () => {
+            const content = editor.value.trim();
+            if (!content) {
+                alert('没有内容可以导出！');
+                return;
+            }
+            
+            const title = noteTitle.value.trim() || '笔记';
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Export HTML
+        exportHtmlBtn.addEventListener('click', () => {
+            const content = editor.value.trim();
+            if (!content) {
+                alert('没有内容可以导出！');
+                return;
+            }
+            
+            const title = noteTitle.value.trim() || '笔记';
+            const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.7; max-width: 900px; margin: 0 auto; padding: 40px 20px; color: #333; }
+        h1, h2, h3, h4, h5, h6 { font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; color: #1e293b; }
+        h1 { font-size: 2em; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.3em; }
+        h2 { font-size: 1.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }
+        code { font-family: 'Fira Code', monospace; background: #f1f5f9; padding: 0.2em 0.4em; border-radius: 0.3em; font-size: 0.9em; color: #e11d48; }
+        pre { background: #1e293b; color: #f8fafc; padding: 1em; border-radius: 0.5em; overflow-x: auto; }
+        pre code { background: none; padding: 0; color: inherit; }
+        blockquote { border-left: 4px solid #667eea; padding-left: 1em; margin: 1em 0; color: #64748b; font-style: italic; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.5em; text-align: left; }
+        th { background: #f1f5f9; font-weight: 600; }
+        a { color: #667eea; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>${title}</h1>
+    ${marked.parse(content)}
+</body>
+</html>`;
+            
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Copy content
+        copyBtn.addEventListener('click', async () => {
+            const content = editor.value.trim();
+            if (!content) {
+                alert('没有内容可以复制！');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(content);
+                copyBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已复制';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy mr-2"></i>复制内容';
+                }, 2000);
+            } catch (err) {
+                alert('复制失败，请手动复制');
+            }
+        });
+        
+        // Load note
+        window.loadNote = function(id) {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                currentNoteId = note.id;
+                noteTitle.value = note.title;
+                editor.value = note.content;
+                updatePreview();
+                editor.scrollTop = 0;
+                preview.scrollTop = 0;
+            }
+        }
+        
+        // Delete note
+        window.deleteNote = function(id, e) {
+            e.stopPropagation();
+            if (confirm('确定要删除这篇笔记吗？此操作不可恢复！')) {
+                notes = notes.filter(n => n.id !== id);
+                localStorage.setItem('markdownNotes', JSON.stringify(notes));
+                
+                if (currentNoteId === id) {
+                    currentNoteId = null;
+                    noteTitle.value = '';
+                    editor.value = '';
+                    updatePreview();
+                }
+                
+                renderNotesList();
+            }
+        }
+        
+        // Render notes list
+        function renderNotesList() {
+            if (notes.length === 0) {
+                notesList.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 col-span-full">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg">还没有保存任何笔记</p>
+                        <p class="text-sm mt-1">保存的笔记会显示在这里，本地永久存储</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            notesList.innerHTML = notes.map(note => {
+                const date = new Date(note.updatedAt);
+                const dateStr = date.toLocaleString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Get preview text
+                const previewText = note.content.replace(/[#*`>]/g, '').replace(/\s+/g, ' ').slice(0, 100) + '...';
+                
+                return `
+                    <div class="note-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="loadNote('${note.id}')">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-semibold text-lg text-gray-800 line-clamp-1 flex-1 mr-2">${note.title}</h3>
+                            <button class="p-1.5 text-red-500 hover:bg-red-100 rounded" onclick="deleteNote('${note.id}', event)" title="删除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${previewText}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span><i class="fas fa-clock mr-1"></i>${dateStr}</span>
+                            <span>${note.content.replace(/\s+/g, '').length} 字</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Clear all notes
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有笔记吗？此操作不可恢复！')) {
+                notes = [];
+                localStorage.removeItem('markdownNotes');
+                currentNoteId = null;
+                noteTitle.value = '';
+                editor.value = '';
+                updatePreview();
+                renderNotesList();
+            }
+        });
+        
+        // Toggle view for mobile
+        toggleViewBtn.addEventListener('click', () => {
+            const editorPanel = editor.closest('.lg\\:col-span-2 > div:first-child');
+            const previewPanel = preview.closest('.lg\\:col-span-2 > div:last-child');
+            
+            if (editorPanel.classList.contains('hidden')) {
+                editorPanel.classList.remove('hidden');
+                previewPanel.classList.add('hidden');
+            } else if (previewPanel.classList.contains('hidden')) {
+                editorPanel.classList.add('hidden');
+                previewPanel.classList.remove('hidden');
+            } else {
+                editorPanel.classList.add('hidden');
+            }
+        });
+        
+        // Event listeners
+        editor.addEventListener('input', updatePreview);
+        editor.addEventListener('scroll', () => {
+            // Sync scroll (optional)
+            const scrollPercentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+            preview.scrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveBtn.click();
+            }
+            // Ctrl/Cmd + B for bold
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                insertFormatting('**', '**');
+            }
+            // Ctrl/Cmd + I for italic
+            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault();
+                insertFormatting('*', '*');
+            }
+            // Ctrl/Cmd + K for link
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                insertLink();
+            }
+        });
+    </script>
+</body>
+</html>

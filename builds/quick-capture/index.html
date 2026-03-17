@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Capture - 快速想法捕捉器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .capture-box {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .input-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .input-area:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-area::placeholder {
+            color: #999;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid white;
+            border-radius: 20px;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .item-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .item-btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn-delete {
+            background: #ff4757;
+            color: white;
+        }
+
+        .item-content {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .item-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Quick Capture</h1>
+            <p>快速捕捉你的想法、灵感和待办事项</p>
+        </div>
+
+        <div class="capture-box">
+            <textarea 
+                id="captureInput" 
+                class="input-area" 
+                placeholder="写下你的想法...&#10;&#10;使用 #标签 来分类（如 #工作 #想法 #待办 #灵感）&#10;按 Ctrl+Enter 快速保存"
+                autofocus
+            ></textarea>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="saveCapture()">💾 保存 (Ctrl+Enter)</button>
+                <button class="btn btn-secondary" onclick="clearInput()">🗑️ 清空</button>
+                <button class="btn btn-secondary" onclick="exportToMarkdown()">📤 导出Markdown</button>
+                <button class="btn btn-secondary" onclick="clearAll()">🔄 清空全部</button>
+            </div>
+            <div class="hint">
+                💡 提示：使用 #标签 来组织你的想法，支持多个标签
+            </div>
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div class="search-box">
+            <span>🔍</span>
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="搜索想法..."
+                oninput="filterItems()"
+            >
+        </div>
+
+        <div class="filters" id="filters"></div>
+
+        <div class="items-container" id="itemsContainer"></div>
+    </div>
+
+    <script>
+        let captures = JSON.parse(localStorage.getItem('quickCaptures') || '[]');
+        let currentFilter = 'all';
+
+        // 快捷键支持
+        document.getElementById('captureInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                saveCapture();
+            }
+        });
+
+        function saveCapture() {
+            const input = document.getElementById('captureInput');
+            const content = input.value.trim();
+            
+            if (!content) {
+                alert('请输入内容！');
+                return;
+            }
+
+            const tags = extractTags(content);
+            const capture = {
+                id: Date.now(),
+                content: content,
+                tags: tags,
+                timestamp: new Date().toISOString()
+            };
+
+            captures.unshift(capture);
+            localStorage.setItem('quickCaptures', JSON.stringify(captures));
+            
+            input.value = '';
+            input.focus();
+            
+            renderAll();
+        }
+
+        function extractTags(content) {
+            const tagRegex = /#[\u4e00-\u9fa5a-zA-Z0-9_]+/g;
+            const matches = content.match(tagRegex);
+            return matches ? [...new Set(matches)] : [];
+        }
+
+        function clearInput() {
+            document.getElementById('captureInput').value = '';
+            document.getElementById('captureInput').focus();
+        }
+
+        function deleteCapture(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                captures = captures.filter(c => c.id !== id);
+                localStorage.setItem('quickCaptures', JSON.stringify(captures));
+                renderAll();
+            }
+        }
+
+        function clearAll() {
+            if (confirm('确定要清空所有记录吗？此操作不可恢复！')) {
+                captures = [];
+                localStorage.setItem('quickCaptures', JSON.stringify(captures));
+                renderAll();
+            }
+        }
+
+        function getAllTags() {
+            const allTags = new Set();
+            captures.forEach(c => {
+                c.tags.forEach(tag => allTags.add(tag));
+            });
+            return Array.from(allTags).sort();
+        }
+
+        function renderFilters() {
+            const allTags = getAllTags();
+            const filtersHtml = `
+                <button class="filter-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
+                    📋 全部 (${captures.length})
+                </button>
+                ${allTags.map(tag => `
+                    <button class="filter-btn ${currentFilter === tag ? 'active' : ''}" onclick="setFilter('${tag}')">
+                        ${tag} (${captures.filter(c => c.tags.includes(tag)).length})
+                    </button>
+                `).join('')}
+            `;
+            document.getElementById('filters').innerHTML = filtersHtml;
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            renderAll();
+        }
+
+        function filterItems() {
+            renderItems();
+        }
+
+        function getFilteredCaptures() {
+            let filtered = captures;
+            
+            // 标签筛选
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(c => c.tags.includes(currentFilter));
+            }
+            
+            // 搜索筛选
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    c.content.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            return filtered;
+        }
+
+        function renderStats() {
+            const allTags = getAllTags();
+            const today = new Date().toDateString();
+            const todayCaptures = captures.filter(c => 
+                new Date(c.timestamp).toDateString() === today
+            );
+
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-value">${captures.length}</div>
+                    <div class="stat-label">总记录</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${todayCaptures.length}</div>
+                    <div class="stat-label">今日新增</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${allTags.length}</div>
+                    <div class="stat-label">标签数</div>
+                </div>
+            `;
+            document.getElementById('stats').innerHTML = statsHtml;
+        }
+
+        function renderItems() {
+            const filtered = getFilteredCaptures();
+            const container = document.getElementById('itemsContainer');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>还没有记录</h3>
+                        <p>开始记录你的第一个想法吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const itemsHtml = filtered.map(capture => {
+                const date = new Date(capture.timestamp);
+                const timeStr = formatTime(date);
+                
+                return `
+                    <div class="item">
+                        <div class="item-header">
+                            <div class="item-time">⏰ ${timeStr}</div>
+                            <div class="item-actions">
+                                <button class="item-btn btn-delete" onclick="deleteCapture(${capture.id})">删除</button>
+                            </div>
+                        </div>
+                        <div class="item-content">${escapeHtml(capture.content)}</div>
+                        ${capture.tags.length > 0 ? `
+                            <div class="item-tags">
+                                ${capture.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = itemsHtml;
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes}分钟前`;
+            if (hours < 24) return `${hours}小时前`;
+            if (days < 7) return `${days}天前`;
+            
+            return date.toLocaleDateString('zh-CN', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function exportToMarkdown() {
+            if (captures.length === 0) {
+                alert('没有可导出的内容！');
+                return;
+            }
+
+            let markdown = `# Quick Capture 导出\n\n`;
+            markdown += `导出时间：${new Date().toLocaleString('zh-CN')}\n`;
+            markdown += `总记录数：${captures.length}\n\n`;
+            markdown += `---\n\n`;
+
+            const allTags = getAllTags();
+            allTags.forEach(tag => {
+                const tagCaptures = captures.filter(c => c.tags.includes(tag));
+                if (tagCaptures.length > 0) {
+                    markdown += `## ${tag}\n\n`;
+                    tagCaptures.forEach(capture => {
+                        const date = new Date(capture.timestamp).toLocaleString('zh-CN');
+                        markdown += `### ${date}\n\n`;
+                        markdown += `${capture.content}\n\n`;
+                        markdown += `---\n\n`;
+                    });
+                }
+            });
+
+            // 无标签的记录
+            const untagged = captures.filter(c => c.tags.length === 0);
+            if (untagged.length > 0) {
+                markdown += `## 未分类\n\n`;
+                untagged.forEach(capture => {
+                    const date = new Date(capture.timestamp).toLocaleString('zh-CN');
+                    markdown += `### ${date}\n\n`;
+                    markdown += `${capture.content}\n\n`;
+                    markdown += `---\n\n`;
+                });
+            }
+
+            // 下载文件
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quick-capture-${new Date().toISOString().split('T')[0]}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function renderAll() {
+            renderStats();
+            renderFilters();
+            renderItems();
+        }
+
+        // 初始化
+        renderAll();
+    </script>
+</body>
+</html>

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本统计分析工具 📝</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .stat-card {
+                transition: all 0.3s ease;
+            }
+            .stat-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+                文本统计分析工具 <span class="text-3xl">📝</span>
+            </h1>
+            <p class="text-gray-600 text-lg mb-6">一键分析文本的字符数、字数、词频、阅读时间等信息，写文案、投稿必备</p>
+            
+            <!-- 快捷操作 -->
+            <div class="flex flex-wrap gap-4 justify-center mb-6">
+                <button id="loadSampleBtn" class="bg-white border-2 border-purple-500 text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-file-text-o mr-2"></i> 加载示例文本
+                </button>
+                <button id="clearBtn" class="bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-trash-o mr-2"></i> 清空
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <div class="grid lg:grid-cols-3 gap-6 mb-8">
+            <!-- 左侧：文本输入 -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-pencil text-purple-600"></i> 输入文本
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500" id="liveCount">0 字符 | 0 字</span>
+                        <button id="pasteBtn" class="text-purple-600 hover:text-purple-800 transition-all" title="粘贴">
+                            <i class="fa fa-paste"></i>
+                        </button>
+                        <button id="copyBtn" class="text-purple-600 hover:text-purple-800 transition-all" title="复制">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea id="textInput" class="w-full h-[500px] p-4 border-2 border-gray-200 rounded-xl font-mono text-sm resize-none focus:border-purple-500 focus:outline-none" placeholder="在此粘贴或输入要分析的文本..."></textarea>
+            </div>
+
+            <!-- 右侧：统计卡片 -->
+            <div class="space-y-6">
+                <!-- 基础统计 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-bar-chart text-purple-600"></i> 基础统计
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl text-center">
+                            <div class="text-3xl font-bold text-purple-700 mb-1" id="charCount">0</div>
+                            <div class="text-xs text-purple-600 font-medium">字符数</div>
+                        </div>
+                        <div class="stat-card bg-gradient-to-br from-pink-50 to-pink-100 p-4 rounded-xl text-center">
+                            <div class="text-3xl font-bold text-pink-700 mb-1" id="charCountNoSpace">0</div>
+                            <div class="text-xs text-pink-600 font-medium">字符数(不含空格)</div>
+                        </div>
+                        <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl text-center">
+                            <div class="text-3xl font-bold text-blue-700 mb-1" id="wordCount">0</div>
+                            <div class="text-xs text-blue-600 font-medium">字数</div>
+                        </div>
+                        <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl text-center">
+                            <div class="text-3xl font-bold text-green-700 mb-1" id="lineCount">0</div>
+                            <div class="text-xs text-green-600 font-medium">行数</div>
+                        </div>
+                        <div class="stat-card bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-xl text-center">
+                            <div class="text-3xl font-bold text-yellow-700 mb-1" id="paragraphCount">0</div>
+                            <div class="text-xs text-yellow-600 font-medium">段落数</div>
+                        </div>
+                        <div class="stat-card bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl text-center">
+                            <div class="text-3xl font-bold text-orange-700 mb-1" id="punctuationCount">0</div>
+                            <div class="text-xs text-orange-600 font-medium">标点符号</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 阅读信息 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-book text-pink-600"></i> 阅读信息
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700 font-medium">中文阅读时间</span>
+                            <span class="text-purple-700 font-bold" id="readingTimeCn">0 分钟</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700 font-medium">英文阅读时间</span>
+                            <span class="text-purple-700 font-bold" id="readingTimeEn">0 分钟</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700 font-medium">朗读时间</span>
+                            <span class="text-purple-700 font-bold" id="speakingTime">0 分钟</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700 font-medium">平均词长</span>
+                            <span class="text-purple-700 font-bold" id="avgWordLength">0 字符</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 词频分析 -->
+        <div class="grid lg:grid-cols-2 gap-6 mb-8">
+            <!-- 词频统计 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-tags text-blue-600"></i> 词频统计
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 text-sm">
+                            <span class="text-gray-600">显示数量:</span>
+                            <select id="wordFreqLimit" class="border-2 border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:border-purple-500 focus:outline-none">
+                                <option value="10">Top 10</option>
+                                <option value="20" selected>Top 20</option>
+                                <option value="30">Top 30</option>
+                                <option value="50">Top 50</option>
+                            </select>
+                        </label>
+                        <button id="exportFreqBtn" class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-all">
+                            <i class="fa fa-download mr-1"></i> 导出
+                        </button>
+                    </div>
+                </div>
+                <div class="max-h-[400px] overflow-y-auto pr-2">
+                    <div id="wordFreqContainer" class="space-y-2">
+                        <div class="text-center py-16 text-gray-400">
+                            <i class="fa fa-bar-chart text-4xl mb-3"></i>
+                            <p>输入文本后将显示词频统计</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 字符分布 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-pie-chart text-green-600"></i> 字符分布
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <select id="chartType" class="border-2 border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:border-purple-500 focus:outline-none">
+                            <option value="pie">饼图</option>
+                            <option value="bar">柱状图</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="h-[400px] flex items-center justify-center">
+                    <canvas id="distributionChart"></canvas>
+                    <div id="chartPlaceholder" class="text-center text-gray-400">
+                        <i class="fa fa-pie-chart text-4xl mb-3"></i>
+                        <p>输入文本后将显示字符分布</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 高级统计 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <i class="fa fa-line-chart text-orange-600"></i> 高级统计
+            </h3>
+            <div class="grid md:grid-cols-4 gap-4">
+                <div class="stat-card bg-gradient-to-br from-indigo-50 to-indigo-100 p-5 rounded-xl">
+                    <div class="text-sm text-indigo-600 font-medium mb-2">中文字符</div>
+                    <div class="text-3xl font-bold text-indigo-700 mb-1" id="chineseCount">0</div>
+                    <div class="text-xs text-indigo-500">占比 <span id="chinesePercent">0%</span></div>
+                </div>
+                <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-xl">
+                    <div class="text-sm text-purple-600 font-medium mb-2">英文字符</div>
+                    <div class="text-3xl font-bold text-purple-700 mb-1" id="englishCount">0</div>
+                    <div class="text-xs text-purple-500">占比 <span id="englishPercent">0%</span></div>
+                </div>
+                <div class="stat-card bg-gradient-to-br from-pink-50 to-pink-100 p-5 rounded-xl">
+                    <div class="text-sm text-pink-600 font-medium mb-2">数字字符</div>
+                    <div class="text-3xl font-bold text-pink-700 mb-1" id="numberCount">0</div>
+                    <div class="text-xs text-pink-500">占比 <span id="numberPercent">0%</span></div>
+                </div>
+                <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl">
+                    <div class="text-sm text-green-600 font-medium mb-2">空格换行</div>
+                    <div class="text-3xl font-bold text-green-700 mb-1" id="spaceCount">0</div>
+                    <div class="text-xs text-green-500">占比 <span id="spacePercent">0%</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 常用功能 -->
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                        <i class="fa fa-remove-format"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">去除格式</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">一键去除文本中的多余空格、换行和特殊格式，只保留纯文本内容。</p>
+                <button id="removeFormatBtn" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-600 py-2 rounded-lg font-medium transition-all">
+                    执行去除格式
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center text-pink-600">
+                        <i class="fa fa-text-height"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">大小写转换</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">支持英文全大写、全小写、首字母大写等多种转换模式。</p>
+                <div class="flex gap-2">
+                    <button id="toUpperCaseBtn" class="flex-1 bg-pink-50 hover:bg-pink-100 text-pink-600 py-2 rounded-lg font-medium text-sm transition-all">
+                        全大写
+                    </button>
+                    <button id="toLowerCaseBtn" class="flex-1 bg-pink-50 hover:bg-pink-100 text-pink-600 py-2 rounded-lg font-medium text-sm transition-all">
+                        全小写
+                    </button>
+                    <button id="capitalizeBtn" class="flex-1 bg-pink-50 hover:bg-pink-100 text-pink-600 py-2 rounded-lg font-medium text-sm transition-all">
+                        首字母大写
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                        <i class="fa fa-sort-alpha-asc"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">文本排序</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">按行对文本进行字典序、长度排序，支持升序和降序。</p>
+                <div class="flex gap-2">
+                    <button id="sortAscBtn" class="flex-1 bg-green-50 hover:bg-green-100 text-green-600 py-2 rounded-lg font-medium text-sm transition-all">
+                        升序
+                    </button>
+                    <button id="sortDescBtn" class="flex-1 bg-green-50 hover:bg-green-100 text-green-600 py-2 rounded-lg font-medium text-sm transition-all">
+                        降序
+                    </button>
+                    <button id="sortLengthBtn" class="flex-1 bg-green-50 hover:bg-green-100 text-green-600 py-2 rounded-lg font-medium text-sm transition-all">
+                        按长度
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>💡 提示：所有统计和处理完全在本地完成，数据绝不会上传到服务器，支持中英文混合文本</p>
+            <p class="mt-2">文本统计分析工具 | Build #112 | 旺仔工具百宝箱 🥛</p>
+        </footer>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all transform translate-x-full opacity-0">
+        <i id="toastIcon" class="fa fa-check-circle"></i>
+        <span id="toastText"></span>
+    </div>
+
+    <script>
+        // 全局状态
+        let currentChart = null;
+        let stopwords = new Set([
+            '的', '了', '和', '是', '在', '我', '有', '也', '很', '都', '就', '要', '会', '可以', '这个', '这样', '非常',
+            'a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'in', 'on', 'at', 'to', 'of', 'for', 'with'
+        ]);
+
+        // DOM 元素
+        const textInput = document.getElementById('textInput');
+        const liveCount = document.getElementById('liveCount');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        
+        // 统计卡片
+        const charCount = document.getElementById('charCount');
+        const charCountNoSpace = document.getElementById('charCountNoSpace');
+        const wordCount = document.getElementById('wordCount');
+        const lineCount = document.getElementById('lineCount');
+        const paragraphCount = document.getElementById('paragraphCount');
+        const punctuationCount = document.getElementById('punctuationCount');
+        
+        // 阅读信息
+        const readingTimeCn = document.getElementById('readingTimeCn');
+        const readingTimeEn = document.getElementById('readingTimeEn');
+        const speakingTime = document.getElementById('speakingTime');
+        const avgWordLength = document.getElementById('avgWordLength');
+        
+        // 词频
+        const wordFreqLimit = document.getElementById('wordFreqLimit');
+        const wordFreqContainer = document.getElementById('wordFreqContainer');
+        const exportFreqBtn = document.getElementById('exportFreqBtn');
+        
+        // 图表
+        const chartType = document.getElementById('chartType');
+        const distributionChart = document.getElementById('distributionChart');
+        const chartPlaceholder = document.getElementById('chartPlaceholder');
+        
+        // 高级统计
+        const chineseCount = document.getElementById('chineseCount');
+        const chinesePercent = document.getElementById('chinesePercent');
+        const englishCount = document.getElementById('englishCount');
+        const englishPercent = document.getElementById('englishPercent');
+        const numberCount = document.getElementById('numberCount');
+        const numberPercent = document.getElementById('numberPercent');
+        const spaceCount = document.getElementById('spaceCount');
+        const spacePercent = document.getElementById('spacePercent');
+        
+        // 功能按钮
+        const removeFormatBtn = document.getElementById('removeFormatBtn');
+        const toUpperCaseBtn = document.getElementById('toUpperCaseBtn');
+        const toLowerCaseBtn = document.getElementById('toLowerCaseBtn');
+        const capitalizeBtn = document.getElementById('capitalizeBtn');
+        const sortAscBtn = document.getElementById('sortAscBtn');
+        const sortDescBtn = document.getElementById('sortDescBtn');
+        const sortLengthBtn = document.getElementById('sortLengthBtn');
+        
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastText = document.getElementById('toastText');
+
+        // 示例文本
+        const sampleText = `大语言模型（Large Language Model, LLM）是一种基于Transformer架构的人工智能模型，通过在大规模文本语料上进行预训练，学习语言的模式和知识。
+
+近年来，大语言模型技术发展迅速，GPT、Claude、Qwen、DeepSeek等模型在各种任务上表现出了强大的能力。这些模型不仅能理解自然语言，还能生成高质量的文本内容，完成翻译、摘要、推理、编程等复杂任务。
+
+大语言模型的应用场景非常广泛，包括智能客服、内容创作、代码开发、教育辅助、医疗诊断等领域。随着技术的不断进步，大语言模型正在深刻改变我们的工作和生活方式。
+
+根据相关研究，当前主流大语言模型的参数量已经从数十亿发展到数千亿级别，训练数据量也达到了万亿token级别。模型能力的提升带来了更好的表现，但也带来了更高的计算成本和能源消耗。
+
+未来，大语言模型的发展方向包括：更高的效率、更强的推理能力、更好的安全性、更低的使用成本，以及更广泛的行业落地应用。`;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 事件监听
+            textInput.addEventListener('input', debounce(updateStatistics, 200));
+            wordFreqLimit.addEventListener('change', updateStatistics);
+            chartType.addEventListener('change', updateChart);
+            
+            // 按钮事件
+            pasteBtn.addEventListener('click', pasteFromClipboard);
+            copyBtn.addEventListener('click', copyToClipboard);
+            loadSampleBtn.addEventListener('click', loadSample);
+            clearBtn.addEventListener('click', clearAll);
+            exportFreqBtn.addEventListener('click', exportWordFreq);
+            
+            // 功能按钮
+            removeFormatBtn.addEventListener('click', removeFormat);
+            toUpperCaseBtn.addEventListener('click', toUpperCase);
+            toLowerCaseBtn.addEventListener('click', toLowerCase);
+            capitalizeBtn.addEventListener('click', capitalizeText);
+            sortAscBtn.addEventListener('click', () => sortText('asc'));
+            sortDescBtn.addEventListener('click', () => sortText('desc'));
+            sortLengthBtn.addEventListener('click', () => sortText('length'));
+            
+            // 初始化统计
+            updateStatistics();
+        });
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 更新所有统计
+        function updateStatistics() {
+            const text = textInput.value;
+            
+            // 更新实时计数
+            const chars = text.length;
+            const words = countWords(text);
+            liveCount.textContent = `${chars} 字符 | ${words} 字`;
+            
+            // 更新基础统计
+            updateBasicStats(text);
+            
+            // 更新阅读信息
+            updateReadingInfo(text, words);
+            
+            // 更新词频
+            updateWordFrequency(text);
+            
+            // 更新高级统计
+            updateAdvancedStats(text, chars);
+            
+            // 更新图表
+            updateChart();
+            
+            // 显示/隐藏图表占位符
+            if (chars === 0) {
+                chartPlaceholder.classList.remove('hidden');
+                if (currentChart) {
+                    currentChart.destroy();
+                    currentChart = null;
+                }
+            } else {
+                chartPlaceholder.classList.add('hidden');
+            }
+        }
+
+        // 基础统计
+        function updateBasicStats(text) {
+            const totalChars = text.length;
+            const charsNoSpace = text.replace(/\s/g, '').length;
+            const words = countWords(text);
+            const lines = text ? text.split('\n').length : 0;
+            const paragraphs = text ? text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length : 0;
+            const punctuation = (text.match(/[\u3000-\u303f\uff00-\uffef.,;:!?'"，。；：！？""''、（）【】《》]/g) || []).length;
+            
+            charCount.textContent = totalChars.toLocaleString();
+            charCountNoSpace.textContent = charsNoSpace.toLocaleString();
+            wordCount.textContent = words.toLocaleString();
+            lineCount.textContent = lines.toLocaleString();
+            paragraphCount.textContent = paragraphs.toLocaleString();
+            punctuationCount.textContent = punctuation.toLocaleString();
+        }
+
+        // 统计字数
+        function countWords(text) {
+            if (!text) return 0;
+            
+            // 中文字符
+            const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            
+            // 英文单词
+            const englishWords = text.match(/[a-zA-Z]+/g) || [];
+            
+            // 数字
+            const numbers = text.match(/\d+/g) || [];
+            
+            return chineseChars + englishWords.length + numbers.length;
+        }
+
+        // 更新阅读信息
+        function updateReadingInfo(text, wordCount) {
+            // 中文阅读速度：300-500字/分钟，取400
+            const cnTime = Math.ceil(wordCount / 400);
+            // 英文阅读速度：200-300词/分钟，取250
+            const enWords = (text.match(/[a-zA-Z]+/g) || []).length;
+            const enTime = Math.ceil(enWords / 250);
+            // 朗读速度：150-200字/分钟，取180
+            const speakTime = Math.ceil(wordCount / 180);
+            
+            // 平均词长
+            const totalWords = countWords(text);
+            const avgLength = totalWords > 0 ? (text.replace(/\s/g, '').length / totalWords).toFixed(1) : 0;
+            
+            readingTimeCn.textContent = `${cnTime} 分钟`;
+            readingTimeEn.textContent = `${enTime} 分钟`;
+            speakingTime.textContent = `${speakTime} 分钟`;
+            avgWordLength.textContent = `${avgLength} 字符`;
+        }
+
+        // 更新词频统计
+        function updateWordFrequency(text) {
+            if (!text.trim()) {
+                wordFreqContainer.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa fa-bar-chart text-4xl mb-3"></i><p>输入文本后将显示词频统计</p></div>';
+                return;
+            }
+            
+            const limit = parseInt(wordFreqLimit.value);
+            const freqMap = new Map();
+            
+            // 提取中文词（简单分词：单个汉字）
+            const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+            chineseChars.forEach(char => {
+                if (!stopwords.has(char)) {
+                    freqMap.set(char, (freqMap.get(char) || 0) + 1);
+                }
+            });
+            
+            // 提取英文单词
+            const englishWords = text.match(/[a-zA-Z]+/g) || [];
+            englishWords.forEach(word => {
+                const lowerWord = word.toLowerCase();
+                if (!stopwords.has(lowerWord) && lowerWord.length > 1) {
+                    freqMap.set(lowerWord, (freqMap.get(lowerWord) || 0) + 1);
+                }
+            });
+            
+            // 排序
+            const sortedFreq = Array.from(freqMap.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, limit);
+            
+            // 计算最大频率
+            const maxFreq = sortedFreq.length > 0 ? sortedFreq[0][1] : 1;
+            
+            // 渲染
+            wordFreqContainer.innerHTML = '';
+            sortedFreq.forEach(([word, count], index) => {
+                const percentage = ((count / maxFreq) * 100).toFixed(0);
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all';
+                item.innerHTML = `
+                    <span class="text-sm font-semibold text-gray-500 w-6">${index + 1}</span>
+                    <span class="font-mono font-medium text-purple-700 flex-1">${word}</span>
+                    <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700 w-12 text-right">${count}</span>
+                `;
+                wordFreqContainer.appendChild(item);
+            });
+        }
+
+        // 更新高级统计
+        function updateAdvancedStats(text, totalChars) {
+            const chinese = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const english = (text.match(/[a-zA-Z]/g) || []).length;
+            const numbers = (text.match(/\d/g) || []).length;
+            const spaces = (text.match(/\s/g) || []).length;
+            
+            const calcPercent = (count) => totalChars > 0 ? ((count / totalChars) * 100).toFixed(1) : 0;
+            
+            chineseCount.textContent = chinese.toLocaleString();
+            chinesePercent.textContent = `${calcPercent(chinese)}%`;
+            englishCount.textContent = english.toLocaleString();
+            englishPercent.textContent = `${calcPercent(english)}%`;
+            numberCount.textContent = numbers.toLocaleString();
+            numberPercent.textContent = `${calcPercent(numbers)}%`;
+            spaceCount.textContent = spaces.toLocaleString();
+            spacePercent.textContent = `${calcPercent(spaces)}%`;
+        }
+
+        // 更新图表
+        function updateChart() {
+            const text = textInput.value;
+            if (!text.trim()) return;
+            
+            const chinese = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const english = (text.match(/[a-zA-Z]/g) || []).length;
+            const numbers = (text.match(/\d/g) || []).length;
+            const punctuation = (text.match(/[\u3000-\u303f\uff00-\uffef.,;:!?'"，。；：！？""''、（）【】《》]/g) || []).length;
+            const spaces = (text.match(/\s/g) || []).length;
+            const other = text.length - chinese - english - numbers - punctuation - spaces;
+            
+            const data = {
+                labels: ['中文字符', '英文字符', '数字', '标点符号', '空格换行', '其他'],
+                datasets: [{
+                    data: [chinese, english, numbers, punctuation, spaces, other],
+                    backgroundColor: [
+                        '#8B5CF6', // 紫色
+                        '#EC4899', // 粉色
+                        '#3B82F6', // 蓝色
+                        '#10B981', // 绿色
+                        '#F59E0B', // 橙色
+                        '#6B7280'  // 灰色
+                    ],
+                    borderWidth: 0
+                }]
+            };
+            
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            };
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            currentChart = new Chart(distributionChart, {
+                type: chartType.value,
+                data: data,
+                options: options
+            });
+        }
+
+        // 导出词频
+        function exportWordFreq() {
+            const text = textInput.value;
+            if (!text.trim()) {
+                showToast('没有数据可导出', 'error');
+                return;
+            }
+            
+            const freqMap = new Map();
+            const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+            chineseChars.forEach(char => {
+                if (!stopwords.has(char)) {
+                    freqMap.set(char, (freqMap.get(char) || 0) + 1);
+                }
+            });
+            
+            const englishWords = text.match(/[a-zA-Z]+/g) || [];
+            englishWords.forEach(word => {
+                const lowerWord = word.toLowerCase();
+                if (!stopwords.has(lowerWord) && lowerWord.length > 1) {
+                    freqMap.set(lowerWord, (freqMap.get(lowerWord) || 0) + 1);
+                }
+            });
+            
+            const sortedFreq = Array.from(freqMap.entries()).sort((a, b) => b[1] - a[1]);
+            
+            let csv = '词语,出现次数\n';
+            sortedFreq.forEach(([word, count]) => {
+                csv += `"${word}",${count}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `word-frequency-${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('词频数据已导出', 'success');
+        }
+
+        // 功能：去除格式
+        function removeFormat() {
+            let text = textInput.value;
+            // 去除多余空格和换行
+            text = text.replace(/\s+/g, ' ').trim();
+            textInput.value = text;
+            updateStatistics();
+            showToast('格式已去除', 'success');
+        }
+
+        // 功能：转大写
+        function toUpperCase() {
+            textInput.value = textInput.value.toUpperCase();
+            updateStatistics();
+            showToast('已转换为大写', 'success');
+        }
+
+        // 功能：转小写
+        function toLowerCase() {
+            textInput.value = textInput.value.toLowerCase();
+            updateStatistics();
+            showToast('已转换为小写', 'success');
+        }
+
+        // 功能：首字母大写
+        function capitalizeText() {
+            let text = textInput.value;
+            // 英文单词首字母大写
+            text = text.replace(/\b\w/g, char => char.toUpperCase());
+            textInput.value = text;
+            updateStatistics();
+            showToast('首字母已大写', 'success');
+        }
+
+        // 功能：文本排序
+        function sortText(mode) {
+            const lines = textInput.value.split('\n').filter(line => line.trim() !== '');
+            
+            if (mode === 'asc') {
+                lines.sort();
+            } else if (mode === 'desc') {
+                lines.sort().reverse();
+            } else if (mode === 'length') {
+                lines.sort((a, b) => a.length - b.length);
+            }
+            
+            textInput.value = lines.join('\n');
+            updateStatistics();
+            showToast('文本已排序', 'success');
+        }
+
+        // 粘贴
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                textInput.value = text;
+                updateStatistics();
+                showToast('已从剪贴板粘贴', 'success');
+            } catch (err) {
+                showToast('粘贴失败，请手动粘贴', 'error');
+            }
+        }
+
+        // 复制
+        function copyToClipboard() {
+            if (!textInput.value.trim()) {
+                showToast('没有内容可复制', 'error');
+                return;
+            }
+            navigator.clipboard.writeText(textInput.value).then(() => {
+                showToast('文本已复制到剪贴板', 'success');
+            }).catch(() => {
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 加载示例
+        function loadSample() {
+            textInput.value = sampleText;
+            updateStatistics();
+            showToast('示例文本已加载', 'success');
+        }
+
+        // 清空
+        function clearAll() {
+            textInput.value = '';
+            updateStatistics();
+            showToast('已清空', 'success');
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            if (type === 'success') {
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-check-circle';
+            } else {
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-exclamation-circle';
+            }
+            
+            toastText.textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式测试工具 🔍</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .match-highlight {
+            background: #fef08a;
+            padding: 2px 0;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+        
+        .match-group {
+            background: #bfdbfe;
+            padding: 2px 0;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .pattern-item {
+            transition: all 0.3s ease;
+        }
+        
+        .pattern-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .flag-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .flag-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-gray-800">
+    <div class="container mx-auto px-4 py-12 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                <i class="fas fa-search mr-3"></i>正则表达式测试工具
+            </h1>
+            <p class="text-lg text-white/90 font-light">
+                实时测试正则表达式，高亮匹配结果，提取分组，常用模板快速使用
+            </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">匹配结果</p>
+                        <p class="text-3xl font-bold" id="matchCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">捕获分组</p>
+                        <p class="text-3xl font-bold" id="groupCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">执行时间</p>
+                        <p class="text-3xl font-bold" id="execTime">0 ms</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">语法状态</p>
+                        <p class="text-3xl font-bold" id="syntaxStatus">-</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-code"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Left Panel -->
+            <div class="space-y-6">
+                <!-- Pattern Input -->
+                <div class="bg-white rounded-3xl card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-regex mr-2 text-purple-600"></i>正则表达式
+                        </h3>
+                        <button id="copyPatternBtn" class="copy-btn px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
+                            <i class="fas fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                    
+                    <div class="flex gap-3 mb-4">
+                        <div class="flex-1 relative">
+                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 code-font">/</span>
+                            <input 
+                                type="text" 
+                                id="patternInput" 
+                                class="w-full pl-8 pr-4 py-3 rounded-xl border-2 border-gray-200 code-font outline-none focus:border-purple-500"
+                                placeholder="输入正则表达式，例如: \d+"
+                                value="(\w+)@(\w+\.\w+)"
+                            >
+                            <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 code-font">/</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="text-sm text-gray-600 font-medium mr-2">标志位:</span>
+                        <button class="flag-btn px-3 py-1 border-2 border-gray-200 rounded-lg text-sm font-medium" data-flag="g" title="全局匹配">g</button>
+                        <button class="flag-btn px-3 py-1 border-2 border-gray-200 rounded-lg text-sm font-medium" data-flag="i" title="忽略大小写">i</button>
+                        <button class="flag-btn px-3 py-1 border-2 border-gray-200 rounded-lg text-sm font-medium" data-flag="m" title="多行匹配">m</button>
+                        <button class="flag-btn px-3 py-1 border-2 border-gray-200 rounded-lg text-sm font-medium" data-flag="s" title="点号匹配换行">s</button>
+                        <button class="flag-btn px-3 py-1 border-2 border-gray-200 rounded-lg text-sm font-medium" data-flag="u" title="Unicode支持">u</button>
+                        <button class="flag-btn px-3 py-1 border-2 border-gray-200 rounded-lg text-sm font-medium" data-flag="y" title="粘性匹配">y</button>
+                    </div>
+                    
+                    <div id="patternError" class="text-red-500 text-sm hidden">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+                </div>
+
+                <!-- Test Text Input -->
+                <div class="bg-white rounded-3xl card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-file-alt mr-2 text-purple-600"></i>测试文本
+                        </h3>
+                        <button id="clearTextBtn" class="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition">
+                            <i class="fas fa-trash mr-1"></i>清空
+                        </button>
+                    </div>
+                    
+                    <textarea 
+                        id="testTextInput" 
+                        class="w-full h-[300px] p-4 rounded-xl border-2 border-gray-200 code-font outline-none focus:border-purple-500 resize-none"
+                        placeholder="输入要测试的文本..."
+                    >联系我们：support@example.com, sales@company.org, admin@test.com
+电话：13812345678, 13987654321
+网址：https://www.example.com, http://test.org
+邮编：100000, 200000
+身份证：110101199001011234, 310101198512315678
+                    </textarea>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="space-y-6">
+                <!-- Results Preview -->
+                <div class="bg-white rounded-3xl card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-eye mr-2 text-purple-600"></i>匹配结果预览
+                        </h3>
+                        <div class="flex gap-2">
+                            <button id="copyResultsBtn" class="copy-btn px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
+                                <i class="fas fa-copy mr-1"></i>复制结果
+                            </button>
+                            <button id="expandAllBtn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                                <i class="fas fa-expand-alt mr-1"></i>全部展开
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="resultsPreview" class="w-full h-[250px] p-4 rounded-xl border-2 border-gray-200 bg-gray-50 overflow-y-auto code-font whitespace-pre-wrap">
+                    </div>
+                </div>
+
+                <!-- Matches List -->
+                <div class="bg-white rounded-3xl card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-list mr-2 text-purple-600"></i>匹配详情
+                        </h3>
+                        <span id="matchesCount" class="text-sm text-gray-500 font-medium">0 个匹配</span>
+                    </div>
+                    
+                    <div id="matchesList" class="max-h-[250px] overflow-y-auto space-y-3">
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-3 opacity-30"></i>
+                            <p>暂无匹配结果</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Patterns -->
+        <div class="bg-white rounded-3xl card-shadow p-8 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-book mr-3 text-purple-600"></i>常用正则模板
+                </h2>
+                <button id="addPatternBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
+                    <i class="fas fa-plus mr-1"></i>添加模板
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('邮箱', '\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">📧 邮箱地址</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('手机号', '1[3-9]\\d{9}', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">📱 中国大陆手机号</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/1[3-9]\d{9}/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('URL', 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/\\/=]*)', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">🌐 URL网址</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('身份证', '[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">🆔 中国大陆身份证</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('IP地址', '((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">🌐 IP地址</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('邮编', '[1-9]\\d{5}', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">📮 中国大陆邮编</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/[1-9]\d{5}/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('数字', '\\d+', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">🔢 整数</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/\d+/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('中文字符', '[\\u4e00-\\u9fa5]', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">🇨🇳 中文字符</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/[\u4e00-\u9fa5]/g</div>
+                </div>
+                
+                <div class="pattern-item bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer" onclick="usePattern('HTML标签', '<([^>]+)>', 'g')">
+                    <div class="font-semibold text-gray-800 mb-1">🏷️ HTML标签</div>
+                    <div class="text-xs text-gray-600 font-mono break-all">/<([^>]+)>/g</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Section -->
+        <div class="bg-white rounded-3xl card-shadow p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-question-circle mr-3 text-purple-600"></i>正则语法速查
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-3">元字符</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">.</span> <span class="text-gray-600">匹配任意字符</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">\w</span> <span class="text-gray-600">字母数字下划线</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">\d</span> <span class="text-gray-600">数字</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">\s</span> <span class="text-gray-600">空白字符</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">\b</span> <span class="text-gray-600">单词边界</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">^</span> <span class="text-gray-600">行开始</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">$</span> <span class="text-gray-600">行结束</span></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-3">量词</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">*</span> <span class="text-gray-600">零次或多次</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">+</span> <span class="text-gray-600">一次或多次</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">?</span> <span class="text-gray-600">零次或一次</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">{n}</span> <span class="text-gray-600">n次</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">{n,}</span> <span class="text-gray-600">至少n次</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">{n,m}</span> <span class="text-gray-600">n到m次</span></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-3">标志位</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">g</span> <span class="text-gray-600">全局匹配</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">i</span> <span class="text-gray-600">忽略大小写</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">m</span> <span class="text-gray-600">多行匹配</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">s</span> <span class="text-gray-600">点号匹配换行</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">u</span> <span class="text-gray-600">Unicode支持</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">y</span> <span class="text-gray-600">粘性匹配</span></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-3">分组和断言</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">(abc)</span> <span class="text-gray-600">捕获分组</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">(?:abc)</span> <span class="text-gray-600">非捕获分组</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">(?=abc)</span> <span class="text-gray-600">正向肯定断言</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">(?!abc)</span> <span class="text-gray-600">正向否定断言</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">(?<=abc)</span> <span class="text-gray-600">反向肯定断言</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">(?<!abc)</span> <span class="text-gray-600">反向否定断言</span></li>
+                        <li class="flex justify-between"><span class="font-mono bg-gray-100 px-2 rounded">a|b</span> <span class="text-gray-600">a或b</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/70 text-sm">
+            <p>🔍 所有正则匹配都在本地完成，数据绝不会上传到任何服务器</p>
+            <p class="mt-1">内置常用模板，支持实时高亮匹配，开发调试必备</p>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let activeFlags = new Set(['g']);
+        let currentMatches = [];
+        let customPatterns = JSON.parse(localStorage.getItem('regexPatterns') || '[]');
+        
+        // DOM Elements
+        const patternInput = document.getElementById('patternInput');
+        const testTextInput = document.getElementById('testTextInput');
+        const resultsPreview = document.getElementById('resultsPreview');
+        const matchesList = document.getElementById('matchesList');
+        const matchCount = document.getElementById('matchCount');
+        const groupCount = document.getElementById('groupCount');
+        const execTime = document.getElementById('execTime');
+        const syntaxStatus = document.getElementById('syntaxStatus');
+        const patternError = document.getElementById('patternError');
+        const errorMessage = document.getElementById('errorMessage');
+        const matchesCount = document.getElementById('matchesCount');
+        const flagBtns = document.querySelectorAll('.flag-btn');
+        const copyPatternBtn = document.getElementById('copyPatternBtn');
+        const copyResultsBtn = document.getElementById('copyResultsBtn');
+        const clearTextBtn = document.getElementById('clearTextBtn');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const addPatternBtn = document.getElementById('addPatternBtn');
+        
+        // Initialize
+        updateFlagButtons();
+        testRegex();
+        
+        // Update flag buttons
+        function updateFlagButtons() {
+            flagBtns.forEach(btn => {
+                const flag = btn.dataset.flag;
+                if (activeFlags.has(flag)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        // Build regex
+        function buildRegex() {
+            try {
+                const pattern = patternInput.value;
+                const flags = Array.from(activeFlags).join('');
+                return new RegExp(pattern, flags);
+            } catch (e) {
+                throw e;
+            }
+        }
+        
+        // Test regex
+        function testRegex() {
+            try {
+                const startTime = performance.now();
+                const regex = buildRegex();
+                const text = testTextInput.value;
+                
+                patternError.classList.add('hidden');
+                syntaxStatus.textContent = '✅';
+                syntaxStatus.className = 'text-3xl font-bold text-green-400';
+                
+                // Find all matches
+                currentMatches = [];
+                let match;
+                const globalRegex = new RegExp(regex.source, regex.flags + (regex.global ? '' : 'g'));
+                
+                while ((match = globalRegex.exec(text)) !== null) {
+                    currentMatches.push({
+                        value: match[0],
+                        groups: match.slice(1),
+                        index: match.index,
+                        length: match[0].length
+                    });
+                    
+                    // Avoid infinite loops with zero-width matches
+                    if (match.index === globalRegex.lastIndex) {
+                        globalRegex.lastIndex++;
+                    }
+                }
+                
+                const endTime = performance.now();
+                const timeTaken = Math.round(endTime - startTime);
+                
+                // Update stats
+                matchCount.textContent = currentMatches.length;
+                groupCount.textContent = currentMatches.length > 0 ? currentMatches[0].groups.length : 0;
+                execTime.textContent = `${timeTaken} ms`;
+                matchesCount.textContent = `${currentMatches.length} 个匹配`;
+                
+                // Render results
+                renderResultsPreview(text, currentMatches);
+                renderMatchesList(currentMatches);
+                
+            } catch (e) {
+                patternError.classList.remove('hidden');
+                errorMessage.textContent = e.message;
+                syntaxStatus.textContent = '❌';
+                syntaxStatus.className = 'text-3xl font-bold text-red-400';
+                matchCount.textContent = '0';
+                groupCount.textContent = '0';
+                execTime.textContent = '0 ms';
+                matchesCount.textContent = '0 个匹配';
+                resultsPreview.textContent = testTextInput.value;
+                matchesList.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+                        <p>正则表达式语法错误</p>
+                        <p class="text-sm mt-1">${e.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Render results preview with highlights
+        function renderResultsPreview(text, matches) {
+            if (matches.length === 0) {
+                resultsPreview.textContent = text;
+                return;
+            }
+            
+            // Sort matches by index
+            const sortedMatches = [...matches].sort((a, b) => a.index - b.index);
+            let html = '';
+            let lastIndex = 0;
+            
+            sortedMatches.forEach((match, idx) => {
+                // Add text before match
+                html += escapeHtml(text.slice(lastIndex, match.index));
+                
+                // Add match with highlight
+                const matchText = escapeHtml(match.value);
+                html += `<span class="match-highlight" data-match="${idx}">${matchText}</span>`;
+                
+                lastIndex = match.index + match.length;
+            });
+            
+            // Add remaining text
+            html += escapeHtml(text.slice(lastIndex));
+            
+            resultsPreview.innerHTML = html;
+        }
+        
+        // Render matches list
+        function renderMatchesList(matches) {
+            if (matches.length === 0) {
+                matchesList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-3 opacity-30"></i>
+                        <p>暂无匹配结果</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            matchesList.innerHTML = matches.map((match, idx) => {
+                const groupsHtml = match.groups.length > 0 ? `
+                    <div class="mt-2 pt-2 border-t border-gray-200">
+                        <div class="text-sm font-medium text-gray-700 mb-1">捕获分组 (${match.groups.length}个):</div>
+                        <div class="grid grid-cols-1 gap-1">
+                            ${match.groups.map((group, gidx) => `
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono">$${gidx + 1}</span>
+                                    <span class="text-sm text-gray-600 font-mono break-all">${escapeHtml(group || '')}</span>
+                                    <button class="copy-btn ml-auto text-gray-400 hover:text-purple-600" onclick="copyText('${escapeHtml(group || '')}')" title="复制分组">
+                                        <i class="fas fa-copy text-xs"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1 mr-2">
+                                <div class="font-mono text-sm text-gray-800 break-all mb-1">
+                                    <span class="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded mr-2">#${idx + 1}</span>
+                                    <span class="match-group">${escapeHtml(match.value)}</span>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    位置: ${match.index} - ${match.index + match.length} (长度: ${match.length})
+                                </div>
+                            </div>
+                            <button class="copy-btn p-1.5 text-purple-600 hover:bg-purple-100 rounded" onclick="copyText('${escapeHtml(match.value)}')" title="复制匹配">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        ${groupsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Copy text to clipboard
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                // Show success toast
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse';
+                toast.textContent = '已复制到剪贴板';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            } catch (err) {
+                alert('复制失败');
+            }
+        }
+        
+        // Use pattern from templates
+        window.usePattern = function(name, pattern, flags) {
+            patternInput.value = pattern;
+            activeFlags = new Set(flags.split(''));
+            updateFlagButtons();
+            testRegex();
+            
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-purple-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse';
+            toast.textContent = `已加载"${name}"模板`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        // Event Listeners
+        patternInput.addEventListener('input', () => {
+            clearTimeout(window.testTimer);
+            window.testTimer = setTimeout(testRegex, 300);
+        });
+        
+        testTextInput.addEventListener('input', () => {
+            clearTimeout(window.testTimer);
+            window.testTimer = setTimeout(testRegex, 300);
+        });
+        
+        flagBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const flag = btn.dataset.flag;
+                if (activeFlags.has(flag)) {
+                    activeFlags.delete(flag);
+                } else {
+                    activeFlags.add(flag);
+                }
+                updateFlagButtons();
+                testRegex();
+            });
+        });
+        
+        copyPatternBtn.addEventListener('click', () => {
+            const pattern = patternInput.value;
+            const flags = Array.from(activeFlags).join('');
+            const fullPattern = `/${pattern}/${flags}`;
+            copyText(fullPattern);
+        });
+        
+        copyResultsBtn.addEventListener('click', () => {
+            const resultText = currentMatches.map((m, idx) => {
+                let str = `#${idx + 1}: ${m.value}\n`;
+                if (m.groups.length > 0) {
+                    m.groups.forEach((g, gidx) => {
+                        str += `  $${gidx + 1}: ${g}\n`;
+                    });
+                }
+                return str;
+            }).join('\n');
+            copyText(resultText);
+        });
+        
+        clearTextBtn.addEventListener('click', () => {
+            if (confirm('确定要清空测试文本吗？')) {
+                testTextInput.value = '';
+                testRegex();
+            }
+        });
+        
+        expandAllBtn.addEventListener('click', () => {
+            // Scroll to matches list
+            matchesList.scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        addPatternBtn.addEventListener('click', () => {
+            const name = prompt('请输入模板名称:');
+            if (!name) return;
+            
+            const pattern = patternInput.value;
+            if (!pattern) {
+                alert('请先输入正则表达式');
+                return;
+            }
+            
+            const flags = Array.from(activeFlags).join('');
+            const newPattern = {
+                id: Date.now().toString(),
+                name: name,
+                pattern: pattern,
+                flags: flags
+            };
+            
+            customPatterns.push(newPattern);
+            localStorage.setItem('regexPatterns', JSON.stringify(customPatterns));
+            
+            alert('模板已保存，刷新页面后会显示在自定义模板区域');
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to test
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                testRegex();
+            }
+            // Ctrl/Cmd + C to copy pattern
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && document.activeElement !== patternInput && document.activeElement !== testTextInput) {
+                e.preventDefault();
+                copyPatternBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

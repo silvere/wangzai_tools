@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 像素画编辑器 - Pixel Art Editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:1.6em;margin-bottom:16px;background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;max-width:700px}
+.toolbar button{padding:6px 14px;border:2px solid #333;border-radius:8px;background:#16213e;color:#e0e0e0;cursor:pointer;font-size:13px;transition:all .2s}
+.toolbar button:hover{background:#0f3460;border-color:#4d96ff}
+.toolbar button.active{background:#4d96ff;border-color:#4d96ff;color:#fff}
+.toolbar select{padding:6px 10px;border:2px solid #333;border-radius:8px;background:#16213e;color:#e0e0e0;font-size:13px;cursor:pointer}
+.main{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.canvas-wrap{position:relative;border:2px solid #333;border-radius:8px;overflow:hidden;background:#000;cursor:crosshair}
+canvas{display:block}
+.side{display:flex;flex-direction:column;gap:12px;min-width:180px}
+.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.palette .swatch{width:36px;height:36px;border-radius:6px;border:2px solid #333;cursor:pointer;transition:transform .15s}
+.palette .swatch:hover{transform:scale(1.15)}
+.palette .swatch.active{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.5)}
+.color-pick{display:flex;align-items:center;gap:8px}
+.color-pick input[type=color]{width:48px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none}
+.color-pick span{font-size:13px;font-family:monospace}
+.section-title{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.templates{display:grid;grid-template-columns:repeat(2,1fr);gap:4px}
+.templates button{padding:6px;border:1px solid #333;border-radius:6px;background:#16213e;color:#e0e0e0;cursor:pointer;font-size:12px}
+.templates button:hover{background:#0f3460}
+.info{font-size:12px;color:#666;text-align:center;margin-top:12px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:#4d96ff;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;transition:transform .3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<h1>🎨 像素画编辑器</h1>
+<div class="toolbar">
+  <select id="sizeSelect" title="画布大小">
+    <option value="8">8×8</option>
+    <option value="16" selected>16×16</option>
+    <option value="32">32×32</option>
+  </select>
+  <button id="btnPen" class="active" title="画笔 (B)">✏️ 画笔</button>
+  <button id="btnEraser" title="橡皮 (E)">🧹 橡皮</button>
+  <button id="btnFill" title="填充 (F)">🪣 填充</button>
+  <button id="btnPicker" title="取色 (I)">💉 取色</button>
+  <button id="btnMirror" title="镜像模式 (M)">🪞 镜像</button>
+  <button id="btnGrid" class="active" title="网格 (G)">📐 网格</button>
+  <button id="btnUndo" title="撤销 (Ctrl+Z)">↩️ 撤销</button>
+  <button id="btnRedo" title="重做 (Ctrl+Y)">↪️ 重做</button>
+  <button id="btnClear" title="清空">🗑️ 清空</button>
+  <button id="btnExport" title="导出PNG">💾 导出</button>
+</div>
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div class="side">
+    <div class="section-title">调色板</div>
+    <div class="palette" id="palette"></div>
+    <div class="color-pick">
+      <input type="color" id="colorInput" value="#ff6b6b">
+      <span id="colorHex">#ff6b6b</span>
+    </div>
+    <div class="section-title">预设模板</div>
+    <div class="templates">
+      <button onclick="loadTemplate('heart')">❤️ 爱心</button>
+      <button onclick="loadTemplate('smile')">😊 笑脸</button>
+      <button onclick="loadTemplate('star')">⭐ 星星</button>
+      <button onclick="loadTemplate('sword')">⚔️ 宝剑</button>
+      <button onclick="loadTemplate('tree')">🌲 树木</button>
+      <button onclick="loadTemplate('ghost')">👻 幽灵</button>
+    </div>
+  </div>
+</div>
+<div class="info">快捷键: B画笔 E橡皮 F填充 I取色 M镜像 G网格 Ctrl+Z撤销 Ctrl+Y重做</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS = [
+  '#000000','#ffffff','#ff6b6b','#ee5a24',
+  '#ffd93d','#6bcb77','#4d96ff','#9b59b6',
+  '#1abc9c','#e74c3c','#f39c12','#2ecc71',
+  '#3498db','#8e44ad','#e67e22','#1a1a2e'
+];
+
+let gridSize = 16, pixelSize, showGrid = true, mirror = false;
+let tool = 'pen', currentColor = '#ff6b6b';
+let pixels = [], history = [], historyIdx = -1;
+let isDrawing = false;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function init() {
+  gridSize = parseInt(document.getElementById('sizeSelect').value);
+  pixelSize = Math.min(Math.floor(480 / gridSize), 60);
+  canvas.width = canvas.height = gridSize * pixelSize;
+  pixels = Array.from({length: gridSize}, () => Array(gridSize).fill(null));
+  history = [JSON.parse(JSON.stringify(pixels))];
+  historyIdx = 0;
+  render();
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // checkerboard bg
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      ctx.fillStyle = (x + y) % 2 === 0 ? '#2a2a3e' : '#222236';
+      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+      if (pixels[y][x]) {
+        ctx.fillStyle = pixels[y][x];
+        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+      }
+    }
+  }
+  if (showGrid && pixelSize > 4) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= gridSize; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * pixelSize, 0);
+      ctx.lineTo(i * pixelSize, canvas.height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * pixelSize);
+      ctx.lineTo(canvas.width, i * pixelSize);
+      ctx.stroke();
+    }
+  }
+}
+
+function getCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = Math.floor((e.clientX - rect.left) * scaleX / pixelSize);
+  const y = Math.floor((e.clientY - rect.top) * scaleY / pixelSize);
+  return {x: Math.max(0, Math.min(gridSize-1, x)), y: Math.max(0, Math.min(gridSize-1, y))};
+}
+
+function setPixel(x, y, color) {
+  if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) return;
+  pixels[y][x] = color;
+  if (mirror) {
+    pixels[y][gridSize - 1 - x] = color;
+  }
+}
+
+function floodFill(sx, sy, newColor) {
+  const target = pixels[sy][sx];
+  if (target === newColor) return;
+  const stack = [[sx, sy]];
+  const visited = new Set();
+  while (stack.length) {
+    const [x, y] = stack.pop();
+    const key = `${x},${y}`;
+    if (visited.has(key)) continue;
+    if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) continue;
+    if (pixels[y][x] !== target) continue;
+    visited.add(key);
+    pixels[y][x] = newColor;
+    if (mirror) pixels[y][gridSize-1-x] = newColor;
+    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+}
+
+function saveState() {
+  history = history.slice(0, historyIdx + 1);
+  history.push(JSON.parse(JSON.stringify(pixels)));
+  historyIdx = history.length - 1;
+  if (history.length > 50) { history.shift(); historyIdx--; }
+}
+
+function undo() {
+  if (historyIdx > 0) { historyIdx--; pixels = JSON.parse(JSON.stringify(history[historyIdx])); render(); }
+}
+function redo() {
+  if (historyIdx < history.length - 1) { historyIdx++; pixels = JSON.parse(JSON.stringify(history[historyIdx])); render(); }
+}
+
+function applyTool(e) {
+  const {x, y} = getCell(e);
+  if (tool === 'pen') { setPixel(x, y, currentColor); render(); }
+  else if (tool === 'eraser') { setPixel(x, y, null); render(); }
+  else if (tool === 'fill') { floodFill(x, y, currentColor); render(); saveState(); }
+  else if (tool === 'picker') {
+    if (pixels[y][x]) { setColor(pixels[y][x]); }
+    setTool('pen');
+  }
+}
+
+canvas.addEventListener('mousedown', e => { isDrawing = true; applyTool(e); });
+canvas.addEventListener('mousemove', e => { if (isDrawing && (tool === 'pen' || tool === 'eraser')) applyTool(e); });
+canvas.addEventListener('mouseup', () => { if (isDrawing) { isDrawing = false; if (tool === 'pen' || tool === 'eraser') saveState(); } });
+canvas.addEventListener('mouseleave', () => { if (isDrawing) { isDrawing = false; if (tool === 'pen' || tool === 'eraser') saveState(); } });
+
+// Touch support
+canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; applyTool(e.touches[0]); }, {passive:false});
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing && (tool==='pen'||tool==='eraser')) applyTool(e.touches[0]); }, {passive:false});
+canvas.addEventListener('touchend', e => { e.preventDefault(); if (isDrawing) { isDrawing = false; if (tool==='pen'||tool==='eraser') saveState(); } }, {passive:false});
+
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.toolbar button').forEach(b => {
+    if (['btnPen','btnEraser','btnFill','btnPicker'].includes(b.id))
+      b.classList.toggle('active', b.id === 'btn' + t.charAt(0).toUpperCase() + t.slice(1));
+  });
+}
+
+function setColor(c) {
+  currentColor = c;
+  document.getElementById('colorInput').value = c;
+  document.getElementById('colorHex').textContent = c;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s.dataset.color === c));
+}
+
+// Build palette
+const paletteEl = document.getElementById('palette');
+COLORS.forEach(c => {
+  const d = document.createElement('div');
+  d.className = 'swatch' + (c === currentColor ? ' active' : '');
+  d.style.background = c;
+  d.dataset.color = c;
+  d.onclick = () => setColor(c);
+  paletteEl.appendChild(d);
+});
+
+document.getElementById('colorInput').addEventListener('input', e => setColor(e.target.value));
+document.getElementById('sizeSelect').addEventListener('change', init);
+
+document.getElementById('btnPen').onclick = () => setTool('pen');
+document.getElementById('btnEraser').onclick = () => setTool('eraser');
+document.getElementById('btnFill').onclick = () => setTool('fill');
+document.getElementById('btnPicker').onclick = () => setTool('picker');
+document.getElementById('btnMirror').onclick = function() { mirror = !mirror; this.classList.toggle('active', mirror); };
+document.getElementById('btnGrid').onclick = function() { showGrid = !showGrid; this.classList.toggle('active', showGrid); render(); };
+document.getElementById('btnUndo').onclick = undo;
+document.getElementById('btnRedo').onclick = redo;
+document.getElementById('btnClear').onclick = () => { pixels = Array.from({length:gridSize},()=>Array(gridSize).fill(null)); saveState(); render(); };
+document.getElementById('btnExport').onclick = () => {
+  const exp = document.createElement('canvas');
+  const s = Math.max(512 / gridSize, 1);
+  exp.width = exp.height = gridSize * s;
+  const ectx = exp.getContext('2d');
+  for (let y = 0; y < gridSize; y++)
+    for (let x = 0; x < gridSize; x++) {
+      if (pixels[y][x]) { ectx.fillStyle = pixels[y][x]; ectx.fillRect(x*s,y*s,s,s); }
+    }
+  const a = document.createElement('a');
+  a.download = 'pixel-art-' + Date.now() + '.png';
+  a.href = exp.toDataURL('image/png');
+  a.click();
+  showToast('已导出 PNG！');
+};
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+  else if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+  else if (e.key === 'b') setTool('pen');
+  else if (e.key === 'e') setTool('eraser');
+  else if (e.key === 'f') setTool('fill');
+  else if (e.key === 'i') setTool('picker');
+  else if (e.key === 'm') { mirror = !mirror; document.getElementById('btnMirror').classList.toggle('active', mirror); }
+  else if (e.key === 'g') { showGrid = !showGrid; document.getElementById('btnGrid').classList.toggle('active', showGrid); render(); }
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// Templates (16x16)
+const TEMPLATES = {
+  heart: {s:16,d:`
+................
+................
+..xx....xx......
+.xxxx..xxxx.....
+.xxxxxxxxxx.....
+.xxxxxxxxxx.....
+..xxxxxxxx......
+...xxxxxx.......
+....xxxx........
+.....xx.........
+................
+................
+................
+................
+................
+................`.replace(/x/g,'r')},
+  smile: {s:16,d:`
+................
+....xxxxxx......
+..xx......xx....
+.x..........x...
+.x..xx..xx..x...
+x...xx..xx...x..
+x............x..
+x..x......x..x..
+x...x....x...x..
+.x...xxxx...x...
+.x..........x...
+..xx......xx....
+....xxxxxx......
+................
+................
+................`},
+  star: {s:16,d:`
+.......y........
+.......y........
+......yyy.......
+......yyy.......
+.yyyyyyyyyyyyy..
+..yyyyyyyyyyy...
+...yyyyyyyyy....
+....yyyyyyy.....
+...yyyyyyyyy....
+..yy.yyyyy.yy...
+.yy...yyy...yy..
+.y.....y.....y..
+................
+................
+................
+................`},
+  sword: {s:16,d:`
+..............s.
+.............ss.
+............ss..
+...........ss...
+..........ss....
+.........ss.....
+........ss......
+.......ss.......
+..b...ss........
+..bb.ss.........
+...bbs..........
+...sbb..........
+..s..bb.........
+.......b........
+................
+................`},
+  tree: {s:16,d:`
+.......g........
+......ggg.......
+.....ggggg......
+....ggggggg.....
+...ggggggggg....
+..ggggggggggg...
+.ggggggggggggg..
+......ttt.......
+......ttt.......
+......ttt.......
+................
+................
+................
+................
+................
+................`},
+  ghost: {s:16,d:`
+.....wwwww......
+...wwwwwwwww....
+..wwwwwwwwwww...
+.wwwppwwwppww...
+.wwppppwppppw...
+.wwwppwwwppww...
+.wwwwwwwwwwww...
+.wwwwwwwwwwww...
+.wwwwwwwwwwww...
+.wwwwwwwwwwww...
+.wwwwwwwwwwww...
+.ww.www.www.w...
+................
+................
+................
+................`}
+};
+const TCOLORS = {r:'#ff6b6b',x:'#4d96ff',y:'#ffd93d',g:'#6bcb77',t:'#8B4513',w:'#ffffff',b:'#888888',s:'#c0c0c0',p:'#222222'};
+
+function loadTemplate(name) {
+  const tmpl = TEMPLATES[name];
+  if (!tmpl) return;
+  if (gridSize !== tmpl.s) {
+    document.getElementById('sizeSelect').value = tmpl.s;
+    gridSize = tmpl.s;
+    pixelSize = Math.min(Math.floor(480/gridSize),60);
+    canvas.width = canvas.height = gridSize * pixelSize;
+  }
+  pixels = Array.from({length:gridSize},()=>Array(gridSize).fill(null));
+  const lines = tmpl.d.trim().split('\n');
+  for (let y = 0; y < Math.min(lines.length, gridSize); y++) {
+    const line = lines[y].trim();
+    for (let x = 0; x < Math.min(line.length, gridSize); x++) {
+      if (line[x] !== '.') pixels[y][x] = TCOLORS[line[x]] || '#ffffff';
+    }
+  }
+  saveState();
+  render();
+  showToast('已加载模板: ' + name);
+}
+
+init();
+</script>
+</body>
+</html>

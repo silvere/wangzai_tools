@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON 树形浏览器 🌳</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .json-editor {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .json-tree {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .json-key {
+            color: #6366f1;
+            font-weight: 500;
+        }
+        
+        .json-string {
+            color: #10b981;
+        }
+        
+        .json-number {
+            color: #f59e0b;
+        }
+        
+        .json-boolean {
+            color: #8b5cf6;
+        }
+        
+        .json-null {
+            color: #ef4444;
+        }
+        
+        .json-toggle {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+        
+        .json-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        
+        .json-children {
+            padding-left: 24px;
+            transition: all 0.2s ease;
+        }
+        
+        .json-children.hidden {
+            display: none;
+        }
+        
+        .json-node:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .path-item {
+            transition: all 0.2s ease;
+        }
+        
+        .path-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .search-highlight {
+            background: #fef08a;
+            padding: 2px 0;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-gray-800">
+    <div class="container mx-auto px-4 py-12 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                <i class="fas fa-sitemap mr-3"></i>JSON 树形浏览器
+            </h1>
+            <p class="text-lg text-white/90 font-light">
+                可视化JSON数据，支持折叠、搜索、路径复制、格式化，完全离线运行
+            </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">文件大小</p>
+                        <p class="text-3xl font-bold" id="fileSize">0 B</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-file"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">节点数量</p>
+                        <p class="text-3xl font-bold" id="nodeCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">键值对数量</p>
+                        <p class="text-3xl font-bold" id="keyCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-key"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">搜索结果</p>
+                        <p class="text-3xl font-bold" id="searchCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Input Panel -->
+            <div class="bg-white rounded-3xl card-shadow overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-edit text-purple-600"></i>
+                        <span class="font-semibold text-gray-700">JSON 输入</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <label for="fileInput" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-200 transition">
+                            <i class="fas fa-upload mr-1"></i>上传文件
+                            <input type="file" id="fileInput" accept=".json" class="hidden">
+                        </label>
+                        <button id="clearBtn" class="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition">
+                            <i class="fas fa-trash mr-1"></i>清空
+                        </button>
+                    </div>
+                </div>
+                <textarea 
+                    id="jsonInput" 
+                    class="w-full h-[500px] p-6 json-editor outline-none bg-gray-50 border-none resize-none"
+                    placeholder='{
+  "name": "JSON树形浏览器",
+  "version": "1.0.0",
+  "features": [
+    "可视化JSON结构",
+    "折叠/展开节点",
+    "搜索功能",
+    "路径复制",
+    "格式化输出",
+    "完全离线运行"
+  ],
+  "author": "旺仔",
+  "isAwesome": true,
+  "releaseDate": "2026-03-08"
+}'
+                ></textarea>
+                <div class="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-gray-50">
+                    <div class="flex gap-3">
+                        <button id="formatBtn" class="btn-hover px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">
+                            <i class="fas fa-magic mr-1"></i>格式化
+                        </button>
+                        <button id="minifyBtn" class="btn-hover px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+                            <i class="fas fa-compress mr-1"></i>压缩
+                        </button>
+                        <button id="validateBtn" class="btn-hover px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>验证
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        <span id="validationStatus" class="text-gray-500">等待输入</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="bg-white rounded-3xl card-shadow overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-tree text-purple-600"></i>
+                        <span class="font-semibold text-gray-700">树形视图</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="搜索键或值..."
+                            class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-purple-500"
+                        >
+                        <button id="expandAllBtn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                            <i class="fas fa-expand-alt mr-1"></i>全部展开
+                        </button>
+                        <button id="collapseAllBtn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                            <i class="fas fa-compress-alt mr-1"></i>全部折叠
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Path Navigation -->
+                <div class="border-b border-gray-200 px-6 py-2 bg-gray-50 flex flex-wrap gap-1 items-center">
+                    <span class="text-sm text-gray-500 mr-2">路径:</span>
+                    <div id="pathNavigation" class="flex flex-wrap gap-1">
+                        <span class="path-item px-2 py-1 rounded text-sm bg-gray-100 text-gray-700 cursor-pointer" data-path="root">root</span>
+                    </div>
+                </div>
+                
+                <div id="jsonOutput" class="h-[450px] p-6 overflow-y-auto json-tree bg-white"></div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="bg-white rounded-2xl p-6 mb-8 card-shadow">
+            <div class="flex flex-wrap gap-4 justify-between items-center">
+                <div class="flex flex-wrap gap-3">
+                    <button id="copyJsonBtn" class="btn-hover px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-copy mr-2"></i>复制格式化JSON
+                    </button>
+                    <button id="copyMinifiedBtn" class="btn-hover px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-file-code mr-2"></i>复制压缩JSON
+                    </button>
+                    <button id="downloadJsonBtn" class="btn-hover px-6 py-3 bg-green-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-download mr-2"></i>下载JSON文件
+                    </button>
+                    <button id="copyPathBtn" class="btn-hover px-6 py-3 bg-orange-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-link mr-2"></i>复制当前路径
+                    </button>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <span id="currentPath">当前路径: root</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Files -->
+        <div class="bg-white rounded-3xl card-shadow p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-history mr-3 text-purple-600"></i>最近文件
+                </h2>
+                <button id="clearHistoryBtn" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition">
+                    <i class="fas fa-trash mr-1"></i>清空历史
+                </button>
+            </div>
+
+            <div id="recentFilesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="text-center py-12 text-gray-500 col-span-full">
+                    <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                    <p class="text-lg">还没有处理过的JSON文件</p>
+                    <p class="text-sm mt-1">处理过的文件会保存在这里</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/70 text-sm">
+            <p>🌳 所有解析和处理都在本地完成，数据绝不会上传到任何服务器</p>
+            <p class="mt-1">支持大文件解析，最多可处理10MB以上的JSON文件</p>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let currentJson = null;
+        let currentPath = [];
+        let searchResults = [];
+        let recentFiles = JSON.parse(localStorage.getItem('jsonViewerHistory') || '[]');
+        let nodeCount = 0;
+        let keyCount = 0;
+        
+        // DOM Elements
+        const jsonInput = document.getElementById('jsonInput');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const formatBtn = document.getElementById('formatBtn');
+        const minifyBtn = document.getElementById('minifyBtn');
+        const validateBtn = document.getElementById('validateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const fileInput = document.getElementById('fileInput');
+        const searchInput = document.getElementById('searchInput');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
+        const copyJsonBtn = document.getElementById('copyJsonBtn');
+        const copyMinifiedBtn = document.getElementById('copyMinifiedBtn');
+        const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+        const copyPathBtn = document.getElementById('copyPathBtn');
+        const validationStatus = document.getElementById('validationStatus');
+        const pathNavigation = document.getElementById('pathNavigation');
+        const currentPathEl = document.getElementById('currentPath');
+        const fileSizeEl = document.getElementById('fileSize');
+        const nodeCountEl = document.getElementById('nodeCount');
+        const keyCountEl = document.getElementById('keyCount');
+        const searchCountEl = document.getElementById('searchCount');
+        const recentFilesList = document.getElementById('recentFilesList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        
+        // Initialize
+        renderRecentFiles();
+        validateJson();
+        
+        // Validate JSON
+        function validateJson() {
+            try {
+                const json = JSON.parse(jsonInput.value);
+                currentJson = json;
+                validationStatus.textContent = '✅ JSON 有效';
+                validationStatus.className = 'text-green-600 font-medium';
+                countNodes(json);
+                updateStats();
+                renderJsonTree(json);
+                addToHistory(json);
+                return true;
+            } catch (e) {
+                validationStatus.textContent = `❌ 无效: ${e.message}`;
+                validationStatus.className = 'text-red-600 font-medium';
+                jsonOutput.innerHTML = `<div class="text-red-500 font-medium">JSON 解析错误: ${e.message}</div>`;
+                return false;
+            }
+        }
+        
+        // Count nodes and keys
+        function countNodes(obj) {
+            nodeCount = 0;
+            keyCount = 0;
+            
+            function traverse(o) {
+                nodeCount++;
+                if (typeof o === 'object' && o !== null) {
+                    if (Array.isArray(o)) {
+                        keyCount += o.length;
+                        o.forEach(item => traverse(item));
+                    } else {
+                        const keys = Object.keys(o);
+                        keyCount += keys.length;
+                        keys.forEach(key => traverse(o[key]));
+                    }
+                }
+            }
+            
+            traverse(obj);
+        }
+        
+        // Update stats
+        function updateStats() {
+            const size = new Blob([jsonInput.value]).size;
+            let sizeStr = '';
+            if (size < 1024) sizeStr = `${size} B`;
+            else if (size < 1024 * 1024) sizeStr = `${(size / 1024).toFixed(2)} KB`;
+            else sizeStr = `${(size / (1024 * 1024)).toFixed(2)} MB`;
+            
+            fileSizeEl.textContent = sizeStr;
+            nodeCountEl.textContent = nodeCount;
+            keyCountEl.textContent = keyCount;
+        }
+        
+        // Render JSON tree
+        function renderJsonTree(obj, path = []) {
+            jsonOutput.innerHTML = '';
+            const tree = buildTreeHtml(obj, path);
+            jsonOutput.appendChild(tree);
+            updatePathNavigation(path);
+        }
+        
+        // Build tree HTML
+        function buildTreeHtml(obj, path = [], isRoot = true) {
+            const container = document.createElement('div');
+            
+            if (typeof obj !== 'object' || obj === null) {
+                const valueEl = document.createElement('span');
+                valueEl.className = getValueClass(obj);
+                valueEl.textContent = formatValue(obj);
+                container.appendChild(valueEl);
+                return container;
+            }
+            
+            const isArray = Array.isArray(obj);
+            const keys = isArray ? obj.keys() : Object.keys(obj);
+            const entries = isArray ? obj.entries() : Object.entries(obj);
+            
+            if (isRoot) {
+                const rootToggle = document.createElement('span');
+                rootToggle.className = 'json-toggle';
+                rootToggle.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                rootToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const children = container.querySelector('.json-children');
+                    children.classList.toggle('hidden');
+                    rootToggle.classList.toggle('collapsed');
+                });
+                
+                const rootLabel = document.createElement('span');
+                rootLabel.className = 'text-gray-500 mr-1';
+                rootLabel.textContent = isArray ? 'Array' : 'Object';
+                
+                const rootLength = document.createElement('span');
+                rootLength.className = 'text-gray-400 text-sm ml-1';
+                rootLength.textContent = `(${isArray ? obj.length : Object.keys(obj).length})`;
+                
+                container.appendChild(rootToggle);
+                container.appendChild(rootLabel);
+                container.appendChild(rootLength);
+            }
+            
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'json-children';
+            
+            for (const [key, value] of entries) {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'json-node p-1 rounded';
+                
+                const nodePath = [...path, key];
+                nodeDiv.dataset.path = nodePath.join('.');
+                
+                if (typeof value === 'object' && value !== null) {
+                    const toggle = document.createElement('span');
+                    toggle.className = 'json-toggle';
+                    toggle.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                    toggle.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const children = nodeDiv.querySelector('.json-children');
+                        children.classList.toggle('hidden');
+                        toggle.classList.toggle('collapsed');
+                    });
+                    
+                    const keyEl = document.createElement('span');
+                    keyEl.className = 'json-key mr-1';
+                    keyEl.textContent = isArray ? `[${key}]` : `"${key}"`;
+                    keyEl.addEventListener('click', () => {
+                        currentPath = nodePath;
+                        updateCurrentPathDisplay();
+                    });
+                    
+                    const typeLabel = document.createElement('span');
+                    typeLabel.className = 'text-gray-500 mr-1';
+                    typeLabel.textContent = Array.isArray(value) ? 'Array' : 'Object';
+                    
+                    const lengthLabel = document.createElement('span');
+                    lengthLabel.className = 'text-gray-400 text-sm';
+                    lengthLabel.textContent = `(${Array.isArray(value) ? value.length : Object.keys(value).length})`;
+                    
+                    nodeDiv.appendChild(toggle);
+                    nodeDiv.appendChild(keyEl);
+                    nodeDiv.appendChild(document.createTextNode(': '));
+                    nodeDiv.appendChild(typeLabel);
+                    nodeDiv.appendChild(lengthLabel);
+                    
+                    const childContainer = buildTreeHtml(value, nodePath, false);
+                    childrenContainer.appendChild(nodeDiv);
+                    nodeDiv.appendChild(childContainer.querySelector('.json-children') || childContainer);
+                } else {
+                    const keyEl = document.createElement('span');
+                    keyEl.className = 'json-key mr-1';
+                    keyEl.textContent = isArray ? `[${key}]` : `"${key}"`;
+                    keyEl.addEventListener('click', () => {
+                        currentPath = nodePath;
+                        updateCurrentPathDisplay();
+                    });
+                    
+                    const valueEl = document.createElement('span');
+                    valueEl.className = getValueClass(value);
+                    valueEl.textContent = formatValue(value);
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn ml-2 text-gray-400 hover:text-purple-600 opacity-0 group-hover:opacity-100 transition';
+                    copyBtn.innerHTML = '<i class="fas fa-copy text-xs"></i>';
+                    copyBtn.title = '复制值';
+                    copyBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await copyToClipboard(formatValue(value, false));
+                        copyBtn.innerHTML = '<i class="fas fa-check text-xs text-green-500"></i>';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fas fa-copy text-xs"></i>';
+                        }, 1500);
+                    });
+                    
+                    nodeDiv.className += ' group';
+                    nodeDiv.appendChild(keyEl);
+                    nodeDiv.appendChild(document.createTextNode(': '));
+                    nodeDiv.appendChild(valueEl);
+                    nodeDiv.appendChild(copyBtn);
+                    childrenContainer.appendChild(nodeDiv);
+                }
+            }
+            
+            container.appendChild(childrenContainer);
+            return container;
+        }
+        
+        // Get value class
+        function getValueClass(value) {
+            if (typeof value === 'string') return 'json-string';
+            if (typeof value === 'number') return 'json-number';
+            if (typeof value === 'boolean') return 'json-boolean';
+            if (value === null) return 'json-null';
+            return '';
+        }
+        
+        // Format value for display
+        function formatValue(value, quoteStrings = true) {
+            if (typeof value === 'string') {
+                return quoteStrings ? `"${value}"` : value;
+            }
+            if (value === null) return 'null';
+            return String(value);
+        }
+        
+        // Update path navigation
+        function updatePathNavigation(path) {
+            pathNavigation.innerHTML = '';
+            
+            const rootItem = document.createElement('span');
+            rootItem.className = 'path-item px-2 py-1 rounded text-sm bg-gray-100 text-gray-700 cursor-pointer';
+            rootItem.textContent = 'root';
+            rootItem.dataset.path = 'root';
+            rootItem.addEventListener('click', () => {
+                currentPath = [];
+                renderJsonTree(currentJson, []);
+                updateCurrentPathDisplay();
+            });
+            pathNavigation.appendChild(rootItem);
+            
+            let currentFullPath = [];
+            path.forEach((segment, index) => {
+                currentFullPath.push(segment);
+                
+                const separator = document.createElement('span');
+                separator.className = 'text-gray-400 mx-1';
+                separator.textContent = '>';
+                pathNavigation.appendChild(separator);
+                
+                const pathItem = document.createElement('span');
+                pathItem.className = 'path-item px-2 py-1 rounded text-sm bg-gray-100 text-gray-700 cursor-pointer';
+                pathItem.textContent = segment;
+                pathItem.dataset.path = currentFullPath.join('.');
+                pathItem.addEventListener('click', () => {
+                    currentPath = [...currentFullPath];
+                    const value = getValueByPath(currentJson, currentFullPath);
+                    renderJsonTree(value, currentFullPath);
+                    updateCurrentPathDisplay();
+                });
+                pathNavigation.appendChild(pathItem);
+            });
+            
+            updateCurrentPathDisplay();
+        }
+        
+        // Update current path display
+        function updateCurrentPathDisplay() {
+            const pathStr = currentPath.length === 0 ? 'root' : currentPath.join('.');
+            currentPathEl.textContent = `当前路径: ${pathStr}`;
+        }
+        
+        // Get value by path
+        function getValueByPath(obj, path) {
+            return path.reduce((current, key) => {
+                if (current === null || current === undefined) return undefined;
+                return current[key];
+            }, obj);
+        }
+        
+        // Add to history
+        function addToHistory(json) {
+            const preview = JSON.stringify(json).slice(0, 100) + '...';
+            const entry = {
+                id: Date.now().toString(),
+                preview: preview,
+                size: new Blob([JSON.stringify(json)]).size,
+                timestamp: new Date().toISOString(),
+                content: JSON.stringify(json, null, 2)
+            };
+            
+            recentFiles.unshift(entry);
+            if (recentFiles.length > 10) {
+                recentFiles = recentFiles.slice(0, 10);
+            }
+            
+            localStorage.setItem('jsonViewerHistory', JSON.stringify(recentFiles));
+            renderRecentFiles();
+        }
+        
+        // Render recent files
+        function renderRecentFiles() {
+            if (recentFiles.length === 0) {
+                recentFilesList.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 col-span-full">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg">还没有处理过的JSON文件</p>
+                        <p class="text-sm mt-1">处理过的文件会保存在这里</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            recentFilesList.innerHTML = recentFiles.map(file => {
+                const date = new Date(file.timestamp);
+                const dateStr = date.toLocaleString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                let sizeStr = '';
+                if (file.size < 1024) sizeStr = `${file.size} B`;
+                else if (file.size < 1024 * 1024) sizeStr = `${(file.size / 1024).toFixed(2)} KB`;
+                else sizeStr = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                
+                return `
+                    <div class="note-item bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex items-start justify-between mb-2">
+                            <p class="text-sm text-gray-700 line-clamp-2 flex-1 mr-2 font-mono">${file.preview}</p>
+                            <div class="flex gap-1">
+                                <button class="p-1.5 text-purple-600 hover:bg-purple-100 rounded" onclick="loadHistory('${file.id}')" title="加载">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                                <button class="p-1.5 text-red-500 hover:bg-red-100 rounded" onclick="deleteHistory('${file.id}')" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span><i class="fas fa-clock mr-1"></i>${dateStr}</span>
+                            <span><i class="fas fa-file mr-1"></i>${sizeStr}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Load history
+        window.loadHistory = function(id) {
+            const file = recentFiles.find(f => f.id === id);
+            if (file) {
+                jsonInput.value = file.content;
+                validateJson();
+            }
+        }
+        
+        // Delete history
+        window.deleteHistory = function(id) {
+            if (confirm('确定要删除这条历史记录吗？')) {
+                recentFiles = recentFiles.filter(f => f.id !== id);
+                localStorage.setItem('jsonViewerHistory', JSON.stringify(recentFiles));
+                renderRecentFiles();
+            }
+        }
+        
+        // Copy to clipboard
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return true;
+            }
+        }
+        
+        // Event Listeners
+        jsonInput.addEventListener('input', () => {
+            clearTimeout(window.validateTimer);
+            window.validateTimer = setTimeout(validateJson, 500);
+        });
+        
+        formatBtn.addEventListener('click', () => {
+            try {
+                const parsed = JSON.parse(jsonInput.value);
+                jsonInput.value = JSON.stringify(parsed, null, 2);
+                validateJson();
+            } catch (e) {
+                alert('JSON 格式错误，无法格式化');
+            }
+        });
+        
+        minifyBtn.addEventListener('click', () => {
+            try {
+                const parsed = JSON.parse(jsonInput.value);
+                jsonInput.value = JSON.stringify(parsed);
+                validateJson();
+            } catch (e) {
+                alert('JSON 格式错误，无法压缩');
+            }
+        });
+        
+        validateBtn.addEventListener('click', validateJson);
+        
+        clearBtn.addEventListener('click', () => {
+            if (confirm('确定要清空输入内容吗？')) {
+                jsonInput.value = '';
+                currentJson = null;
+                jsonOutput.innerHTML = '';
+                validationStatus.textContent = '等待输入';
+                validationStatus.className = 'text-gray-500';
+                updateStats();
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const content = event.target.result;
+                    jsonInput.value = content;
+                    validateJson();
+                } catch (err) {
+                    alert('文件读取失败');
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        expandAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.json-children').forEach(el => el.classList.remove('hidden'));
+            document.querySelectorAll('.json-toggle').forEach(el => el.classList.remove('collapsed'));
+        });
+        
+        collapseAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.json-children').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.json-toggle').forEach(el => el.classList.add('collapsed'));
+        });
+        
+        copyJsonBtn.addEventListener('click', async () => {
+            if (!currentJson) {
+                alert('没有有效的JSON可以复制');
+                return;
+            }
+            const formatted = JSON.stringify(currentJson, null, 2);
+            await copyToClipboard(formatted);
+            copyJsonBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已复制';
+            setTimeout(() => {
+                copyJsonBtn.innerHTML = '<i class="fas fa-copy mr-2"></i>复制格式化JSON';
+            }, 2000);
+        });
+        
+        copyMinifiedBtn.addEventListener('click', async () => {
+            if (!currentJson) {
+                alert('没有有效的JSON可以复制');
+                return;
+            }
+            const minified = JSON.stringify(currentJson);
+            await copyToClipboard(minified);
+            copyMinifiedBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已复制';
+            setTimeout(() => {
+                copyMinifiedBtn.innerHTML = '<i class="fas fa-file-code mr-2"></i>复制压缩JSON';
+            }, 2000);
+        });
+        
+        downloadJsonBtn.addEventListener('click', () => {
+            if (!currentJson) {
+                alert('没有有效的JSON可以下载');
+                return;
+            }
+            const formatted = JSON.stringify(currentJson, null, 2);
+            const blob = new Blob([formatted], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `data_${new Date().getTime()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        copyPathBtn.addEventListener('click', async () => {
+            const pathStr = currentPath.length === 0 ? 'root' : currentPath.join('.');
+            await copyToClipboard(pathStr);
+            copyPathBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已复制';
+            setTimeout(() => {
+                copyPathBtn.innerHTML = '<i class="fas fa-link mr-2"></i>复制当前路径';
+            }, 2000);
+        });
+        
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                recentFiles = [];
+                localStorage.removeItem('jsonViewerHistory');
+                renderRecentFiles();
+            }
+        });
+        
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim().toLowerCase();
+            searchCountEl.textContent = '0';
+            
+            if (!query || !currentJson) {
+                // Remove highlights
+                document.querySelectorAll('.search-highlight').forEach(el => {
+                    el.replaceWith(...el.childNodes);
+                });
+                return;
+            }
+            
+            // Search implementation (simplified)
+            let count = 0;
+            const textNodes = [];
+            
+            function traverse(el) {
+                if (el.nodeType === Node.TEXT_NODE) {
+                    textNodes.push(el);
+                    return;
+                }
+                for (const child of el.childNodes) {
+                    traverse(child);
+                }
+            }
+            
+            traverse(jsonOutput);
+            
+            textNodes.forEach(node => {
+                const text = node.textContent.toLowerCase();
+                const index = text.indexOf(query);
+                if (index !== -1) {
+                    count++;
+                    const highlight = document.createElement('span');
+                    highlight.className = 'search-highlight';
+                    highlight.textContent = node.textContent.slice(index, index + query.length);
+                    
+                    const before = document.createTextNode(node.textContent.slice(0, index));
+                    const after = document.createTextNode(node.textContent.slice(index + query.length));
+                    
+                    node.parentNode.replaceChild(after, node);
+                    node.parentNode.insertBefore(highlight, after);
+                    node.parentNode.insertBefore(before, highlight);
+                }
+            });
+            
+            searchCountEl.textContent = count;
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + S to copy
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                downloadJsonBtn.click();
+            }
+            // Ctrl/Cmd + F to search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            // Ctrl/Cmd + B to format
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                formatBtn.click();
+            }
+        });
+        
+        // Initial render
+        validateJson();
+    </script>
+</body>
+</html>

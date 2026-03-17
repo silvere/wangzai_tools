@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML 格式化美化工具 🎨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fast-xml-parser@4.3.5/dist/fxparser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .xml-tree .tag { color: #2563eb; }
+        .xml-tree .attr-name { color: #f59e0b; }
+        .xml-tree .attr-value { color: #16a34a; }
+        .xml-tree .text { color: #1f2937; }
+        .xml-tree .comment { color: #6b7280; font-style: italic; }
+        .xml-tree .cdata { color: #9333ea; }
+        .line-numbers { user-select: none; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
+                <i class="fas fa-code text-blue-600"></i>
+                XML 格式化美化工具
+            </h1>
+            <p class="text-gray-600 text-lg">一键格式化XML，语法高亮，结构校验，完全本地运行零数据上传</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+            <!-- Controls -->
+            <div class="flex flex-wrap gap-4 mb-6">
+                <button onclick="formatXML()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium">
+                    <i class="fas fa-magic"></i>
+                    格式化
+                </button>
+                <button onclick="minifyXML()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium">
+                    <i class="fas fa-compress"></i>
+                    压缩
+                </button>
+                <button onclick="clearAll()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium">
+                    <i class="fas fa-trash"></i>
+                    清空
+                </button>
+                <button onclick="copyResult()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium">
+                    <i class="fas fa-copy"></i>
+                    复制结果
+                </button>
+                <button onclick="downloadXML()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium">
+                    <i class="fas fa-download"></i>
+                    下载文件
+                </button>
+                <label class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium cursor-pointer">
+                    <i class="fas fa-upload"></i>
+                    上传文件
+                    <input type="file" accept=".xml,.txt" class="hidden" id="fileInput" onchange="loadFile(event)">
+                </label>
+            </div>
+
+            <!-- Options -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">缩进大小</label>
+                    <select id="indentSize" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="2">2 空格</option>
+                        <option value="4" selected>4 空格</option>
+                        <option value="8">8 空格</option>
+                        <option value="tab">Tab</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">换行符</label>
+                    <select id="lineBreak" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="\n" selected>LF (Unix)</option>
+                        <option value="\r\n">CRLF (Windows)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">显示模式</label>
+                    <select id="viewMode" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" onchange="changeViewMode()">
+                        <option value="text" selected>文本视图</option>
+                        <option value="tree">树形视图</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Input -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-keyboard text-blue-500"></i>
+                            输入 XML
+                        </label>
+                        <div class="text-sm text-gray-500" id="inputStats">0 字符</div>
+                    </div>
+                    <textarea 
+                        id="xmlInput" 
+                        class="w-full h-[500px] border border-gray-300 rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                        placeholder="粘贴XML内容到这里，或者点击上方按钮上传文件..."
+                        oninput="updateInputStats()"
+                    ></textarea>
+                </div>
+
+                <!-- Output -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-eye text-blue-500"></i>
+                            输出结果
+                        </label>
+                        <div class="text-sm text-gray-500" id="outputStats">0 字符</div>
+                    </div>
+                    <!-- Text Output -->
+                    <div id="textOutputContainer">
+                        <div class="relative">
+                            <div class="absolute left-0 top-0 bottom-0 w-12 bg-gray-50 border-r border-gray-200 rounded-l-lg text-right pr-2 py-4 text-gray-400 text-sm font-mono line-numbers" id="lineNumbers"></div>
+                            <pre id="xmlOutput" class="w-full h-[500px] border border-gray-300 rounded-lg p-4 pl-16 font-mono text-sm overflow-auto bg-gray-50"></pre>
+                        </div>
+                    </div>
+                    <!-- Tree Output -->
+                    <div id="treeOutputContainer" class="hidden">
+                        <div class="w-full h-[500px] border border-gray-300 rounded-lg p-4 overflow-auto bg-gray-50 xml-tree" id="treeOutput"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="mb-6">
+                <div class="text-sm font-medium text-gray-700 mb-3">快速示例：</div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="loadExample('rss')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">RSS Feed</button>
+                    <button onclick="loadExample('soap')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">SOAP 消息</button>
+                    <button onclick="loadExample('svg')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">SVG 图片</button>
+                    <button onclick="loadExample('android')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Android Layout</button>
+                    <button onclick="loadExample('maven')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Maven POM</button>
+                    <button onclick="loadExample('web.config')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">web.config</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <div class="text-sm text-blue-600 font-medium mb-1">状态</div>
+                    <div class="text-2xl font-bold text-gray-800" id="status">就绪</div>
+                </div>
+                <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+                    <div class="text-sm text-green-600 font-medium mb-1">根节点</div>
+                    <div class="text-2xl font-bold text-gray-800" id="rootNode">-</div>
+                </div>
+                <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                    <div class="text-sm text-purple-600 font-medium mb-1">元素数量</div>
+                    <div class="text-2xl font-bold text-gray-800" id="elementCount">-</div>
+                </div>
+                <div class="bg-orange-50 border border-orange-100 rounded-lg p-4">
+                    <div class="text-sm text-orange-600 font-medium mb-1">压缩率</div>
+                    <div class="text-2xl font-bold text-gray-800" id="compressionRate">-</div>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div id="errorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4 hidden mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                    <div>
+                        <h4 class="font-semibold text-red-800">XML 格式错误</h4>
+                        <p class="text-red-700 text-sm" id="errorText"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-check-circle text-blue-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">严格校验</h3>
+                <p class="text-gray-600">内置严格XML语法校验，精准定位错误位置，显示详细错误信息，快速修复问题</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-shield-alt text-green-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">本地运行</h3>
+                <p class="text-gray-600">所有格式化和解析完全在浏览器本地完成，XML数据绝不会上传到任何服务器，安全可靠</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-palette text-purple-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">语法高亮</h3>
+                <p class="text-gray-600">支持标签、属性、值、注释、CDATA等不同内容的语法高亮，树形结构可视化，一目了然</p>
+            </div>
+        </div>
+
+        <!-- Usage Guide -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-book text-blue-600"></i>
+                使用场景
+            </h3>
+            <ul class="space-y-3 text-gray-700">
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>API接口调试，格式化返回的XML响应，快速定位问题</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>配置文件格式化，美化XML格式的配置文件（pom.xml, web.config, AndroidManifest等）</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>Web服务开发，调试SOAP、RSS、Atom等XML格式的接口</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>数据分析，格式化XML格式的数据集，方便查看和分析结构</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>SVG文件处理，查看和编辑SVG图片的源代码</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-500 text-sm">
+            <p>🚀 完全本地运行 | 零数据上传 | 支持大文件 | 免费开源</p>
+            <p class="mt-2">Built with ❤️ by 旺仔</p>
+        </div>
+    </div>
+
+    <script>
+        const parser = new XMLParser();
+        const builder = new XMLBuilder({
+            format: true,
+            indentBy: '    ',
+            lineBreak: '\n'
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateInputStats();
+        });
+
+        function updateInputStats() {
+            const input = document.getElementById('xmlInput').value;
+            document.getElementById('inputStats').textContent = `${input.length} 字符`;
+        }
+
+        function updateOutputStats(output) {
+            document.getElementById('outputStats').textContent = `${output.length} 字符`;
+            
+            const input = document.getElementById('xmlInput').value;
+            if (input.length > 0 && output.length > 0) {
+                const rate = ((1 - output.length / input.length) * 100).toFixed(1);
+                document.getElementById('compressionRate').textContent = `${rate}%`;
+            }
+        }
+
+        function loadExample(type) {
+            const examples = {
+                'rss': `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>示例RSS Feed</title>
+  <link>https://example.com</link>
+  <description>这是一个RSS Feed示例</description>
+  <language>zh-cn</language>
+  <item>
+    <title>第一篇文章</title>
+    <link>https://example.com/article1</link>
+    <description>这是第一篇文章的描述内容</description>
+    <pubDate>Sun, 15 Mar 2026 08:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>第二篇文章</title>
+    <link>https://example.com/article2</link>
+    <description>这是第二篇文章的描述内容</description>
+    <pubDate>Sun, 15 Mar 2026 09:00:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>`,
+                'soap': `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+  <soap:Header>
+    <m:Trans xmlns:m="http://www.w3schools.com/transaction/" soap:mustUnderstand="1">234</m:Trans>
+  </soap:Header>
+  <soap:Body>
+    <m:GetPrice xmlns:m="http://www.w3schools.com/prices">
+      <m:Item>Apples</m:Item>
+    </m:GetPrice>
+  </soap:Body>
+</soap:Envelope>`,
+                'svg': `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+  <text x="50" y="55" font-size="16" text-anchor="middle" fill="black">SVG</text>
+</svg>`,
+                'android': `<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"
+        android:textSize="24sp" />
+    <Button
+        android:id="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Click Me" />
+</LinearLayout>`,
+                'maven': `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>demo</artifactId>
+    <version>1.0.0</version>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>`,
+                'web.config': `<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.web>
+        <compilation debug="true" targetFramework="4.8" />
+        <httpRuntime targetFramework="4.8" />
+        <authentication mode="Forms">
+            <forms loginUrl="login.aspx" defaultUrl="default.aspx" />
+        </authentication>
+    </system.web>
+    <appSettings>
+        <add key="ConnectionString" value="Server=localhost;Database=demo;Uid=root;Pwd=123456;" />
+        <add key="SiteName" value="示例网站" />
+    </appSettings>
+</configuration>`
+            };
+
+            document.getElementById('xmlInput').value = examples[type] || '';
+            updateInputStats();
+            formatXML();
+        }
+
+        function loadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('xmlInput').value = e.target.result;
+                updateInputStats();
+                formatXML();
+            };
+            reader.readAsText(file);
+        }
+
+        function getIndent() {
+            const size = document.getElementById('indentSize').value;
+            return size === 'tab' ? '\t' : ' '.repeat(parseInt(size));
+        }
+
+        function getLineBreak() {
+            return document.getElementById('lineBreak').value === '\\n' ? '\n' : '\r\n';
+        }
+
+        function formatXML() {
+            const input = document.getElementById('xmlInput').value.trim();
+            document.getElementById('errorMessage').classList.add('hidden');
+            
+            if (!input) {
+                document.getElementById('xmlOutput').textContent = '';
+                document.getElementById('treeOutput').innerHTML = '';
+                updateOutputStats('');
+                updateStats(null);
+                return;
+            }
+
+            try {
+                // Parse XML
+                const jsonObj = parser.parse(input, {
+                    ignoreAttributes: false,
+                    attributeNamePrefix: '@_',
+                    parseAttributeValue: true
+                });
+
+                // Build formatted XML
+                const formatted = builder.build(jsonObj, {
+                    format: true,
+                    indentBy: getIndent(),
+                    lineBreak: getLineBreak(),
+                    suppressEmptyNode: false
+                });
+
+                // Display
+                if (document.getElementById('viewMode').value === 'text') {
+                    displayTextOutput(formatted);
+                } else {
+                    displayTreeOutput(jsonObj);
+                }
+
+                updateOutputStats(formatted);
+                updateStats(jsonObj);
+                document.getElementById('status').textContent = '✅ 有效';
+                document.getElementById('status').className = 'text-2xl font-bold text-green-600';
+
+            } catch (error) {
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('errorText').textContent = error.message;
+                document.getElementById('xmlOutput').textContent = '';
+                document.getElementById('treeOutput').innerHTML = '';
+                document.getElementById('status').textContent = '❌ 无效';
+                document.getElementById('status').className = 'text-2xl font-bold text-red-600';
+                updateStats(null);
+            }
+        }
+
+        function minifyXML() {
+            const input = document.getElementById('xmlInput').value.trim();
+            document.getElementById('errorMessage').classList.add('hidden');
+            
+            if (!input) return;
+
+            try {
+                const jsonObj = parser.parse(input);
+                const minified = builder.build(jsonObj, {
+                    format: false,
+                    indentBy: '',
+                    lineBreak: ''
+                });
+
+                document.getElementById('xmlInput').value = minified;
+                updateInputStats();
+                formatXML();
+                showToast('XML 已压缩');
+
+            } catch (error) {
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('errorText').textContent = error.message;
+            }
+        }
+
+        function displayTextOutput(xml) {
+            const lines = xml.split('\n');
+            const lineNumbers = lines.map((_, i) => i + 1).join('\n');
+            document.getElementById('lineNumbers').textContent = lineNumbers;
+            
+            // Simple syntax highlighting
+            const highlighted = xml
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                // Comments
+                .replace(/&lt;!--([\s\S]*?)--&gt;/g, '<span class="comment">&lt;!--$1--&gt;</span>')
+                // CDATA
+                .replace(/&lt;!\[CDATA\[([\s\S]*?)\]\]&gt;/g, '<span class="cdata">&lt;![CDATA[$1]]&gt;</span>')
+                // Tags
+                .replace(/&lt;(\/?)([\w:-]+)(\s|\/?&gt;)/g, (_, close, tag, end) => 
+                    `&lt;${close}<span class="tag">${tag}</span>${end}`
+                )
+                // Attributes
+                .replace(/(\s)([\w:-]+)=(".*?")/g, (_, space, name, value) => 
+                    `${space}<span class="attr-name">${name}</span>=<span class="attr-value">${value}</span>`
+                )
+                // Text content
+                .replace(/&gt;([^&<]+)&lt;/g, (_, text) => 
+                    `&gt;<span class="text">${text}</span>&lt;`
+                );
+
+            document.getElementById('xmlOutput').innerHTML = highlighted;
+        }
+
+        function displayTreeOutput(jsonObj) {
+            const tree = buildTree(jsonObj, 0);
+            document.getElementById('treeOutput').innerHTML = tree;
+        }
+
+        function buildTree(obj, level) {
+            if (typeof obj !== 'object' || obj === null) {
+                return `<div class="pl-${level * 4} text">${escapeHtml(obj)}</div>`;
+            }
+
+            let html = '';
+            for (const key in obj) {
+                if (key.startsWith('@_')) {
+                    // Attribute
+                    const attrName = key.substring(2);
+                    html += `<div class="pl-${level * 4}">
+                        <span class="attr-name">${attrName}</span> = <span class="attr-value">"${escapeHtml(obj[key])}"</span>
+                    </div>`;
+                } else if (key === '#text') {
+                    // Text content
+                    html += `<div class="pl-${level * 4} text">${escapeHtml(obj[key])}</div>`;
+                } else if (key === '#comment') {
+                    // Comment
+                    html += `<div class="pl-${level * 4} comment">&lt;!-- ${escapeHtml(obj[key])} --&gt;</div>`;
+                } else if (key === '#cdata') {
+                    // CDATA
+                    html += `<div class="pl-${level * 4} cdata">&lt;![CDATA[ ${escapeHtml(obj[key])} ]]&gt;</div>`;
+                } else {
+                    // Element
+                    html += `<div class="pl-${level * 4}">
+                        <span class="tag">&lt;${key}&gt;</span>
+                        ${Array.isArray(obj[key]) ? '' : buildTree(obj[key], level + 1)}
+                        ${Array.isArray(obj[key]) ? obj[key].map(item => buildTree(item, level + 1)).join('') : ''}
+                        <span class="tag">&lt;/${key}&gt;</span>
+                    </div>`;
+                }
+            }
+            return html;
+        }
+
+        function escapeHtml(text) {
+            return text.toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function changeViewMode() {
+            const mode = document.getElementById('viewMode').value;
+            if (mode === 'text') {
+                document.getElementById('textOutputContainer').classList.remove('hidden');
+                document.getElementById('treeOutputContainer').classList.add('hidden');
+            } else {
+                document.getElementById('textOutputContainer').classList.add('hidden');
+                document.getElementById('treeOutputContainer').classList.remove('hidden');
+            }
+            formatXML();
+        }
+
+        function updateStats(jsonObj) {
+            if (!jsonObj) {
+                document.getElementById('rootNode').textContent = '-';
+                document.getElementById('elementCount').textContent = '-';
+                return;
+            }
+
+            const root = Object.keys(jsonObj).find(key => !key.startsWith('@_') && key !== '#text' && key !== '#comment');
+            document.getElementById('rootNode').textContent = root || '-';
+
+            function countElements(obj) {
+                if (typeof obj !== 'object' || obj === null) return 0;
+                let count = 0;
+                for (const key in obj) {
+                    if (!key.startsWith('@_') && key !== '#text' && key !== '#comment' && key !== '#cdata') {
+                        count++;
+                        if (Array.isArray(obj[key])) {
+                            count += obj[key].reduce((sum, item) => sum + countElements(item), 0);
+                        } else {
+                            count += countElements(obj[key]);
+                        }
+                    }
+                }
+                return count;
+            }
+
+            document.getElementById('elementCount').textContent = countElements(jsonObj);
+        }
+
+        function copyResult() {
+            const output = document.getElementById('xmlOutput').textContent;
+            if (!output) {
+                showToast('没有可复制的内容');
+                return;
+            }
+            navigator.clipboard.writeText(output).then(() => {
+                showToast('已复制到剪贴板');
+            });
+        }
+
+        function downloadXML() {
+            const output = document.getElementById('xmlOutput').textContent;
+            if (!output) {
+                showToast('没有可下载的内容');
+                return;
+            }
+            const blob = new Blob([output], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `formatted_${new Date().getTime()}.xml`;
+            link.click();
+            URL.revokeObjectURL(url);
+            showToast('文件已下载');
+        }
+
+        function clearAll() {
+            document.getElementById('xmlInput').value = '';
+            document.getElementById('xmlOutput').textContent = '';
+            document.getElementById('treeOutput').innerHTML = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('errorMessage').classList.add('hidden');
+            updateInputStats();
+            updateOutputStats('');
+            updateStats(null);
+            document.getElementById('status').textContent = '就绪';
+            document.getElementById('status').className = 'text-2xl font-bold text-gray-800';
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+            toast.innerHTML = `
+                <i class="fas fa-check-circle text-green-400"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

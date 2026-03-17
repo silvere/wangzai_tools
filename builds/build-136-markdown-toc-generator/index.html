@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 目录生成器 📑 | 旺仔工具百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .editor-container {
+            transition: all 0.3s ease;
+        }
+        
+        .toc-item {
+            transition: all 0.2s ease;
+        }
+        
+        .toc-item:hover {
+            transform: translateX(4px);
+        }
+        
+        .copy-success {
+            animation: pulse 0.5s ease;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .code-editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            tab-size: 2;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <i class="fa fa-list-alt text-4xl text-purple-600"></i>
+                <h1 class="text-4xl font-bold text-gray-800">Markdown 目录生成器</h1>
+            </div>
+            <p class="text-gray-600 text-lg">一键生成结构化目录，文档写作效率翻倍！完全本地运行，零数据上传</p>
+        </header>
+
+        <!-- Control Panel -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">目录层级</label>
+                    <select id="maxLevel" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="1">仅显示 1 级标题</option>
+                        <option value="2">显示 1-2 级标题</option>
+                        <option value="3" selected>显示 1-3 级标题</option>
+                        <option value="4">显示 1-4 级标题</option>
+                        <option value="5">显示 1-5 级标题</option>
+                        <option value="6">显示全部 6 级标题</option>
+                    </select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">列表风格</label>
+                    <select id="listStyle" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="ul" selected>无序列表 (-)</option>
+                        <option value="ol">有序列表 (1.)</option>
+                        <option value="dash">破折号列表 (—)</option>
+                        <option value="asterisk">星号列表 (*)</option>
+                    </select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">锚点格式</label>
+                    <select id="anchorFormat" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="github" selected>GitHub 风格 (小写，空格转-)</option>
+                        <option value="gfm">GFM 完整风格 (支持特殊字符)</option>
+                        <option value="gitlab">GitLab 风格</option>
+                        <option value="vuepress">VuePress 风格</option>
+                        <option value="none">不生成锚点链接</option>
+                    </select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">选项</label>
+                    <div class="flex gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer flex-1">
+                            <input type="checkbox" id="addTitle" checked class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700">添加"目录"标题</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer flex-1">
+                            <input type="checkbox" id="autoUpdate" checked class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700">实时更新</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm font-semibold text-gray-700 mb-2 block">自定义标题前缀/后缀</label>
+                    <div class="flex gap-2">
+                        <input id="prefix" type="text" placeholder="前缀（如「第X章」）" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <input id="suffix" type="text" placeholder="后缀（如「：」）" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="generateBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-refresh mr-2"></i>生成目录
+                    </button>
+                    <button id="copyBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-copy mr-2"></i>复制目录
+                    </button>
+                    <button id="insertBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-paste mr-2"></i>插入到原文
+                    </button>
+                    <button id="clearBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-trash mr-2"></i>清空
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">标题总数</p>
+                        <p id="totalHeadings" class="text-3xl font-bold text-gray-800">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-header text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">H1 标题</p>
+                        <p id="h1Count" class="text-3xl font-bold text-gray-800">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-h1 text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">H2 标题</p>
+                        <p id="h2Count" class="text-3xl font-bold text-gray-800">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-h2 text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">H3+ 标题</p>
+                        <p id="h3Count" class="text-3xl font-bold text-gray-800">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-list text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Editor Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left: Markdown Input -->
+            <div class="editor-container bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-file-text-o text-gray-600"></i>
+                        Markdown 原文
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="loadExample" class="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                            <i class="fa fa-lightbulb-o mr-1"></i>加载示例
+                        </button>
+                        <label class="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+                            <i class="fa fa-upload mr-1"></i>上传文件
+                            <input type="file" accept=".md,.txt" class="hidden" id="fileInput">
+                        </label>
+                        <button id="downloadOriginal" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                            <i class="fa fa-download mr-1"></i>下载
+                        </button>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <textarea 
+                        id="markdownInput" 
+                        class="w-full h-[600px] p-6 border-none outline-none resize-none code-editor text-gray-800 text-sm scrollbar-thin"
+                        placeholder="在这里粘贴你的 Markdown 内容，或者上传 .md 文件...
+
+# 示例标题 1
+## 示例二级标题 1.1
+### 示例三级标题 1.1.1
+## 示例二级标题 1.2
+# 示例标题 2
+## 示例二级标题 2.1"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Right: TOC Output -->
+            <div class="editor-container bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-list text-gray-600"></i>
+                        生成的目录
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="copyToc" class="text-sm text-green-600 hover:text-green-700 font-medium">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                        <button id="downloadToc" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                            <i class="fa fa-download mr-1"></i>下载
+                        </button>
+                        <button id="previewBtn" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                            <i class="fa fa-eye mr-1"></i>预览
+                        </button>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <div id="tocOutput" class="w-full h-[600px] p-6 bg-gray-50 font-mono text-sm text-gray-800 overflow-y-auto scrollbar-thin whitespace-pre-wrap">
+生成的目录将显示在这里...
+
+- [示例标题 1](#示例标题-1)
+  - [示例二级标题 1.1](#示例二级标题-11)
+    - [示例三级标题 1.1.1](#示例三级标题-111)
+  - [示例二级标题 1.2](#示例二级标题-12)
+- [示例标题 2](#示例标题-2)
+  - [示例二级标题 2.1](#示例二级标题-21)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heading Tree Preview -->
+        <div class="mt-8 bg-white rounded-2xl shadow-xl p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa fa-sitemap text-purple-600"></i>
+                标题结构树
+            </h2>
+            <div id="headingTree" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fa fa-tree text-4xl mb-2 text-gray-300"></i>
+                    <p>输入 Markdown 内容后将显示标题结构树</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>💾 所有处理完全在浏览器本地完成，你的文档内容绝不会上传到任何服务器</p>
+            <p class="mt-2">⭐ 旺仔工具百宝箱 | 纯前端离线工具，开箱即用 | 完美支持 GitHub/GitLab/VuePress 等平台</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentToc = '';
+        let updateTimeout = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            generateTOC();
+        });
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 输入变化
+            document.getElementById('markdownInput').addEventListener('input', () => {
+                if (document.getElementById('autoUpdate').checked) {
+                    clearTimeout(updateTimeout);
+                    updateTimeout = setTimeout(generateTOC, 500);
+                }
+            });
+
+            // 配置变化
+            document.getElementById('maxLevel').addEventListener('change', generateTOC);
+            document.getElementById('listStyle').addEventListener('change', generateTOC);
+            document.getElementById('anchorFormat').addEventListener('change', generateTOC);
+            document.getElementById('addTitle').addEventListener('change', generateTOC);
+            document.getElementById('prefix').addEventListener('input', generateTOC);
+            document.getElementById('suffix').addEventListener('input', generateTOC);
+
+            // 按钮事件
+            document.getElementById('generateBtn').addEventListener('click', generateTOC);
+            document.getElementById('copyBtn').addEventListener('click', copyTOC);
+            document.getElementById('copyToc').addEventListener('click', copyTOC);
+            document.getElementById('insertBtn').addEventListener('click', insertTOC);
+            document.getElementById('clearBtn').addEventListener('click', clearAll);
+            document.getElementById('loadExample').addEventListener('click', loadExample);
+            document.getElementById('downloadOriginal').addEventListener('click', downloadOriginal);
+            document.getElementById('downloadToc').addEventListener('click', downloadTOC);
+            document.getElementById('previewBtn').addEventListener('click', previewTOC);
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        }
+
+        // 生成目录
+        function generateTOC() {
+            const markdown = document.getElementById('markdownInput').value;
+            const maxLevel = parseInt(document.getElementById('maxLevel').value);
+            const listStyle = document.getElementById('listStyle').value;
+            const anchorFormat = document.getElementById('anchorFormat').value;
+            const addTitle = document.getElementById('addTitle').checked;
+            const prefix = document.getElementById('prefix').value;
+            const suffix = document.getElementById('suffix').value;
+
+            // 提取标题
+            const headingRegex = /^(#{1,6})\s+(.+?)\s*$/gm;
+            const headings = [];
+            let match;
+
+            while ((match = headingRegex.exec(markdown)) !== null) {
+                const level = match[1].length;
+                const text = match[2].trim();
+                
+                // 跳过代码块中的标题
+                const prevText = markdown.substring(0, match.index);
+                const codeBlockCount = (prevText.match(/```/g) || []).length;
+                if (codeBlockCount % 2 !== 0) continue;
+
+                if (level <= maxLevel) {
+                    headings.push({
+                        level: level,
+                        text: text,
+                        anchor: generateAnchor(text, anchorFormat)
+                    });
+                }
+            }
+
+            // 更新统计
+            updateStatistics(headings);
+
+            // 生成目录
+            let toc = '';
+            if (addTitle) {
+                toc += '## 目录\n\n';
+            }
+
+            headings.forEach((heading, index) => {
+                const indent = '  '.repeat(heading.level - 1);
+                const listMarker = getListMarker(listStyle, index);
+                const titleText = prefix + heading.text + suffix;
+                
+                if (anchorFormat === 'none') {
+                    toc += `${indent}${listMarker} ${titleText}\n`;
+                } else {
+                    toc += `${indent}${listMarker} [${titleText}](${heading.anchor})\n`;
+                }
+            });
+
+            currentToc = toc;
+            document.getElementById('tocOutput').textContent = toc || '没有检测到标题，请输入包含 # 标题的 Markdown 内容';
+
+            // 生成标题树
+            renderHeadingTree(headings);
+        }
+
+        // 生成锚点
+        function generateAnchor(text, format) {
+            let anchor = text.toLowerCase();
+            
+            switch (format) {
+                case 'github':
+                    // GitHub 风格：移除非字母数字字符，空格转-
+                    anchor = anchor
+                        .replace(/[^\w\s-一-龥]/g, '') // 保留中文、字母、数字、空格、横杠
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-');
+                    break;
+                    
+                case 'gfm':
+                    // GFM 完整风格
+                    anchor = anchor
+                        .replace(/<[^>]*>/g, '') // 移除 HTML 标签
+                        .replace(/[!\"#$%&'()*+,.\/:;<=>?@\[\]^`{|}~]/g, '')
+                        .replace(/\s+/g, '-');
+                    break;
+                    
+                case 'gitlab':
+                    // GitLab 风格
+                    anchor = anchor
+                        .replace(/\s+/g, '-')
+                        .replace(/[^\w-一-龥]/g, '')
+                        .toLowerCase();
+                    break;
+                    
+                case 'vuepress':
+                    // VuePress 风格
+                    anchor = anchor
+                        .replace(/\s+/g, '-')
+                        .replace(/[^\w\u4e00-\u9fa5-]/g, '')
+                        .toLowerCase();
+                    break;
+            }
+            
+            return `#${encodeURI(anchor)}`;
+        }
+
+        // 获取列表标记
+        function getListMarker(style, index) {
+            switch (style) {
+                case 'ul': return '-';
+                case 'ol': return `${index + 1}.`;
+                case 'dash': return '—';
+                case 'asterisk': return '*';
+                default: return '-';
+            }
+        }
+
+        // 更新统计信息
+        function updateStatistics(headings) {
+            document.getElementById('totalHeadings').textContent = headings.length;
+            
+            const h1Count = headings.filter(h => h.level === 1).length;
+            const h2Count = headings.filter(h => h.level === 2).length;
+            const h3Count = headings.filter(h => h.level >= 3).length;
+            
+            document.getElementById('h1Count').textContent = h1Count;
+            document.getElementById('h2Count').textContent = h2Count;
+            document.getElementById('h3Count').textContent = h3Count;
+        }
+
+        // 渲染标题树
+        function renderHeadingTree(headings) {
+            if (headings.length === 0) {
+                document.getElementById('headingTree').innerHTML = `
+                    <div class="text-center py-8 text-gray-500 col-span-full">
+                        <i class="fa fa-tree text-4xl mb-2 text-gray-300"></i>
+                        <p>输入 Markdown 内容后将显示标题结构树</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 构建树形结构
+            const tree = [];
+            const stack = [];
+
+            headings.forEach(heading => {
+                const node = { ...heading, children: [] };
+                
+                while (stack.length > 0 && stack[stack.length - 1].level >= heading.level) {
+                    stack.pop();
+                }
+                
+                if (stack.length === 0) {
+                    tree.push(node);
+                } else {
+                    stack[stack.length - 1].children.push(node);
+                }
+                
+                stack.push(node);
+            });
+
+            // 渲染树
+            function renderNode(node) {
+                const hasChildren = node.children.length > 0;
+                return `
+                    <div class="toc-item p-3 bg-gray-50 rounded-lg border-l-4 border-purple-${400 + (node.level - 1) * 100}">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-purple-100 text-purple-700 rounded">H${node.level}</span>
+                            <span class="text-sm font-medium text-gray-800 truncate" title="${node.text}">${node.text}</span>
+                        </div>
+                        ${hasChildren ? `
+                            <div class="pl-4 space-y-2 border-l border-gray-200">
+                                ${node.children.map(child => renderNode(child)).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            document.getElementById('headingTree').innerHTML = tree.map(node => renderNode(node)).join('');
+        }
+
+        // 复制目录
+        async function copyTOC() {
+            if (!currentToc) {
+                showToast('没有可复制的目录', 'error');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(currentToc);
+                showToast('目录已复制到剪贴板！', 'success');
+                
+                // 复制成功动画
+                document.getElementById('tocOutput').classList.add('copy-success');
+                setTimeout(() => {
+                    document.getElementById('tocOutput').classList.remove('copy-success');
+                }, 500);
+            } catch (err) {
+                showToast('复制失败，请手动复制', 'error');
+            }
+        }
+
+        // 插入目录到原文开头
+        function insertTOC() {
+            if (!currentToc) {
+                showToast('没有可插入的目录', 'error');
+                return;
+            }
+            
+            const input = document.getElementById('markdownInput');
+            const currentContent = input.value;
+            
+            // 检查是否已有目录
+            if (currentContent.includes('## 目录') || currentContent.includes('# 目录')) {
+                if (!confirm('检测到原文可能已有目录，是否替换？')) {
+                    return;
+                }
+                // 移除旧目录
+                const tocRegex = /^##? 目录\n[\s\S]*?\n\n/m;
+                input.value = currentContent.replace(tocRegex, '').trimStart();
+            }
+            
+            // 插入新目录到开头
+            input.value = currentToc + '\n\n' + input.value.trimStart();
+            showToast('目录已插入到原文开头！', 'success');
+            generateTOC();
+        }
+
+        // 清空所有内容
+        function clearAll() {
+            if (confirm('确定要清空所有内容吗？')) {
+                document.getElementById('markdownInput').value = '';
+                currentToc = '';
+                generateTOC();
+                showToast('已清空', 'success');
+            }
+        }
+
+        // 加载示例
+        function loadExample() {
+            const example = `# Markdown 目录生成器使用说明
+
+## 功能特性
+### 1. 多平台支持
+- GitHub 风格锚点
+- GitLab 风格锚点
+- VuePress 风格锚点
+
+### 2. 多样化配置
+- 支持 1-6 级标题选择
+- 多种列表风格
+- 自定义前后缀
+- 实时更新预览
+
+## 使用方法
+### 基本使用
+1. 粘贴 Markdown 内容
+2. 选择配置选项
+3. 点击生成目录
+4. 复制或插入到原文
+
+### 高级功能
+- 上传 .md 文件直接处理
+- 下载生成的目录
+- 标题结构树可视化预览
+
+## 常见问题
+### Q: 生成的锚点无法跳转？
+A: 请选择与你使用的平台对应的锚点格式。
+
+### Q: 代码块中的标题被识别了？
+A: 工具会自动跳过代码块中的 # 内容，无需担心。
+
+# 其他说明
+完全本地运行，所有数据不会上传，安全可靠！
+`;
+            document.getElementById('markdownInput').value = example;
+            generateTOC();
+            showToast('示例内容已加载', 'success');
+        }
+
+        // 文件上传处理
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('markdownInput').value = event.target.result;
+                generateTOC();
+                showToast(`文件 "${file.name}" 已加载`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // 下载原文
+        function downloadOriginal() {
+            const content = document.getElementById('markdownInput').value;
+            if (!content) {
+                showToast('没有可下载的内容', 'error');
+                return;
+            }
+            
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `document-${new Date().toISOString().split('T')[0]}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('原文已下载', 'success');
+        }
+
+        // 下载目录
+        function downloadTOC() {
+            if (!currentToc) {
+                showToast('没有可下载的目录', 'error');
+                return;
+            }
+            
+            const blob = new Blob([currentToc], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `toc-${new Date().toISOString().split('T')[0]}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('目录已下载', 'success');
+        }
+
+        // 预览目录
+        function previewTOC() {
+            if (!currentToc) {
+                showToast('没有可预览的目录', 'error');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden">
+                    <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-gray-800">目录预览</h3>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fa fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 overflow-y-auto max-h-[calc(80vh-140px)] prose prose-sm max-w-none">
+                        ${currentToc.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+                                    .replace(/^- /gm, '<li>')
+                                    .replace(/^(\s+)- /gm, (m, p1) => `${p1}<li>`)
+                                    .replace(/<li>(.+?)(\n|$)/g, '<li>$1</li>')
+                                    .replace(/(  +)<li>/g, (m, p1) => {
+                                        const level = p1.length / 2;
+                                        return '<ul style="margin-left: 20px;">'.repeat(level) + '<li>';
+                                    })
+                        }
+                    </div>
+                    <div class="p-6 border-t border-gray-200 flex justify-end gap-3">
+                        <button onclick="copyTOC(); this.parentElement.parentElement.parentElement.remove()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition-all">
+                            <i class="fa fa-copy mr-2"></i>复制目录
+                        </button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-6 rounded-lg transition-all">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all transform translate-y-0 opacity-100 ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

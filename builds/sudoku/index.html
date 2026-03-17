@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧩 Sudoku 数独</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#38bdf8;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--purple:#a78bfa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+.header{text-align:center;margin-bottom:16px}
+.header h1{font-size:22px}.header p{color:var(--text2);font-size:13px;margin-top:4px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent);background:var(--surface2)}
+.btn.note-active{border-color:var(--purple);background:rgba(167,139,250,.15);color:var(--purple)}
+.diff-btns{display:flex;gap:6px;margin-bottom:16px}
+.diff{padding:5px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s}
+.diff:hover{border-color:var(--accent);color:var(--accent)}
+.diff.active{background:rgba(56,189,248,.15);border-color:var(--accent);color:var(--accent)}
+.board{display:grid;grid-template-columns:repeat(9,1fr);border:3px solid var(--accent);border-radius:8px;overflow:hidden;margin-bottom:16px;width:min(414px,90vw);height:min(414px,90vw)}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,4vw,22px);font-weight:600;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .12s;position:relative}
+.cell:hover{background:var(--surface2)}
+.cell.selected{background:rgba(56,189,248,.2);border-color:var(--accent)}
+.cell.same-num{background:rgba(56,189,248,.1)}
+.cell.same-row-col{background:rgba(56,189,248,.05)}
+.cell.given{color:var(--text);font-weight:700}
+.cell.user{color:var(--accent)}
+.cell.error{color:var(--red);background:rgba(248,113,113,.1)}
+.cell.hint-cell{color:var(--green);animation:hintFlash .6s}
+@keyframes hintFlash{0%{background:rgba(52,211,153,.3)}100%{background:var(--surface)}}
+.cell.box-right{border-right:2px solid var(--accent)}
+.cell.box-bottom{border-bottom:2px solid var(--accent)}
+.cell .notes-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;position:absolute;top:0;left:0}
+.cell .notes-grid span{display:flex;align-items:center;justify-content:center;font-size:clamp(7px,1.8vw,10px);font-weight:500;color:var(--purple);opacity:.85}
+.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px;width:min(280px,65vw)}
+.num{aspect-ratio:1.3;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;color:var(--accent)}
+.num:hover{background:var(--surface2);border-color:var(--accent)}
+.num.used-up{opacity:.25;cursor:not-allowed}
+.num.erase{font-size:13px;color:var(--red)}
+.num.note-mode{border-color:var(--purple);color:var(--purple)}
+.stats{display:flex;gap:16px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;text-align:center}
+.stat .val{font-size:18px;font-weight:700;color:var(--accent)}
+.stat .lbl{font-size:10px;color:var(--text2);margin-top:2px}
+.msg{font-size:14px;min-height:24px;margin-bottom:8px;text-align:center}
+.msg.win{color:var(--green);font-size:18px;font-weight:700}
+.msg.err{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>🧩 Sudoku 数独</h1>
+<p>经典数独游戏 — Build #56 by 旺仔</p>
+</div>
+<div class="diff-btns">
+<span class="diff active" data-diff="easy" onclick="setDiff(this)">😊 简单</span>
+<span class="diff" data-diff="medium" onclick="setDiff(this)">🤔 中等</span>
+<span class="diff" data-diff="hard" onclick="setDiff(this)">😈 困难</span>
+<span class="diff" data-diff="expert" onclick="setDiff(this)">🔥 专家</span>
+</div>
+<div class="stats">
+<div class="stat"><div class="val" id="timeVal">0:00</div><div class="lbl">用时</div></div>
+<div class="stat"><div class="val" id="errVal">0</div><div class="lbl">错误</div></div>
+<div class="stat"><div class="val" id="hintVal">3</div><div class="lbl">提示</div></div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="board" id="board"></div>
+<div class="numpad" id="numpad"></div>
+<div class="controls">
+<button class="btn" onclick="newGame()">🔄 新游戏</button>
+<button class="btn" id="noteBtn" onclick="toggleNoteMode()">✏️ 标记</button>
+<button class="btn" onclick="useHint()">💡 提示</button>
+<button class="btn" onclick="undoMove()">↩️ 撤销</button>
+<button class="btn" onclick="checkBoard()">✅ 检查</button>
+</div>
+<script>
+let board=[],solution=[],given=[],selected=-1,errors=0,hints=3,timer=null,seconds=0,hist=[];
+let difficulty='easy';
+let notesMode=false;
+let notes=[];// Array of 81 Sets
+const REMOVE={easy:35,medium:42,hard:50,expert:56};
+
+function generate(){const b=Array(81).fill(0);fillBoard(b);return b}
+function fillBoard(b){
+  const empty=b.indexOf(0);if(empty===-1)return true;
+  const nums=shuffle([1,2,3,4,5,6,7,8,9]);
+  for(const n of nums){if(isValid(b,empty,n)){b[empty]=n;if(fillBoard(b))return true;b[empty]=0}}
+  return false;
+}
+function isValid(b,pos,num){
+  const r=Math.floor(pos/9),c=pos%9;
+  for(let i=0;i<9;i++){if(b[r*9+i]===num||b[i*9+c]===num)return false}
+  const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+  for(let i=br;i<br+3;i++)for(let j=bc;j<bc+3;j++)if(b[i*9+j]===num)return false;
+  return true;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function createPuzzle(){
+  solution=generate();board=[...solution];given=Array(81).fill(true);
+  notes=Array.from({length:81},()=>new Set());
+  const indices=shuffle([...Array(81).keys()]);
+  let removed=0;
+  for(const idx of indices){if(removed>=REMOVE[difficulty])break;board[idx]=0;given[idx]=false;removed++}
+}
+
+function newGame(){
+  clearInterval(timer);seconds=0;errors=0;hints=3;hist=[];selected=-1;notesMode=false;
+  document.getElementById('msg').textContent='';document.getElementById('msg').className='msg';
+  document.getElementById('noteBtn').classList.remove('note-active');
+  createPuzzle();render();startTimer();
+}
+
+function toggleNoteMode(){
+  notesMode=!notesMode;
+  document.getElementById('noteBtn').classList.toggle('note-active',notesMode);
+  render();
+}
+
+function startTimer(){
+  clearInterval(timer);
+  timer=setInterval(function(){seconds++;var m=Math.floor(seconds/60),s=seconds%60;
+    document.getElementById('timeVal').textContent=m+':'+String(s).padStart(2,'0')},1000);
+}
+
+function getPeers(pos){
+  // Get all cells in same row, col, box
+  const r=Math.floor(pos/9),c=pos%9;
+  const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+  const peers=new Set();
+  for(let i=0;i<9;i++){peers.add(r*9+i);peers.add(i*9+c)}
+  for(let i=br;i<br+3;i++)for(let j=bc;j<bc+3;j++)peers.add(i*9+j);
+  peers.delete(pos);
+  return peers;
+}
+
+function clearNotesForPeers(pos,num){
+  // When a number is placed, remove it from notes of all peers
+  const peers=getPeers(pos);
+  const cleared=[];
+  peers.forEach(p=>{
+    if(notes[p].has(num)){
+      cleared.push({pos:p,num:num});
+      notes[p].delete(num);
+    }
+  });
+  return cleared;
+}
+
+function render(){
+  var boardEl=document.getElementById('board');boardEl.innerHTML='';
+  var selR=selected>=0?Math.floor(selected/9):-1;
+  var selC=selected>=0?selected%9:-1;
+  for(var i=0;i<81;i++){
+    var cell=document.createElement('div');cell.className='cell';
+    var r=Math.floor(i/9),c=i%9;
+    if(c%3===2&&c<8)cell.classList.add('box-right');
+    if(r%3===2&&r<8)cell.classList.add('box-bottom');
+    if(given[i])cell.classList.add('given');
+    else if(board[i])cell.classList.add('user');
+    if(i===selected)cell.classList.add('selected');
+    else if(selected>=0&&(r===selR||c===selC))cell.classList.add('same-row-col');
+    if(selected>=0&&board[i]&&board[i]===board[selected]&&i!==selected)cell.classList.add('same-num');
+    if(!given[i]&&board[i]&&board[i]!==solution[i])cell.classList.add('error');
+    
+    if(board[i]){
+      cell.textContent=board[i];
+    } else if(notes[i]&&notes[i].size>0){
+      // Show notes as 3x3 grid
+      var ng=document.createElement('div');ng.className='notes-grid';
+      for(var n=1;n<=9;n++){
+        var sp=document.createElement('span');
+        sp.textContent=notes[i].has(n)?n:'';
+        ng.appendChild(sp);
+      }
+      cell.appendChild(ng);
+    }
+    (function(idx){cell.onclick=function(){selectCell(idx)}})(i);
+    boardEl.appendChild(cell);
+  }
+  document.getElementById('errVal').textContent=errors;
+  document.getElementById('hintVal').textContent=hints;
+  updateNumpad();
+}
+
+function selectCell(i){selected=i;render()}
+
+function placeNumber(num){
+  if(selected<0||given[selected])return;
+  
+  if(notesMode&&num>0){
+    // Toggle note
+    var oldNotes=new Set(notes[selected]);
+    if(notes[selected].has(num)){notes[selected].delete(num)}
+    else{notes[selected].add(num)}
+    hist.push({type:'note',pos:selected,oldNotes:oldNotes,oldVal:board[selected]});
+    // If cell had a value, clear it
+    if(board[selected]){board[selected]=0}
+    render();
+    return;
+  }
+  
+  // Normal mode
+  var oldNotes=new Set(notes[selected]);
+  var oldVal=board[selected];
+  
+  if(num===0){
+    // Erase - restore to empty, keep notes
+    hist.push({type:'place',pos:selected,oldVal:oldVal,oldNotes:oldNotes,clearedPeerNotes:[]});
+    board[selected]=0;
+  } else {
+    board[selected]=num;
+    notes[selected]=new Set();// Clear notes on this cell
+    var clearedPeerNotes=clearNotesForPeers(selected,num);
+    hist.push({type:'place',pos:selected,oldVal:oldVal,oldNotes:oldNotes,clearedPeerNotes:clearedPeerNotes});
+    
+    if(num!==solution[selected]){
+      errors++;
+      document.getElementById('msg').textContent='❌ 不对哦';
+      document.getElementById('msg').className='msg err';
+      setTimeout(function(){document.getElementById('msg').textContent='';document.getElementById('msg').className='msg'},1200);
+    }
+  }
+  render();checkWin();
+}
+
+function updateNumpad(){
+  var pad=document.getElementById('numpad');pad.innerHTML='';
+  for(var n=1;n<=9;n++){
+    var count=board.filter(function(v){return v===n}).length;
+    var d=document.createElement('div');d.className='num'+(count>=9?' used-up':'')+(notesMode?' note-mode':'');
+    d.textContent=n;
+    (function(num,c){d.onclick=function(){if(c<9)placeNumber(num)}})(n,count);
+    pad.appendChild(d);
+  }
+  var eb=document.createElement('div');eb.className='num erase';eb.textContent='⌫';
+  eb.onclick=function(){placeNumber(0)};pad.appendChild(eb);
+}
+
+function useHint(){
+  if(hints<=0)return;
+  if(selected<0){
+    for(var i=0;i<81;i++){if(!given[i]&&board[i]!==solution[i]){selected=i;break}}
+  }
+  if(selected<0||given[selected]||(board[selected]===solution[selected]))return;
+  hints--;
+  var oldNotes=new Set(notes[selected]);
+  hist.push({type:'hint',pos:selected,oldVal:board[selected],oldNotes:oldNotes});
+  board[selected]=solution[selected];given[selected]=true;
+  notes[selected]=new Set();
+  clearNotesForPeers(selected,solution[selected]);
+  render();
+  var cells=document.getElementById('board').children;
+  if(cells[selected])cells[selected].classList.add('hint-cell');
+  checkWin();
+}
+
+function undoMove(){
+  if(!hist.length)return;
+  var last=hist.pop();
+  if(last.type==='note'){
+    board[last.pos]=last.oldVal;
+    notes[last.pos]=last.oldNotes;
+  } else if(last.type==='place'){
+    board[last.pos]=last.oldVal;
+    notes[last.pos]=last.oldNotes;
+    // Restore cleared peer notes
+    if(last.clearedPeerNotes){
+      last.clearedPeerNotes.forEach(function(cn){notes[cn.pos].add(cn.num)});
+    }
+  } else if(last.type==='hint'){
+    board[last.pos]=last.oldVal;
+    notes[last.pos]=last.oldNotes;
+    given[last.pos]=false;
+    hints++;
+  }
+  render();
+}
+
+function checkBoard(){
+  var wrong=0,empty=0;
+  for(var i=0;i<81;i++){if(!board[i])empty++;else if(board[i]!==solution[i])wrong++}
+  if(wrong===0&&empty===0)checkWin();
+  else if(wrong===0){document.getElementById('msg').textContent='👍 没有错误，还剩 '+empty+' 格';document.getElementById('msg').className='msg'}
+  else{document.getElementById('msg').textContent='⚠️ 有 '+wrong+' 处错误';document.getElementById('msg').className='msg err'}
+}
+
+function checkWin(){
+  for(var i=0;i<81;i++){if(board[i]!==solution[i])return}
+  clearInterval(timer);
+  var m=Math.floor(seconds/60),s=seconds%60;
+  document.getElementById('msg').innerHTML='🎉 通关！用时 '+m+'分'+s+'秒';
+  document.getElementById('msg').className='msg win';
+}
+
+function setDiff(el){
+  document.querySelectorAll('.diff').forEach(function(d){d.classList.remove('active')});
+  el.classList.add('active');difficulty=el.dataset.diff;newGame();
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='n'||e.key==='N'){toggleNoteMode();return}
+  if(e.key>='1'&&e.key<='9')placeNumber(parseInt(e.key));
+  else if(e.key==='Backspace'||e.key==='Delete')placeNumber(0);
+  else if(e.key==='ArrowRight'&&selected<80){selected++;render()}
+  else if(e.key==='ArrowLeft'&&selected>0){selected--;render()}
+  else if(e.key==='ArrowDown'&&selected<72){selected+=9;render()}
+  else if(e.key==='ArrowUp'&&selected>=9){selected-=9;render()}
+});
+
+newGame();
+</script>
+</body>
+</html>

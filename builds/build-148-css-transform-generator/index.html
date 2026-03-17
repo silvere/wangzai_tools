@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Transform 变换可视化生成器 | 旺仔工具库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        .preview-box {
+            transition: all 0.3s ease;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+        .code-block {
+            font-family: 'Fira Code', 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🔄 CSS Transform 变换可视化生成器</h1>
+            <p class="text-gray-600">可视化拖拽调节CSS变换属性，实时预览，一键复制代码</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Control Panel -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Transform Settings -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">变换参数</h2>
+
+                    <!-- Translate -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">平移 Translate</label>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>X 轴 (px)</span>
+                                    <span id="translateX-value">0</span>
+                                </div>
+                                <input type="range" id="translateX" min="-200" max="200" value="0" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>Y 轴 (px)</span>
+                                    <span id="translateY-value">0</span>
+                                </div>
+                                <input type="range" id="translateY" min="-200" max="200" value="0" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rotate -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">旋转 Rotate</label>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>角度 (deg)</span>
+                                    <span id="rotate-value">0</span>
+                                </div>
+                                <input type="range" id="rotate" min="-180" max="180" value="0" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scale -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">缩放 Scale</label>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>X 轴</span>
+                                    <span id="scaleX-value">1</span>
+                                </div>
+                                <input type="range" id="scaleX" min="0.1" max="2" value="1" step="0.1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>Y 轴</span>
+                                    <span id="scaleY-value">1</span>
+                                </div>
+                                <input type="range" id="scaleY" min="0.1" max="2" value="1" step="0.1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="uniform-scale" checked class="mr-2 h-4 w-4 text-blue-600 rounded">
+                                <label for="uniform-scale" class="text-sm text-gray-600">等比例缩放</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Skew -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">倾斜 Skew</label>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>X 轴 (deg)</span>
+                                    <span id="skewX-value">0</span>
+                                </div>
+                                <input type="range" id="skewX" min="-45" max="45" value="0" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>Y 轴 (deg)</span>
+                                    <span id="skewY-value">0</span>
+                                </div>
+                                <input type="range" id="skewY" min="-45" max="45" value="0" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transform Origin -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">变换原点 Transform Origin</label>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="origin-btn px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm font-medium" data-origin="center">居中</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="top-left">左上</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="top-right">右上</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="center-left">左中</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="center-right">右中</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="bottom-left">左下</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="bottom-center">中下</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="bottom-right">右下</button>
+                            <button class="origin-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm" data-origin="top-center">中上</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">常用预设</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="reset">重置</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="tilt">轻微倾斜</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="enlarge">放大突出</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="flip-horizontal">水平翻转</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="flip-vertical">垂直翻转</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="skew-card">倾斜卡片</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="floating">悬浮效果</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-sm transition" data-preset="perspective">透视效果</button>
+                    </div>
+                </div>
+
+                <!-- Box Style -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">预览框样式</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">背景颜色</label>
+                            <input type="color" id="bgColor" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">边框宽度 (px)</label>
+                            <input type="range" id="borderWidth" min="0" max="10" value="0" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>0</span>
+                                <span id="borderWidth-value">0</span>
+                                <span>10</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">边框颜色</label>
+                            <input type="color" id="borderColor" value="#1e40af" class="w-full h-10 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">圆角 (px)</label>
+                            <input type="range" id="borderRadius" min="0" max="30" value="8" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>0</span>
+                                <span id="borderRadius-value">8</span>
+                                <span>30</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview and Code -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Preview -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+                    <div class="relative bg-gray-100 rounded-lg p-12 min-h-[400px] flex items-center justify-center overflow-hidden">
+                        <div class="absolute inset-0 grid grid-cols-10 grid-rows-10 opacity-20">
+                            <!-- Grid background -->
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                        </div>
+                        <div id="origin-mark" class="absolute w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-md hidden"></div>
+                        <div id="preview-box" class="preview-box w-48 h-48 flex items-center justify-center text-white font-bold text-xl shadow-lg" style="background: #3b82f6; border-radius: 8px; transform: translate(0px, 0px) rotate(0deg) scale(1, 1) skew(0deg, 0deg); transform-origin: center;">
+                            Transform
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+                        <span>当前变换原点: <strong id="origin-text">center</strong></span>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="show-origin" class="mr-2">
+                            显示原点标记
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Generated Code -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">生成的 CSS 代码</h2>
+                        <button id="copy-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium">
+                            📋 复制代码
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <pre class="code-block bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code id="css-code"></code></pre>
+                    </div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Transform 语法速查表</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border px-3 py-2 text-left">函数</th>
+                                    <th class="border px-3 py-2 text-left">说明</th>
+                                    <th class="border px-3 py-2 text-left">示例</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">translate(x, y)</td>
+                                    <td class="border px-3 py-2">移动元素</td>
+                                    <td class="border px-3 py-2 font-mono">translate(50px, 20px)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">translateX(x)</td>
+                                    <td class="border px-3 py-2">X 轴移动</td>
+                                    <td class="border px-3 py-2 font-mono">translateX(50px)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">translateY(y)</td>
+                                    <td class="border px-3 py-2">Y 轴移动</td>
+                                    <td class="border px-3 py-2 font-mono">translateY(20px)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">rotate(angle)</td>
+                                    <td class="border px-3 py-2">顺时针旋转</td>
+                                    <td class="border px-3 py-2 font-mono">rotate(45deg)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">scale(x, y)</td>
+                                    <td class="border px-3 py-2">缩放元素</td>
+                                    <td class="border px-3 py-2 font-mono">scale(1.5, 1.5)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">scaleX(x)</td>
+                                    <td class="border px-3 py-2">X 轴缩放</td>
+                                    <td class="border px-3 py-2 font-mono">scaleX(-1)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">scaleY(y)</td>
+                                    <td class="border px-3 py-2">Y 轴缩放</td>
+                                    <td class="border px-3 py-2 font-mono">scaleY(0.5)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">skew(x-angle, y-angle)</td>
+                                    <td class="border px-3 py-2">倾斜变形</td>
+                                    <td class="border px-3 py-2 font-mono">skew(10deg, 5deg)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">skewX(angle)</td>
+                                    <td class="border px-3 py-2">X 轴倾斜</td>
+                                    <td class="border px-3 py-2 font-mono">skewX(10deg)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">skewY(angle)</td>
+                                    <td class="border px-3 py-2">Y 轴倾斜</td>
+                                    <td class="border px-3 py-2 font-mono">skewY(10deg)</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">matrix(n,n,n,n,n,n)</td>
+                                    <td class="border px-3 py-2">组合所有变换</td>
+                                    <td class="border px-3 py-2 font-mono">matrix(1,0.5,-0.5,1,0,0)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
+                        <strong class="block mb-1">💡 提示：</strong>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>多个变换函数可以组合使用，按顺序应用</li>
+                            <li>变换顺序会影响结果：先旋转再平移 和 先平移再旋转结果不同</li>
+                            <li><code>transform-origin</code> 改变变换的中心点位置</li>
+                            <li>变换不影响其他元素布局，只是视觉效果</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>Built with ❤️ by 旺仔 | 纯前端实现，所有计算在浏览器本地完成</p>
+        </footer>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const translateX = document.getElementById('translateX');
+        const translateY = document.getElementById('translateY');
+        const rotate = document.getElementById('rotate');
+        const scaleX = document.getElementById('scaleX');
+        const scaleY = document.getElementById('scaleY');
+        const skewX = document.getElementById('skewX');
+        const skewY = document.getElementById('skewY');
+
+        const translateXValue = document.getElementById('translateX-value');
+        const translateYValue = document.getElementById('translateY-value');
+        const rotateValue = document.getElementById('rotate-value');
+        const scaleXValue = document.getElementById('scaleX-value');
+        const scaleYValue = document.getElementById('scaleY-value');
+        const skewXValue = document.getElementById('skewX-value');
+        const skewYValue = document.getElementById('skewY-value');
+
+        const previewBox = document.getElementById('preview-box');
+        const cssCode = document.getElementById('css-code');
+        const copyBtn = document.getElementById('copy-btn');
+        const originText = document.getElementById('origin-text');
+        const originMark = document.getElementById('origin-mark');
+        const showOrigin = document.getElementById('show-origin');
+
+        const bgColor = document.getElementById('bgColor');
+        const borderWidth = document.getElementById('borderWidth');
+        const borderColor = document.getElementById('borderColor');
+        const borderRadius = document.getElementById('borderRadius');
+        const borderWidthValue = document.getElementById('borderWidth-value');
+        const borderRadiusValue = document.getElementById('borderRadius-value');
+
+        const uniformScale = document.getElementById('uniform-scale');
+
+        let currentTransformOrigin = 'center';
+        const originMap = {
+            'center': 'center center',
+            'top-left': 'top left',
+            'top-right': 'top right',
+            'center-left': 'center left',
+            'center-right': 'center right',
+            'bottom-left': 'bottom left',
+            'bottom-center': 'bottom center',
+            'bottom-right': 'bottom right',
+            'top-center': 'top center'
+        };
+
+        // Update display values and preview
+        function updateAll() {
+            // Update displayed values
+            translateXValue.textContent = translateX.value;
+            translateYValue.textContent = translateY.value;
+            rotateValue.textContent = rotate.value;
+            scaleXValue.textContent = parseFloat(scaleX.value).toFixed(1);
+            scaleYValue.textContent = parseFloat(scaleY.value).toFixed(1);
+            skewXValue.textContent = skewX.value;
+            skewYValue.textContent = skewY.value;
+            borderWidthValue.textContent = borderWidth.value;
+            borderRadiusValue.textContent = borderRadius.value;
+
+            // Build transform string
+            let transform = '';
+            if (translateX.value != 0 || translateY.value != 0) {
+                transform += `translate(${translateX.value}px, ${translateY.value}px) `;
+            }
+            if (rotate.value != 0) {
+                transform += `rotate(${rotate.value}deg) `;
+            }
+            if (scaleX.value != 1 || scaleY.value != 1) {
+                transform += `scale(${scaleX.value}, ${scaleY.value}) `;
+            }
+            if (skewX.value != 0 || skewY.value != 0) {
+                transform += `skew(${skewX.value}deg, ${skewY.value}deg) `;
+            }
+
+            if (!transform) {
+                transform = 'none';
+            }
+
+            // Apply transform
+            previewBox.style.transform = transform.trim();
+            previewBox.style.transformOrigin = currentTransformOrigin;
+            previewBox.style.background = bgColor.value;
+            previewBox.style.borderWidth = borderWidth.value + 'px';
+            previewBox.style.borderStyle = borderWidth.value > 0 ? 'solid' : 'none';
+            previewBox.style.borderColor = borderColor.value;
+            previewBox.style.borderRadius = borderRadius.value + 'px';
+
+            // Update origin display
+            originText.textContent = currentTransformOrigin;
+
+            // Update CSS code display
+            let css = `.my-element {\n`;
+            css += `  transform: ${transform.trim()};\n`;
+            if (currentTransformOrigin !== 'center center') {
+                css += `  transform-origin: ${currentTransformOrigin};\n`;
+            }
+            css += `}`;
+            cssCode.textContent = css;
+        }
+
+        // Uniform scale handling
+        scaleX.addEventListener('input', () => {
+            if (uniformScale.checked) {
+                scaleY.value = scaleX.value;
+                scaleYValue.textContent = parseFloat(scaleX.value).toFixed(1);
+            }
+            updateAll();
+        });
+
+        scaleY.addEventListener('input', () => {
+            updateAll();
+        });
+
+        // Origin mark position
+        function updateOriginMark() {
+            if (!showOrigin.checked) {
+                originMark.classList.add('hidden');
+                return;
+            }
+            originMark.classList.remove('hidden');
+            const container = originMark.parentElement;
+            const boxRect = previewBox.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            let x = containerRect.width / 2;
+            let y = containerRect.height / 2;
+            const boxLeft = (containerRect.width - previewBox.offsetWidth) / 2;
+            const boxTop = (containerRect.height - previewBox.offsetHeight) / 2;
+
+            switch (currentTransformOrigin) {
+                case 'center center':
+                    x = boxLeft + previewBox.offsetWidth / 2;
+                    y = boxTop + previewBox.offsetHeight / 2;
+                    break;
+                case 'top left':
+                    x = boxLeft;
+                    y = boxTop;
+                    break;
+                case 'top right':
+                    x = boxLeft + previewBox.offsetWidth;
+                    y = boxTop;
+                    break;
+                case 'center left':
+                    x = boxLeft;
+                    y = boxTop + previewBox.offsetHeight / 2;
+                    break;
+                case 'center right':
+                    x = boxLeft + previewBox.offsetWidth;
+                    y = boxTop + previewBox.offsetHeight / 2;
+                    break;
+                case 'bottom left':
+                    x = boxLeft;
+                    y = boxTop + previewBox.offsetHeight;
+                    break;
+                case 'bottom center':
+                    x = boxLeft + previewBox.offsetWidth / 2;
+                    y = boxTop + previewBox.offsetHeight;
+                    break;
+                case 'bottom right':
+                    x = boxLeft + previewBox.offsetWidth;
+                    y = boxTop + previewBox.offsetHeight;
+                    break;
+                case 'top center':
+                    x = boxLeft + previewBox.offsetWidth / 2;
+                    y = boxTop;
+                    break;
+            }
+
+            originMark.style.left = (x - 4) + 'px';
+            originMark.style.top = (y - 4) + 'px';
+        }
+
+        // Event listeners
+        [translateX, translateY, rotate, skewX, skewY, bgColor, borderWidth, borderColor, borderRadius].forEach(el => {
+            el.addEventListener('input', updateAll);
+        });
+
+        uniformScale.addEventListener('change', () => {
+            if (uniformScale.checked) {
+                scaleY.value = scaleX.value;
+                scaleYValue.textContent = parseFloat(scaleX.value).toFixed(1);
+                updateAll();
+            }
+        });
+
+        showOrigin.addEventListener('change', () => {
+            updateOriginMark();
+        });
+
+        // Origin buttons
+        document.querySelectorAll('.origin-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.origin-btn').forEach(b => {
+                    b.classList.remove('bg-blue-100', 'text-blue-700');
+                    b.classList.add('bg-gray-100', 'text-gray-700');
+                });
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                btn.classList.add('bg-blue-100', 'text-blue-700');
+                const preset = btn.dataset.origin;
+                currentTransformOrigin = originMap[preset];
+                originText.textContent = preset;
+                updateAll();
+                updateOriginMark();
+            });
+        });
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                applyPreset(preset);
+            });
+        });
+
+        // Apply presets
+        function applyPreset(preset) {
+            switch (preset) {
+                case 'reset':
+                    translateX.value = 0;
+                    translateY.value = 0;
+                    rotate.value = 0;
+                    scaleX.value = 1;
+                    scaleY.value = 1;
+                    skewX.value = 0;
+                    skewY.value = 0;
+                    currentTransformOrigin = 'center center';
+                    document.querySelectorAll('.origin-btn').forEach(b => {
+                        b.classList.remove('bg-blue-100', 'text-blue-700');
+                        b.classList.add('bg-gray-100', 'text-gray-700');
+                        if (b.dataset.origin === 'center') {
+                            b.classList.remove('bg-gray-100', 'text-gray-700');
+                            b.classList.add('bg-blue-100', 'text-blue-700');
+                        }
+                    });
+                    break;
+                case 'tilt':
+                    translateX.value = 0;
+                    translateY.value = 0;
+                    rotate.value = 5;
+                    scaleX.value = 1;
+                    scaleY.value = 1;
+                    skewX.value = 0;
+                    skewY.value = 0;
+                    break;
+                case 'enlarge':
+                    translateX.value = 0;
+                    translateY.value = 0;
+                    rotate.value = 0;
+                    scaleX.value = 1.3;
+                    scaleY.value = 1.3;
+                    skewX.value = 0;
+                    skewY.value = 0;
+                    break;
+                case 'flip-horizontal':
+                    translateX.value = 0;
+                    translateY.value = 0;
+                    rotate.value = 0;
+                    scaleX.value = -1;
+                    scaleY.value = 1;
+                    skewX.value = 0;
+                    skewY.value = 0;
+                    uniformScale.checked = false;
+                    break;
+                case 'flip-vertical':
+                    translateX.value = 0;
+                    translateY.value = 0;
+                    rotate.value = 0;
+                    scaleX.value = 1;
+                    scaleY.value = -1;
+                    skewX.value = 0;
+                    skewY.value = 0;
+                    uniformScale.checked = false;
+                    break;
+                case 'skew-card':
+                    translateX.value = 0;
+                    translateY.value = 0;
+                    rotate.value = 0;
+                    scaleX.value = 1;
+                    scaleY.value = 1;
+                    skewX.value = 5;
+                    skewY.value = 2;
+                    break;
+                case 'floating':
+                    translateX.value = 0;
+                    translateY.value = -10;
+                    rotate.value = 0;
+                    scaleX.value = 1.05;
+                    scaleY.value = 1.05;
+                    skewX.value = 0;
+                    skewY.value = 0;
+                    break;
+                case 'perspective':
+                    translateX.value = 20;
+                    translateY.value = 0;
+                    rotate.value = 0;
+                    scaleX.value = 1;
+                    scaleY.value = 1;
+                    skewX.value = 0;
+                    skewY.value = 8;
+                    break;
+            }
+            // Update all displays
+            translateXValue.textContent = translateX.value;
+            translateYValue.textContent = translateY.value;
+            rotateValue.textContent = rotate.value;
+            scaleXValue.textContent = parseFloat(scaleX.value).toFixed(1);
+            scaleYValue.textContent = parseFloat(scaleY.value).toFixed(1);
+            skewXValue.textContent = skewX.value;
+            skewYValue.textContent = skewY.value;
+            updateAll();
+        }
+
+        // Copy button
+        copyBtn.addEventListener('click', () => {
+            const text = cssCode.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ 已复制！';
+                copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }, 2000);
+            });
+        });
+
+        // Initialize
+        document.querySelector('.origin-btn[data-origin="center"]').click();
+        updateAll();
+        setTimeout(updateOriginMark, 100);
+    </script>
+</body>
+</html>

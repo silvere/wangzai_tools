@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟 🍅</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .title {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .timer-display {
+            font-size: 6em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 30px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+        
+        .progress-ring {
+            margin: 0 auto 40px;
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+        
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            stroke: #e0e0e0;
+            fill: none;
+            stroke-width: 12;
+        }
+        
+        .progress-ring-progress {
+            stroke: url(#gradient);
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4em;
+            font-weight: 700;
+            color: #333;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .mode-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 12px;
+        }
+        
+        .mode-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .mode-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .settings {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .setting-item label {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .setting-item input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1em;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .timer-display {
+                font-size: 4em;
+            }
+            
+            .progress-ring {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .timer-text {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">🍅 番茄钟</div>
+        <div class="subtitle">专注工作，高效休息</div>
+        
+        <div class="mode-tabs">
+            <button class="mode-tab active" onclick="switchMode('work')">工作</button>
+            <button class="mode-tab" onclick="switchMode('short')">短休息</button>
+            <button class="mode-tab" onclick="switchMode('long')">长休息</button>
+        </div>
+        
+        <div class="progress-ring">
+            <svg width="300" height="300">
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle class="progress-ring-circle" cx="150" cy="150" r="140"></circle>
+                <circle class="progress-ring-progress" cx="150" cy="150" r="140" id="progressCircle"></circle>
+            </svg>
+            <div class="timer-text" id="timerText">25:00</div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">开始</button>
+            <button class="btn btn-secondary" onclick="resetTimer()">重置</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="completedCount">0</div>
+                <div class="stat-label">完成番茄</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalTime">0</div>
+                <div class="stat-label">总时长(分)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label">今日番茄</div>
+            </div>
+        </div>
+        
+        <div class="settings">
+            <div class="setting-item">
+                <label>工作时长(分钟)</label>
+                <input type="number" id="workDuration" value="25" min="1" max="60">
+            </div>
+            <div class="setting-item">
+                <label>短休息(分钟)</label>
+                <input type="number" id="shortBreak" value="5" min="1" max="30">
+            </div>
+            <div class="setting-item">
+                <label>长休息(分钟)</label>
+                <input type="number" id="longBreak" value="15" min="1" max="60">
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let timer = null;
+        let timeLeft = 25 * 60; // 秒
+        let totalTime = 25 * 60;
+        let isRunning = false;
+        let currentMode = 'work';
+        
+        const modes = {
+            work: { duration: 25, label: '工作' },
+            short: { duration: 5, label: '短休息' },
+            long: { duration: 15, label: '长休息' }
+        };
+        
+        // 从 localStorage 加载统计
+        let stats = JSON.parse(localStorage.getItem('pomodoroStats') || '{"completed": 0, "totalMinutes": 0, "today": 0, "lastDate": ""}');
+        
+        // 检查是否是新的一天
+        const today = new Date().toDateString();
+        if (stats.lastDate !== today) {
+            stats.today = 0;
+            stats.lastDate = today;
+            saveStats();
+        }
+        
+        updateStats();
+        
+        function switchMode(mode) {
+            if (isRunning) {
+                if (!confirm('计时器正在运行，确定要切换模式吗？')) {
+                    return;
+                }
+                stopTimer();
+            }
+            
+            currentMode = mode;
+            const duration = parseInt(document.getElementById(mode === 'work' ? 'workDuration' : mode === 'short' ? 'shortBreak' : 'longBreak').value);
+            timeLeft = duration * 60;
+            totalTime = duration * 60;
+            
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateDisplay();
+            updateProgress();
+        }
+        
+        function toggleTimer() {
+            if (isRunning) {
+                stopTimer();
+            } else {
+                startTimer();
+            }
+        }
+        
+        function startTimer() {
+            isRunning = true;
+            document.getElementById('startBtn').textContent = '暂停';
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                updateProgress();
+                
+                if (timeLeft <= 0) {
+                    stopTimer();
+                    playSound();
+                    
+                    if (currentMode === 'work') {
+                        stats.completed++;
+                        stats.today++;
+                        stats.totalMinutes += parseInt(document.getElementById('workDuration').value);
+                        saveStats();
+                        updateStats();
+                        
+                        if (confirm('番茄钟完成！🎉 开始休息吗？')) {
+                            switchModeByButton(stats.completed % 4 === 0 ? 'long' : 'short');
+                        }
+                    } else {
+                        if (confirm('休息结束！继续工作吗？')) {
+                            switchModeByButton('work');
+                        }
+                    }
+                }
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            isRunning = false;
+            clearInterval(timer);
+            document.getElementById('startBtn').textContent = '开始';
+        }
+        
+        function resetTimer() {
+            if (isRunning && !confirm('确定要重置计时器吗？')) {
+                return;
+            }
+            
+            stopTimer();
+            const duration = parseInt(document.getElementById(currentMode === 'work' ? 'workDuration' : currentMode === 'short' ? 'shortBreak' : 'longBreak').value);
+            timeLeft = duration * 60;
+            totalTime = duration * 60;
+            updateDisplay();
+            updateProgress();
+        }
+        
+        function switchModeByButton(mode) {
+            const buttons = document.querySelectorAll('.mode-tab');
+            const index = mode === 'work' ? 0 : mode === 'short' ? 1 : 2;
+            buttons[index].click();
+        }
+        
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timerText').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function updateProgress() {
+            const circle = document.getElementById('progressCircle');
+            const radius = 140;
+            const circumference = 2 * Math.PI * radius;
+            const progress = (totalTime - timeLeft) / totalTime;
+            const offset = circumference * (1 - progress);
+            
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        function updateStats() {
+            document.getElementById('completedCount').textContent = stats.completed;
+            document.getElementById('totalTime').textContent = stats.totalMinutes;
+            document.getElementById('todayCount').textContent = stats.today;
+        }
+        
+        function saveStats() {
+            localStorage.setItem('pomodoroStats', JSON.stringify(stats));
+        }
+        
+        function playSound() {
+            // 使用 Web Audio API 播放提示音
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+        
+        // 初始化进度环
+        updateProgress();
+        
+        // 监听设置变化
+        ['workDuration', 'shortBreak', 'longBreak'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                if (!isRunning) {
+                    resetTimer();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

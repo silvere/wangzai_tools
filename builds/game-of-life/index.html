@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🧬 生命游戏</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a0f;--surface:#141418;--border:#252530;--text:#e8e8f0;--dim:#666;--accent:#22c55e;--cell:#22c55e}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
+.top-bar h1{font-size:15px;font-weight:600;white-space:nowrap}
+.info{display:flex;gap:12px;font-size:12px;color:var(--dim)}
+.info span{font-variant-numeric:tabular-nums}
+.info .val{color:var(--accent);font-weight:600}
+.controls{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--border);align-items:center}
+.btn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:12px;transition:.2s;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.btn.accent{background:var(--accent);color:#000;border-color:var(--accent)}
+.sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+select{padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px}
+.speed-ctrl{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)}
+.speed-ctrl input{width:60px}
+.canvas-wrap{flex:1;overflow:hidden;cursor:crosshair;position:relative}
+canvas{display:block}
+.color-opts{display:flex;gap:4px;align-items:center}
+.color-dot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.color-dot.active{border-color:#fff}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🧬 Conway's Game of Life</h1>
+  <div class="info">
+    <span>世代: <span class="val" id="genCount">0</span></span>
+    <span>存活: <span class="val" id="cellCount">0</span></span>
+    <span>大小: <span class="val" id="gridSize">-</span></span>
+  </div>
+</div>
+<div class="controls">
+  <button class="btn accent" id="playBtn" onclick="togglePlay()">▶ 播放</button>
+  <button class="btn" onclick="step()">⏭ 单步</button>
+  <button class="btn" onclick="clearGrid()">🗑️ 清空</button>
+  <button class="btn" onclick="randomFill()">🎲 随机</button>
+  <div class="sep"></div>
+  <select id="presetSel" onchange="loadPreset(this.value)">
+    <option value="">📋 预设图案</option>
+    <option value="glider">滑翔机 Glider</option>
+    <option value="lwss">轻量飞船 LWSS</option>
+    <option value="pulsar">脉冲星 Pulsar</option>
+    <option value="pentadecathlon">十五连珠</option>
+    <option value="gosper">Gosper 滑翔机枪</option>
+    <option value="acorn">橡子 Acorn</option>
+    <option value="rpentomino">R-pentomino</option>
+    <option value="diehard">Diehard</option>
+  </select>
+  <div class="sep"></div>
+  <div class="speed-ctrl">
+    🏃 <input type="range" min="1" max="30" value="10" id="speedSlider" oninput="setSpeed(this.value)">
+    <span id="speedLabel">10</span>/s
+  </div>
+  <div class="sep"></div>
+  <div class="color-opts">
+    <div class="color-dot active" style="background:#22c55e" onclick="setColor('#22c55e',this)"></div>
+    <div class="color-dot" style="background:#3b82f6" onclick="setColor('#3b82f6',this)"></div>
+    <div class="color-dot" style="background:#a855f7" onclick="setColor('#a855f7',this)"></div>
+    <div class="color-dot" style="background:#ef4444" onclick="setColor('#ef4444',this)"></div>
+    <div class="color-dot" style="background:#f59e0b" onclick="setColor('#f59e0b',this)"></div>
+    <div class="color-dot" style="background:#06b6d4" onclick="setColor('#06b6d4',this)"></div>
+  </div>
+</div>
+<div class="canvas-wrap" id="canvasWrap">
+  <canvas id="canvas"></canvas>
+</div>
+
+<script>
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var wrap = document.getElementById('canvasWrap');
+var cellSize = 10;
+var cols, rows;
+var grid, nextGrid;
+var generation = 0;
+var playing = false;
+var interval = null;
+var speed = 10;
+var cellColor = '#22c55e';
+var drawing = false;
+var drawVal = 1;
+
+function initGrid() {
+  var w = wrap.clientWidth;
+  var h = wrap.clientHeight;
+  canvas.width = w; canvas.height = h;
+  cols = Math.floor(w / cellSize);
+  rows = Math.floor(h / cellSize);
+  grid = new Uint8Array(cols * rows);
+  nextGrid = new Uint8Array(cols * rows);
+  document.getElementById('gridSize').textContent = cols + '×' + rows;
+  generation = 0;
+  updateInfo();
+  render();
+}
+
+function idx(x, y) { return y * cols + x; }
+
+function countNeighbors(x, y) {
+  var count = 0;
+  for (var dy = -1; dy <= 1; dy++) {
+    for (var dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      var nx = (x + dx + cols) % cols;
+      var ny = (y + dy + rows) % rows;
+      count += grid[idx(nx, ny)];
+    }
+  }
+  return count;
+}
+
+function step() {
+  for (var y = 0; y < rows; y++) {
+    for (var x = 0; x < cols; x++) {
+      var n = countNeighbors(x, y);
+      var i = idx(x, y);
+      if (grid[i]) {
+        nextGrid[i] = (n === 2 || n === 3) ? 1 : 0;
+      } else {
+        nextGrid[i] = (n === 3) ? 1 : 0;
+      }
+    }
+  }
+  var tmp = grid; grid = nextGrid; nextGrid = tmp;
+  generation++;
+  updateInfo();
+  render();
+}
+
+function render() {
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Grid lines (subtle)
+  ctx.strokeStyle = '#151520';
+  ctx.lineWidth = 0.5;
+  for (var x = 0; x <= cols; x++) {
+    ctx.beginPath(); ctx.moveTo(x*cellSize, 0); ctx.lineTo(x*cellSize, rows*cellSize); ctx.stroke();
+  }
+  for (var y = 0; y <= rows; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y*cellSize); ctx.lineTo(cols*cellSize, y*cellSize); ctx.stroke();
+  }
+  // Cells
+  ctx.fillStyle = cellColor;
+  for (var y = 0; y < rows; y++) {
+    for (var x = 0; x < cols; x++) {
+      if (grid[idx(x, y)]) {
+        ctx.fillRect(x*cellSize+1, y*cellSize+1, cellSize-2, cellSize-2);
+      }
+    }
+  }
+}
+
+function updateInfo() {
+  document.getElementById('genCount').textContent = generation;
+  var alive = 0;
+  for (var i = 0; i < grid.length; i++) alive += grid[i];
+  document.getElementById('cellCount').textContent = alive;
+}
+
+function togglePlay() {
+  if (playing) {
+    playing = false;
+    clearInterval(interval);
+    document.getElementById('playBtn').textContent = '▶ 播放';
+    document.getElementById('playBtn').classList.add('accent');
+  } else {
+    playing = true;
+    interval = setInterval(step, 1000 / speed);
+    document.getElementById('playBtn').textContent = '⏸ 暂停';
+    document.getElementById('playBtn').classList.remove('accent');
+  }
+}
+
+function setSpeed(val) {
+  speed = parseInt(val);
+  document.getElementById('speedLabel').textContent = speed;
+  if (playing) {
+    clearInterval(interval);
+    interval = setInterval(step, 1000 / speed);
+  }
+}
+
+function clearGrid() {
+  if (playing) togglePlay();
+  grid.fill(0);
+  generation = 0;
+  updateInfo(); render();
+}
+
+function randomFill() {
+  if (playing) togglePlay();
+  for (var i = 0; i < grid.length; i++) grid[i] = Math.random() < 0.25 ? 1 : 0;
+  generation = 0;
+  updateInfo(); render();
+}
+
+function setColor(c, el) {
+  cellColor = c;
+  document.querySelectorAll('.color-dot').forEach(function(d){d.classList.remove('active')});
+  el.classList.add('active');
+  render();
+}
+
+function placePattern(pattern, ox, oy) {
+  if (typeof ox === 'undefined') ox = Math.floor(cols/2) - Math.floor(pattern[0].length/2);
+  if (typeof oy === 'undefined') oy = Math.floor(rows/2) - Math.floor(pattern.length/2);
+  for (var y = 0; y < pattern.length; y++) {
+    for (var x = 0; x < pattern[y].length; x++) {
+      var gx = (ox + x + cols) % cols;
+      var gy = (oy + y + rows) % rows;
+      if (pattern[y][x]) grid[idx(gx, gy)] = 1;
+    }
+  }
+}
+
+var PATTERNS = {
+  glider: [[0,1,0],[0,0,1],[1,1,1]],
+  lwss: [[0,1,0,0,1],[1,0,0,0,0],[1,0,0,0,1],[1,1,1,1,0]],
+  pulsar: [
+    [0,0,1,1,1,0,0,0,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [0,0,1,1,1,0,0,0,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,0,0,0,1,1,1,0,0],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,0,0,0,1,1,1,0,0]
+  ],
+  pentadecathlon: [[0,0,1,0,0,0,0,1,0,0],[1,1,0,1,1,1,1,0,1,1],[0,0,1,0,0,0,0,1,0,0]],
+  gosper: [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+    [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+    [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ],
+  acorn: [[0,1,0,0,0,0,0],[0,0,0,1,0,0,0],[1,1,0,0,1,1,1]],
+  rpentomino: [[0,1,1],[1,1,0],[0,1,0]],
+  diehard: [[0,0,0,0,0,0,1,0],[1,1,0,0,0,0,0,0],[0,1,0,0,0,1,1,1]]
+};
+
+function loadPreset(name) {
+  if (!name) return;
+  clearGrid();
+  if (PATTERNS[name]) placePattern(PATTERNS[name]);
+  updateInfo(); render();
+  document.getElementById('presetSel').value = '';
+}
+
+// Mouse/touch drawing
+function getCellPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  var x = Math.floor((clientX - rect.left) / cellSize);
+  var y = Math.floor((clientY - rect.top) / cellSize);
+  return {x: Math.max(0, Math.min(cols-1, x)), y: Math.max(0, Math.min(rows-1, y))};
+}
+
+canvas.addEventListener('mousedown', function(e) {
+  e.preventDefault();
+  drawing = true;
+  var p = getCellPos(e);
+  drawVal = grid[idx(p.x, p.y)] ? 0 : 1;
+  grid[idx(p.x, p.y)] = drawVal;
+  updateInfo(); render();
+});
+canvas.addEventListener('mousemove', function(e) {
+  if (!drawing) return;
+  var p = getCellPos(e);
+  grid[idx(p.x, p.y)] = drawVal;
+  updateInfo(); render();
+});
+document.addEventListener('mouseup', function() { drawing = false; });
+
+canvas.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  drawing = true;
+  var p = getCellPos(e);
+  drawVal = grid[idx(p.x, p.y)] ? 0 : 1;
+  grid[idx(p.x, p.y)] = drawVal;
+  updateInfo(); render();
+}, {passive: false});
+canvas.addEventListener('touchmove', function(e) {
+  e.preventDefault();
+  if (!drawing) return;
+  var p = getCellPos(e);
+  grid[idx(p.x, p.y)] = drawVal;
+  updateInfo(); render();
+}, {passive: false});
+canvas.addEventListener('touchend', function() { drawing = false; });
+
+window.addEventListener('resize', function() {
+  var oldGrid = grid;
+  var oldCols = cols, oldRows = rows;
+  initGrid();
+  for (var y = 0; y < Math.min(oldRows, rows); y++)
+    for (var x = 0; x < Math.min(oldCols, cols); x++)
+      grid[idx(x,y)] = oldGrid[y * oldCols + x];
+  updateInfo(); render();
+});
+
+initGrid();
+</script>
+</body>
+</html>

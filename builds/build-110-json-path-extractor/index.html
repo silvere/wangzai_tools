@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Path 提取器 🔍</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsonpath-plus@8.0.0/dist/index-umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7C3AED',
+                        secondary: '#2563EB',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .json-editor {
+                tab-size: 2;
+            }
+            .path-highlight {
+                background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(37, 99, 235, 0.1));
+                border-left: 3px solid #7C3AED;
+            }
+            .result-item-hover {
+                transition: all 0.2s ease;
+            }
+            .result-item-hover:hover {
+                background-color: rgba(124, 58, 237, 0.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-violet-50 to-blue-50 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mb-3">
+                JSON Path 提取器 <span class="text-3xl">🔍</span>
+            </h1>
+            <p class="text-gray-600 text-lg mb-6">快速从复杂JSON中提取数据，支持JSONPath语法，实时预览，一键复制</p>
+            
+            <!-- 快捷操作 -->
+            <div class="flex flex-wrap gap-4 justify-center mb-6">
+                <button id="loadSampleBtn" class="bg-white border-2 border-violet-500 text-violet-600 hover:bg-violet-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-file-text-o mr-2"></i> 加载示例
+                </button>
+                <button id="formatJsonBtn" class="bg-white border-2 border-violet-500 text-violet-600 hover:bg-violet-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-indent mr-2"></i> 格式化JSON
+                </button>
+                <button id="clearBtn" class="bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-trash-o mr-2"></i> 清空
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <div class="grid lg:grid-cols-2 gap-6 mb-8">
+            <!-- JSON输入区域 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-code text-violet-600"></i> JSON 输入
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500" id="jsonStats">0 行 | 0 字节</span>
+                        <button id="copyJsonBtn" class="text-violet-600 hover:text-violet-800 transition-all" title="复制JSON">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea id="jsonInput" class="w-full h-[500px] p-4 border-2 border-gray-200 rounded-xl font-mono text-sm json-editor resize-none focus:border-violet-500 focus:outline-none" placeholder="在此粘贴JSON数据..."></textarea>
+                
+                <div id="jsonError" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <i class="fa fa-exclamation-circle mr-2"></i>
+                    <span id="errorMessage">JSON格式错误</span>
+                </div>
+            </div>
+
+            <!-- 查询和结果区域 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <!-- 查询输入 -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa fa-search text-blue-600"></i> JSONPath 查询
+                        </h3>
+                        <div class="flex gap-2">
+                            <button id="queryBtn" class="bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all shadow hover:shadow-md">
+                                <i class="fa fa-play mr-1"></i> 执行
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <input type="text" id="pathInput" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl font-mono text-sm focus:border-violet-500 focus:outline-none" placeholder="输入JSONPath表达式，例如: $.store.book[0].title" value="$..*">
+                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    
+                    <!-- 快速模板 -->
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="text-sm text-gray-600 font-medium mr-2">快速模板:</span>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$.*">所有根节点</button>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$..*">所有节点</button>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$..[?(@.price > 10)]">价格大于10</button>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$..title">所有title字段</button>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$..book[0]">第一本书</button>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$..book[-1:]">最后一本书</button>
+                        <button class="path-template text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" data-path="$..book.length()">书的数量</button>
+                    </div>
+                    
+                    <!-- 语法提示 -->
+                    <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                        <div class="flex items-start gap-2">
+                            <i class="fa fa-info-circle text-blue-600 mt-1"></i>
+                            <div>
+                                <p class="text-sm text-blue-800 font-medium mb-1">JSONPath 语法参考:</p>
+                                <div class="text-xs text-blue-700 grid grid-cols-2 gap-x-4 gap-y-1">
+                                    <div><code>$</code> 根节点</div>
+                                    <div><code>@</code> 当前节点</div>
+                                    <div><code>.property</code> 子属性</div>
+                                    <div><code>['property']</code> 子属性</div>
+                                    <div><code>[index]</code> 数组索引</div>
+                                    <div><code>[start:end]</code> 数组切片</div>
+                                    <div><code>*</code> 通配符</div>
+                                    <div><code>..</code> 递归下降</div>
+                                    <div><code>?()</code> 过滤表达式</div>
+                                    <div><code>()</code> 脚本表达式</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 结果展示 -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa fa-list-alt text-green-600"></i> 查询结果
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500" id="resultStats">找到 0 个匹配项</span>
+                            <div class="flex gap-2">
+                                <button id="copyResultBtn" class="text-violet-600 hover:text-violet-800 transition-all" title="复制结果">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                                <button id="downloadResultBtn" class="text-violet-600 hover:text-violet-800 transition-all" title="下载结果">
+                                    <i class="fa fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="resultContainer" class="h-[220px] overflow-y-auto border-2 border-gray-200 rounded-xl p-4 font-mono text-sm">
+                        <div id="resultPlaceholder" class="text-center py-12 text-gray-400">
+                            <i class="fa fa-barcode text-4xl mb-3"></i>
+                            <p>执行查询后结果将显示在这里</p>
+                        </div>
+                        <div id="resultContent" class="hidden space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史查询 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa fa-history text-gray-600"></i> 查询历史
+                </span>
+                <button id="clearHistoryBtn" class="text-sm text-gray-500 hover:text-red-500 transition-all">
+                    清空历史
+                </button>
+            </h3>
+            <div id="historyContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="text-center py-6 text-gray-400 col-span-full">
+                    暂无查询历史
+                </div>
+            </div>
+        </div>
+
+        <!-- 路径浏览器 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                <i class="fa fa-folder-open text-amber-600"></i> JSON 结构浏览器
+            </h3>
+            <div id="structureBrowser" class="max-h-[400px] overflow-y-auto">
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fa fa-sitemap text-4xl mb-3"></i>
+                    <p>输入JSON后将自动展示结构树</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>💡 提示：所有处理完全在本地完成，数据绝不会上传到服务器，支持复杂嵌套JSON和高级JSONPath语法</p>
+            <p class="mt-2">JSON Path 提取器 | Build #110 | 旺仔工具百宝箱 🥛</p>
+        </footer>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all transform translate-x-full opacity-0">
+        <i id="toastIcon" class="fa fa-check-circle"></i>
+        <span id="toastText"></span>
+    </div>
+
+    <script>
+        // 全局状态
+        let currentJson = null;
+        let queryHistory = JSON.parse(localStorage.getItem('jsonpathHistory') || '[]');
+
+        // DOM 元素
+        const jsonInput = document.getElementById('jsonInput');
+        const jsonError = document.getElementById('jsonError');
+        const errorMessage = document.getElementById('errorMessage');
+        const jsonStats = document.getElementById('jsonStats');
+        const pathInput = document.getElementById('pathInput');
+        const queryBtn = document.getElementById('queryBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultPlaceholder = document.getElementById('resultPlaceholder');
+        const resultContent = document.getElementById('resultContent');
+        const resultStats = document.getElementById('resultStats');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const formatJsonBtn = document.getElementById('formatJsonBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyJsonBtn = document.getElementById('copyJsonBtn');
+        const copyResultBtn = document.getElementById('copyResultBtn');
+        const downloadResultBtn = document.getElementById('downloadResultBtn');
+        const historyContainer = document.getElementById('historyContainer');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const structureBrowser = document.getElementById('structureBrowser');
+        const pathTemplates = document.querySelectorAll('.path-template');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastText = document.getElementById('toastText');
+
+        // 示例JSON
+        const sampleJson = {
+            "store": {
+                "book": [
+                    {
+                        "category": "reference",
+                        "author": "Nigel Rees",
+                        "title": "Sayings of the Century",
+                        "price": 8.95
+                    },
+                    {
+                        "category": "fiction",
+                        "author": "Evelyn Waugh",
+                        "title": "Sword of Honour",
+                        "price": 12.99
+                    },
+                    {
+                        "category": "fiction",
+                        "author": "Herman Melville",
+                        "title": "Moby Dick",
+                        "isbn": "0-553-21311-3",
+                        "price": 8.99
+                    },
+                    {
+                        "category": "fiction",
+                        "author": "J. R. R. Tolkien",
+                        "title": "The Lord of the Rings",
+                        "isbn": "0-395-19395-8",
+                        "price": 22.99
+                    }
+                ],
+                "bicycle": {
+                    "color": "red",
+                    "price": 19.95
+                }
+            },
+            "expensive": 10
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
+            
+            // 事件监听
+            jsonInput.addEventListener('input', debounce(validateJson, 300));
+            queryBtn.addEventListener('click', executeQuery);
+            pathInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') executeQuery();
+            });
+            loadSampleBtn.addEventListener('click', loadSample);
+            formatJsonBtn.addEventListener('click', formatJson);
+            clearBtn.addEventListener('click', clearAll);
+            copyJsonBtn.addEventListener('click', copyJson);
+            copyResultBtn.addEventListener('click', copyResult);
+            downloadResultBtn.addEventListener('click', downloadResult);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // 模板按钮
+            pathTemplates.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    pathInput.value = btn.dataset.path;
+                    executeQuery();
+                });
+            });
+        });
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 验证JSON
+        function validateJson() {
+            const input = jsonInput.value.trim();
+            if (!input) {
+                jsonError.classList.add('hidden');
+                currentJson = null;
+                updateJsonStats();
+                renderStructure();
+                return true;
+            }
+
+            try {
+                currentJson = JSON.parse(input);
+                jsonError.classList.add('hidden');
+                updateJsonStats();
+                renderStructure();
+                return true;
+            } catch (e) {
+                jsonError.classList.remove('hidden');
+                errorMessage.textContent = `JSON格式错误: ${e.message}`;
+                currentJson = null;
+                updateJsonStats();
+                renderStructure();
+                return false;
+            }
+        }
+
+        // 更新JSON统计
+        function updateJsonStats() {
+            const lines = jsonInput.value.split('\n').length;
+            const bytes = new Blob([jsonInput.value]).size;
+            jsonStats.textContent = `${lines} 行 | ${formatBytes(bytes)}`;
+        }
+
+        // 格式化字节
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 执行查询
+        function executeQuery() {
+            if (!validateJson()) {
+                showToast('请输入有效的JSON数据', 'error');
+                return;
+            }
+
+            if (!currentJson) {
+                showToast('请先输入JSON数据', 'error');
+                return;
+            }
+
+            const path = pathInput.value.trim();
+            if (!path) {
+                showToast('请输入JSONPath表达式', 'error');
+                return;
+            }
+
+            try {
+                const result = JSONPath({ path, json: currentJson, resultType: 'all' });
+                
+                resultPlaceholder.classList.add('hidden');
+                resultContent.classList.remove('hidden');
+                resultContent.innerHTML = '';
+                
+                resultStats.textContent = `找到 ${result.length} 个匹配项`;
+                
+                if (result.length === 0) {
+                    resultContent.innerHTML = '<div class="text-center py-8 text-gray-400">没有找到匹配的结果</div>';
+                    return;
+                }
+                
+                result.forEach((item, index) => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item-hover p-3 rounded-lg border border-gray-100';
+                    
+                    const valueStr = JSON.stringify(item.value, null, 2);
+                    const isObject = typeof item.value === 'object' && item.value !== null;
+                    
+                    resultItem.innerHTML = `
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <div class="text-xs text-violet-600 font-medium flex-1 break-all">
+                                <i class="fa fa-location-arrow mr-1"></i> ${item.path}
+                            </div>
+                            <button class="copy-path-btn text-gray-400 hover:text-violet-600 transition-all" data-path="${item.path}" title="复制路径">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="text-xs bg-gray-50 p-2 rounded font-mono break-all ${isObject ? 'whitespace-pre' : ''}">
+                            ${escapeHtml(valueStr)}
+                        </div>
+                        <div class="flex justify-end gap-2 mt-2">
+                            <button class="copy-value-btn text-xs text-green-600 hover:text-green-800 transition-all" data-value='${JSON.stringify(item.value)}' title="复制值">
+                                <i class="fa fa-copy mr-1"></i>复制值
+                            </button>
+                            ${isObject ? `<button class="copy-value-json-btn text-xs text-blue-600 hover:text-blue-800 transition-all" data-value='${JSON.stringify(item.value, null, 2)}' title="复制格式化JSON">
+                                <i class="fa fa-code mr-1"></i>复制格式化JSON
+                            </button>` : ''}
+                        </div>
+                    `;
+                    
+                    // 绑定复制事件
+                    resultItem.querySelector('.copy-path-btn').addEventListener('click', () => {
+                        copyToClipboard(item.path);
+                        showToast('路径已复制', 'success');
+                    });
+                    
+                    resultItem.querySelector('.copy-value-btn').addEventListener('click', () => {
+                        copyToClipboard(typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value));
+                        showToast('值已复制', 'success');
+                    });
+                    
+                    if (isObject) {
+                        resultItem.querySelector('.copy-value-json-btn').addEventListener('click', () => {
+                            copyToClipboard(JSON.stringify(item.value, null, 2));
+                            showToast('格式化JSON已复制', 'success');
+                        });
+                    }
+                    
+                    resultContent.appendChild(resultItem);
+                });
+                
+                // 添加到历史记录
+                addToHistory(path, result.length);
+                
+            } catch (e) {
+                showToast(`查询错误: ${e.message}`, 'error');
+            }
+        }
+
+        // 加载示例
+        function loadSample() {
+            jsonInput.value = JSON.stringify(sampleJson, null, 2);
+            validateJson();
+            pathInput.value = '$..book[?(@.price > 10)].title';
+            executeQuery();
+            showToast('示例数据已加载', 'success');
+        }
+
+        // 格式化JSON
+        function formatJson() {
+            if (!validateJson()) {
+                showToast('JSON格式错误，无法格式化', 'error');
+                return;
+            }
+            
+            jsonInput.value = JSON.stringify(currentJson, null, 2);
+            validateJson();
+            showToast('JSON已格式化', 'success');
+        }
+
+        // 清空所有
+        function clearAll() {
+            jsonInput.value = '';
+            pathInput.value = '$..*';
+            jsonError.classList.add('hidden');
+            currentJson = null;
+            resultPlaceholder.classList.remove('hidden');
+            resultContent.classList.add('hidden');
+            resultStats.textContent = '找到 0 个匹配项';
+            updateJsonStats();
+            renderStructure();
+            showToast('已清空', 'success');
+        }
+
+        // 复制JSON
+        function copyJson() {
+            if (!jsonInput.value.trim()) {
+                showToast('没有内容可复制', 'error');
+                return;
+            }
+            copyToClipboard(jsonInput.value);
+            showToast('JSON已复制到剪贴板', 'success');
+        }
+
+        // 复制结果
+        function copyResult() {
+            if (resultContent.classList.contains('hidden')) {
+                showToast('没有结果可复制', 'error');
+                return;
+            }
+            
+            const result = JSONPath({ path: pathInput.value, json: currentJson });
+            copyToClipboard(JSON.stringify(result, null, 2));
+            showToast('查询结果已复制', 'success');
+        }
+
+        // 下载结果
+        function downloadResult() {
+            if (resultContent.classList.contains('hidden')) {
+                showToast('没有结果可下载', 'error');
+                return;
+            }
+            
+            const result = JSONPath({ path: pathInput.value, json: currentJson });
+            const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `jsonpath-result-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('结果已下载', 'success');
+        }
+
+        // 添加到历史记录
+        function addToHistory(path, count) {
+            // 避免重复
+            const exists = queryHistory.some(item => item.path === path);
+            if (exists) {
+                // 更新时间
+                queryHistory = queryHistory.map(item => 
+                    item.path === path ? { ...item, timestamp: Date.now(), count } : item
+                );
+            } else {
+                queryHistory.unshift({
+                    id: Date.now(),
+                    path,
+                    count,
+                    timestamp: Date.now()
+                });
+                if (queryHistory.length > 20) {
+                    queryHistory = queryHistory.slice(0, 20);
+                }
+            }
+            
+            localStorage.setItem('jsonpathHistory', JSON.stringify(queryHistory));
+            renderHistory();
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            if (queryHistory.length === 0) {
+                historyContainer.innerHTML = '<div class="text-center py-6 text-gray-400 col-span-full">暂无查询历史</div>';
+                return;
+            }
+            
+            historyContainer.innerHTML = '';
+            queryHistory.forEach(item => {
+                const date = new Date(item.timestamp);
+                const timeStr = date.toLocaleString('zh-CN');
+                
+                const historyItem = document.createElement('div');
+                historyItem.className = 'bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-all';
+                historyItem.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <span class="text-xs text-gray-500">
+                            <i class="fa fa-clock-o mr-1"></i>
+                            ${timeStr}
+                        </span>
+                        <span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+                            ${item.count} 个结果
+                        </span>
+                    </div>
+                    <p class="text-sm font-mono text-gray-700 break-all mb-2 line-clamp-2">${item.path}</p>
+                    <div class="flex justify-end gap-2">
+                        <button class="use-history-btn text-xs text-violet-600 hover:text-violet-800 transition-all" data-path="${item.path}">
+                            <i class="fa fa-play mr-1"></i>使用
+                        </button>
+                        <button class="delete-history-btn text-xs text-red-500 hover:text-red-700 transition-all" data-id="${item.id}">
+                            <i class="fa fa-trash-o mr-1"></i>删除
+                        </button>
+                    </div>
+                `;
+                
+                // 绑定事件
+                historyItem.querySelector('.use-history-btn').addEventListener('click', () => {
+                    pathInput.value = item.path;
+                    executeQuery();
+                });
+                
+                historyItem.querySelector('.delete-history-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    queryHistory = queryHistory.filter(h => h.id !== item.id);
+                    localStorage.setItem('jsonpathHistory', JSON.stringify(queryHistory));
+                    renderHistory();
+                    showToast('历史记录已删除', 'success');
+                });
+                
+                historyContainer.appendChild(historyItem);
+            });
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有查询历史吗？')) {
+                queryHistory = [];
+                localStorage.removeItem('jsonpathHistory');
+                renderHistory();
+                showToast('历史记录已清空', 'success');
+            }
+        }
+
+        // 渲染JSON结构树
+        function renderStructure() {
+            if (!currentJson) {
+                structureBrowser.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa fa-sitemap text-4xl mb-3"></i><p>输入JSON后将自动展示结构树</p></div>';
+                return;
+            }
+            
+            structureBrowser.innerHTML = '';
+            const tree = buildTree(currentJson, '$');
+            structureBrowser.appendChild(tree);
+        }
+
+        // 构建结构树
+        function buildTree(obj, path) {
+            const container = document.createElement('div');
+            container.className = 'pl-4';
+            
+            if (typeof obj !== 'object' || obj === null) {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-violet-50 rounded px-2';
+                item.innerHTML = `
+                    <span class="text-violet-600 font-medium">${escapeHtml(path)}</span>
+                    <span class="text-gray-500">:</span>
+                    <span class="text-gray-700 font-mono">${escapeHtml(String(obj))}</span>
+                `;
+                item.addEventListener('click', () => {
+                    pathInput.value = path;
+                    executeQuery();
+                });
+                return item;
+            }
+            
+            if (Array.isArray(obj)) {
+                const toggle = document.createElement('div');
+                toggle.className = 'flex items-center gap-2 py-1 cursor-pointer hover:bg-violet-50 rounded px-2';
+                toggle.innerHTML = `
+                    <i class="fa fa-caret-right text-gray-400 toggle-icon"></i>
+                    <span class="text-violet-600 font-medium">${escapeHtml(path)}</span>
+                    <span class="text-gray-500">Array[${obj.length}]</span>
+                `;
+                
+                const children = document.createElement('div');
+                children.className = 'hidden';
+                
+                obj.forEach((item, index) => {
+                    const childPath = `${path}[${index}]`;
+                    children.appendChild(buildTree(item, childPath));
+                });
+                
+                toggle.addEventListener('click', () => {
+                    children.classList.toggle('hidden');
+                    const icon = toggle.querySelector('.toggle-icon');
+                    icon.classList.toggle('fa-caret-right');
+                    icon.classList.toggle('fa-caret-down');
+                });
+                
+                container.appendChild(toggle);
+                container.appendChild(children);
+            } else {
+                const keys = Object.keys(obj);
+                const toggle = document.createElement('div');
+                toggle.className = 'flex items-center gap-2 py-1 cursor-pointer hover:bg-violet-50 rounded px-2';
+                toggle.innerHTML = `
+                    <i class="fa fa-caret-right text-gray-400 toggle-icon"></i>
+                    <span class="text-violet-600 font-medium">${escapeHtml(path)}</span>
+                    <span class="text-gray-500">Object{${keys.length}}</span>
+                `;
+                
+                const children = document.createElement('div');
+                children.className = 'hidden';
+                
+                keys.forEach(key => {
+                    const childPath = /^[$[]/.test(key) ? `${path}[${JSON.stringify(key)}]` : `${path}.${key}`;
+                    children.appendChild(buildTree(obj[key], childPath));
+                });
+                
+                toggle.addEventListener('click', () => {
+                    children.classList.toggle('hidden');
+                    const icon = toggle.querySelector('.toggle-icon');
+                    icon.classList.toggle('fa-caret-right');
+                    icon.classList.toggle('fa-caret-down');
+                });
+                
+                container.appendChild(toggle);
+                container.appendChild(children);
+            }
+            
+            return container;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).catch(err => {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            if (type === 'success') {
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-check-circle';
+            } else {
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-exclamation-circle';
+            }
+            
+            toastText.textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

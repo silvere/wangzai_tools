@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flexbox 可视化游乐场</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:1.5em;margin-bottom:14px;background:linear-gradient(135deg,#4d96ff,#9b59b6,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.layout{display:flex;gap:16px;width:100%;max-width:1000px;flex-wrap:wrap}
+.panel{flex:1;min-width:280px;display:flex;flex-direction:column;gap:10px}
+.section{background:#16213e;border:1px solid #333;border-radius:8px;padding:12px}
+.section-title{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.row label{font-size:12px;color:#aaa;min-width:100px}
+.row select{padding:4px 8px;border:1px solid #333;border-radius:4px;background:#0d1117;color:#e0e0e0;font-size:12px;flex:1;min-width:100px}
+.row input[type=number]{width:60px;padding:4px 6px;border:1px solid #333;border-radius:4px;background:#0d1117;color:#e0e0e0;font-size:12px}
+.btn{padding:5px 12px;border:1px solid #333;border-radius:6px;background:#16213e;color:#e0e0e0;cursor:pointer;font-size:12px;transition:all .2s}
+.btn:hover{background:#0f3460;border-color:#4d96ff}
+.btn.sm{padding:3px 8px;font-size:11px}
+.btn.primary{background:#4d96ff;border-color:#4d96ff;color:#fff}
+.btn.danger{border-color:#e74c3c;color:#e74c3c}
+.btn.danger:hover{background:#e74c3c;color:#fff}
+.playground{background:#0d1117;border:2px solid #333;border-radius:8px;min-height:300px;padding:12px;position:relative;overflow:auto}
+.flex-container{min-height:260px;border:2px dashed #4d96ff44;border-radius:6px;padding:8px;transition:all .3s}
+.flex-item{border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;min-width:40px;min-height:40px;cursor:pointer;transition:all .2s;border:2px solid transparent;position:relative}
+.flex-item:hover{border-color:#fff;opacity:.9}
+.flex-item.selected{border-color:#ffd93d;box-shadow:0 0 10px #ffd93d44}
+.item-colors{display:flex;gap:4px;flex-wrap:wrap}
+.item-colors .dot{width:20px;height:20px;border-radius:4px;cursor:pointer;border:2px solid transparent}
+.item-colors .dot:hover{border-color:#fff}
+.code-box{background:#0d1117;border:1px solid #333;border-radius:8px;padding:10px;font-family:'Fira Code',monospace;font-size:12px;color:#79c0ff;white-space:pre-wrap;word-break:break-all;position:relative;max-height:200px;overflow:auto;line-height:1.5}
+.code-box .copy{position:absolute;top:6px;right:6px;background:#16213e;border:1px solid #333;color:#e0e0e0;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px}
+.code-box .copy:hover{background:#4d96ff;color:#fff}
+.presets{display:flex;gap:4px;flex-wrap:wrap}
+.presets .btn{font-size:11px;padding:3px 8px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:#4d96ff;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;transition:transform .3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.child-list{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.child-list .tag{padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid #333}
+.child-list .tag.active{border-color:#ffd93d;background:#ffd93d22}
+</style>
+</head>
+<body>
+<h1>Flexbox 可视化游乐场</h1>
+<div class="layout">
+  <div class="panel">
+    <div class="section">
+      <div class="section-title">容器属性</div>
+      <div class="row"><label>flex-direction</label><select id="direction" onchange="update()"><option>row</option><option>row-reverse</option><option>column</option><option>column-reverse</option></select></div>
+      <div class="row"><label>flex-wrap</label><select id="wrap" onchange="update()"><option>nowrap</option><option>wrap</option><option>wrap-reverse</option></select></div>
+      <div class="row"><label>justify-content</label><select id="justify" onchange="update()"><option>flex-start</option><option>flex-end</option><option>center</option><option>space-between</option><option>space-around</option><option>space-evenly</option></select></div>
+      <div class="row"><label>align-items</label><select id="alignItems" onchange="update()"><option>stretch</option><option>flex-start</option><option>flex-end</option><option>center</option><option>baseline</option></select></div>
+      <div class="row"><label>align-content</label><select id="alignContent" onchange="update()"><option>stretch</option><option>flex-start</option><option>flex-end</option><option>center</option><option>space-between</option><option>space-around</option></select></div>
+      <div class="row"><label>gap</label><input type="number" id="gap" value="8" min="0" max="50" onchange="update()"> px</div>
+    </div>
+    <div class="section">
+      <div class="section-title">子元素 <button class="btn sm" onclick="addItem()">+ 添加</button> <button class="btn sm danger" onclick="removeItem()">- 删除</button></div>
+      <div class="child-list" id="childList"></div>
+      <div id="childProps" style="margin-top:8px">
+        <div class="row"><label>flex-grow</label><input type="number" id="cGrow" value="0" min="0" max="10" onchange="updateChild()"></div>
+        <div class="row"><label>flex-shrink</label><input type="number" id="cShrink" value="1" min="0" max="10" onchange="updateChild()"></div>
+        <div class="row"><label>flex-basis</label><select id="cBasis" onchange="updateChild()"><option>auto</option><option>0</option><option>50px</option><option>100px</option><option>150px</option><option>200px</option><option>25%</option><option>50%</option></select></div>
+        <div class="row"><label>align-self</label><select id="cAlign" onchange="updateChild()"><option>auto</option><option>flex-start</option><option>flex-end</option><option>center</option><option>stretch</option><option>baseline</option></select></div>
+        <div class="row"><label>order</label><input type="number" id="cOrder" value="0" min="-5" max="10" onchange="updateChild()"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">预设布局</div>
+      <div class="presets">
+        <button class="btn sm" onclick="preset('center')">居中</button>
+        <button class="btn sm" onclick="preset('nav')">导航栏</button>
+        <button class="btn sm" onclick="preset('sidebar')">侧边栏</button>
+        <button class="btn sm" onclick="preset('grid')">网格</button>
+        <button class="btn sm" onclick="preset('holy')">圣杯</button>
+        <button class="btn sm" onclick="preset('cards')">卡片列表</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="playground">
+      <div class="flex-container" id="container"></div>
+    </div>
+    <div class="section-title">CSS 代码</div>
+    <div class="code-box" id="codeBox"><button class="copy" onclick="copyCSS()">复制</button><span id="codeText"></span></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const COLORS=['#4d96ff','#ff6b6b','#6bcb77','#ffd93d','#9b59b6','#e67e22','#1abc9c','#e74c3c','#3498db','#2ecc71'];
+let items=[
+  {grow:0,shrink:1,basis:'auto',align:'auto',order:0,w:80,h:80},
+  {grow:0,shrink:1,basis:'auto',align:'auto',order:0,w:80,h:60},
+  {grow:0,shrink:1,basis:'auto',align:'auto',order:0,w:80,h:100},
+  {grow:0,shrink:1,basis:'auto',align:'auto',order:0,w:80,h:70},
+];
+let selected=0;
+
+function update(){
+  const c=document.getElementById('container');
+  c.style.display='flex';
+  c.style.flexDirection=document.getElementById('direction').value;
+  c.style.flexWrap=document.getElementById('wrap').value;
+  c.style.justifyContent=document.getElementById('justify').value;
+  c.style.alignItems=document.getElementById('alignItems').value;
+  c.style.alignContent=document.getElementById('alignContent').value;
+  c.style.gap=document.getElementById('gap').value+'px';
+  renderItems();
+  renderCode();
+  renderChildList();
+}
+
+function renderItems(){
+  const c=document.getElementById('container');
+  c.innerHTML='';
+  items.forEach((item,i)=>{
+    const d=document.createElement('div');
+    d.className='flex-item'+(i===selected?' selected':'');
+    d.style.background=COLORS[i%COLORS.length];
+    d.style.width=item.w+'px';
+    d.style.height=item.h+'px';
+    d.style.flexGrow=item.grow;
+    d.style.flexShrink=item.shrink;
+    d.style.flexBasis=item.basis;
+    d.style.alignSelf=item.align;
+    d.style.order=item.order;
+    d.textContent=i+1;
+    d.onclick=()=>{selected=i;update();loadChildProps();};
+    c.appendChild(d);
+  });
+}
+
+function renderChildList(){
+  const el=document.getElementById('childList');
+  el.innerHTML='';
+  items.forEach((item,i)=>{
+    const t=document.createElement('span');
+    t.className='tag'+(i===selected?' active':'');
+    t.style.background=COLORS[i%COLORS.length]+'33';
+    t.style.color=COLORS[i%COLORS.length];
+    t.textContent=i+1;
+    t.onclick=()=>{selected=i;update();loadChildProps();};
+    el.appendChild(t);
+  });
+}
+
+function loadChildProps(){
+  const item=items[selected];
+  if(!item)return;
+  document.getElementById('cGrow').value=item.grow;
+  document.getElementById('cShrink').value=item.shrink;
+  document.getElementById('cBasis').value=item.basis;
+  document.getElementById('cAlign').value=item.align;
+  document.getElementById('cOrder').value=item.order;
+}
+
+function updateChild(){
+  if(!items[selected])return;
+  items[selected].grow=+document.getElementById('cGrow').value;
+  items[selected].shrink=+document.getElementById('cShrink').value;
+  items[selected].basis=document.getElementById('cBasis').value;
+  items[selected].align=document.getElementById('cAlign').value;
+  items[selected].order=+document.getElementById('cOrder').value;
+  update();
+}
+
+function addItem(){
+  items.push({grow:0,shrink:1,basis:'auto',align:'auto',order:0,w:60+Math.floor(Math.random()*40),h:50+Math.floor(Math.random()*50)});
+  selected=items.length-1;
+  update();loadChildProps();
+}
+
+function removeItem(){
+  if(items.length<=1)return;
+  items.splice(selected,1);
+  if(selected>=items.length)selected=items.length-1;
+  update();loadChildProps();
+}
+
+function renderCode(){
+  const props=[
+    'display: flex',
+    'flex-direction: '+document.getElementById('direction').value,
+    'flex-wrap: '+document.getElementById('wrap').value,
+    'justify-content: '+document.getElementById('justify').value,
+    'align-items: '+document.getElementById('alignItems').value,
+    'align-content: '+document.getElementById('alignContent').value,
+    'gap: '+document.getElementById('gap').value+'px'
+  ];
+  let css='.container {\n  '+props.join(';\n  ')+';\n}';
+  items.forEach((item,i)=>{
+    const cp=[];
+    if(item.grow!==0)cp.push('flex-grow: '+item.grow);
+    if(item.shrink!==1)cp.push('flex-shrink: '+item.shrink);
+    if(item.basis!=='auto')cp.push('flex-basis: '+item.basis);
+    if(item.align!=='auto')cp.push('align-self: '+item.align);
+    if(item.order!==0)cp.push('order: '+item.order);
+    if(cp.length)css+='\n\n.item-'+(i+1)+' {\n  '+cp.join(';\n  ')+';\n}';
+  });
+  document.getElementById('codeText').textContent=css;
+}
+
+function copyCSS(){
+  navigator.clipboard.writeText(document.getElementById('codeText').textContent).then(()=>showToast('已复制 CSS！'));
+}
+
+function preset(name){
+  const P={
+    center:{dir:'row',wrap:'nowrap',jc:'center',ai:'center',ac:'stretch',gap:8,items:[{grow:0,shrink:1,basis:'auto',align:'auto',order:0,w:100,h:100}]},
+    nav:{dir:'row',wrap:'nowrap',jc:'space-between',ai:'center',ac:'stretch',gap:12,items:[{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:80,h:40},{grow:1,shrink:1,basis:'auto',align:'auto',order:0,w:200,h:40},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:60,h:40},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:60,h:40}]},
+    sidebar:{dir:'row',wrap:'nowrap',jc:'flex-start',ai:'stretch',ac:'stretch',gap:8,items:[{grow:0,shrink:0,basis:'200px',align:'auto',order:0,w:200,h:250},{grow:1,shrink:1,basis:'auto',align:'auto',order:0,w:300,h:250}]},
+    grid:{dir:'row',wrap:'wrap',jc:'flex-start',ai:'flex-start',ac:'flex-start',gap:8,items:[{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:90,h:90},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:90,h:90},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:90,h:90},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:90,h:90},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:90,h:90},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:90,h:90}]},
+    holy:{dir:'row',wrap:'wrap',jc:'flex-start',ai:'stretch',ac:'stretch',gap:8,items:[{grow:0,shrink:0,basis:'100%',align:'auto',order:0,w:400,h:50},{grow:0,shrink:0,basis:'150px',align:'auto',order:0,w:150,h:180},{grow:1,shrink:1,basis:'0',align:'auto',order:0,w:200,h:180},{grow:0,shrink:0,basis:'150px',align:'auto',order:0,w:150,h:180},{grow:0,shrink:0,basis:'100%',align:'auto',order:0,w:400,h:40}]},
+    cards:{dir:'row',wrap:'wrap',jc:'center',ai:'flex-start',ac:'flex-start',gap:12,items:[{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:120,h:160},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:120,h:140},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:120,h:180},{grow:0,shrink:0,basis:'auto',align:'auto',order:0,w:120,h:150}]}
+  };
+  const p=P[name];if(!p)return;
+  document.getElementById('direction').value=p.dir;
+  document.getElementById('wrap').value=p.wrap;
+  document.getElementById('justify').value=p.jc;
+  document.getElementById('alignItems').value=p.ai;
+  document.getElementById('alignContent').value=p.ac;
+  document.getElementById('gap').value=p.gap;
+  items=JSON.parse(JSON.stringify(p.items));
+  selected=0;
+  update();loadChildProps();
+  showToast('已加载: '+name);
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+update();loadChildProps();
+</script>
+</body>
+</html>

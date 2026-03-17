@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全网热搜聚合器 🔥</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#ef4444',
+                        secondary: '#f59e0b',
+                        accent: '#8b5cf6',
+                        douyin: '#fe2c55',
+                        xiaohongshu: '#ff2442',
+                        bilibili: '#fb7299',
+                        weibo: '#ff8c00',
+                        zhihu: '#0084ff',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #ef4444 0%, #f59e0b 50%, #8b5cf6 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px rgba(239, 68, 68, 0.2);
+            }
+            .hot-badge {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes pulse {
+                0%, 100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-6xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                        <i class="fa fa-fire"></i>
+                        全网热搜聚合器
+                    </h1>
+                    <p class="mt-2 text-red-100 opacity-90">多平台热搜一站式查看 · 实时更新 · 趋势分析</p>
+                </div>
+                <div class="hidden md:block">
+                    <span id="lastUpdate" class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
+                        最后更新: --:--:--
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-6xl px-4 py-8">
+        <!-- Control Panel -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl mb-8">
+            <div class="flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex flex-wrap gap-3">
+                    <button id="refreshBtn" class="bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-xl font-medium transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+                        <i class="fa fa-refresh"></i>
+                        刷新全部
+                    </button>
+                    <button id="exportBtn" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-3 rounded-xl font-medium transition-all flex items-center gap-2">
+                        <i class="fa fa-download"></i>
+                        导出 Markdown
+                    </button>
+                    <button id="copyBtn" class="bg-secondary hover:bg-secondary/90 text-white px-5 py-3 rounded-xl font-medium transition-all flex items-center gap-2">
+                        <i class="fa fa-copy"></i>
+                        复制表格
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <label class="flex items-center gap-2 text-gray-700 font-medium">
+                        <input type="checkbox" id="autoRefresh" class="w-4 h-4 text-primary rounded focus:ring-primary">
+                        自动刷新 (5分钟)
+                    </label>
+                    <select id="platformFilter" class="border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-3 text-base font-medium outline-none transition-all bg-white">
+                        <option value="all">全部平台</option>
+                        <option value="douyin">抖音</option>
+                        <option value="xiaohongshu">小红书</option>
+                        <option value="bilibili">B站</option>
+                        <option value="weibo">微博</option>
+                        <option value="zhihu">知乎</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button class="platform-tab active bg-white shadow-md text-gray-800 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2" data-platform="all">
+                <i class="fa fa-th-large"></i>
+                全部
+            </button>
+            <button class="platform-tab bg-white/70 hover:bg-white text-gray-600 hover:text-gray-800 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2" data-platform="douyin">
+                <i class="fa fa-music text-douyin"></i>
+                抖音
+            </button>
+            <button class="platform-tab bg-white/70 hover:bg-white text-gray-600 hover:text-gray-800 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2" data-platform="xiaohongshu">
+                <i class="fa fa-book text-xiaohongshu"></i>
+                小红书
+            </button>
+            <button class="platform-tab bg-white/70 hover:bg-white text-gray-600 hover:text-gray-800 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2" data-platform="bilibili">
+                <i class="fa fa-play-circle text-bilibili"></i>
+                B站
+            </button>
+            <button class="platform-tab bg-white/70 hover:bg-white text-gray-600 hover:text-gray-800 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2" data-platform="weibo">
+                <i class="fa fa-weibo text-weibo"></i>
+                微博
+            </button>
+            <button class="platform-tab bg-white/70 hover:bg-white text-gray-600 hover:text-gray-800 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2" data-platform="zhihu">
+                <i class="fa fa-zhihu fa fa-question-circle text-zhihu"></i>
+                知乎
+            </button>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">总热搜数</p>
+                        <p class="text-2xl font-bold text-gray-800" id="totalCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <i class="fa fa-fire text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">抖音</p>
+                        <p class="text-2xl font-bold text-douyin" id="douyinCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-douyin/10 flex items-center justify-center text-douyin">
+                        <i class="fa fa-music text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">小红书</p>
+                        <p class="text-2xl font-bold text-xiaohongshu" id="xiaohongshuCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-xiaohongshu/10 flex items-center justify-center text-xiaohongshu">
+                        <i class="fa fa-book text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">B站</p>
+                        <p class="text-2xl font-bold text-bilibili" id="bilibiliCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-bilibili/10 flex items-center justify-center text-bilibili">
+                        <i class="fa fa-play-circle text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">热度峰值</p>
+                        <p class="text-2xl font-bold text-secondary" id="maxHot">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+                        <i class="fa fa-line-chart text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa fa-area-chart text-primary"></i>
+                平台热度分布
+            </h2>
+            <div class="h-64">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Hot Search Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl overflow-hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa fa-list-ol text-primary"></i>
+                热搜列表
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b-2 border-gray-200">
+                            <th class="pb-4 text-gray-500 font-medium">排名</th>
+                            <th class="pb-4 text-gray-500 font-medium">平台</th>
+                            <th class="pb-4 text-gray-500 font-medium">标题</th>
+                            <th class="pb-4 text-gray-500 font-medium text-right">热度</th>
+                            <th class="pb-4 text-gray-500 font-medium text-center">标签</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hotSearchTable">
+                        <tr>
+                            <td colspan="5" class="py-12 text-center text-gray-400">
+                                <i class="fa fa-info-circle text-xl mb-2 block"></i>
+                                点击刷新按钮获取最新热搜数据
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-8 border border-red-100 mt-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <i class="fa fa-star text-primary"></i>
+                功能特点
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">多平台聚合</h3>
+                        <p class="text-gray-600 text-sm mt-1">同时支持抖音、小红书、B站、微博、知乎五大平台热搜</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-refresh"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">实时更新</h3>
+                        <p class="text-gray-600 text-sm mt-1">支持手动刷新和自动定时刷新，掌握最新热点动态</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-filter"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">灵活筛选</h3>
+                        <p class="text-gray-600 text-sm mt-1">支持按平台筛选，快速查看你关心的平台热点</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-download"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">多格式导出</h3>
+                        <p class="text-gray-600 text-sm mt-1">支持导出Markdown表格、复制到剪贴板，方便使用</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-line-chart"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">数据可视化</h3>
+                        <p class="text-gray-600 text-sm mt-1">内置热度分布图表，直观了解各平台热点情况</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-lock"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">隐私安全</h3>
+                        <p class="text-gray-600 text-sm mt-1">所有数据处理均在本地完成，不会上传到任何服务器</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 px-4 mt-12">
+        <div class="container mx-auto max-w-6xl text-center">
+            <p class="text-gray-400">
+                🏗️ 由旺仔开发 | 全网热搜聚合器 | 完全本地运行，保护您的隐私
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                一站式掌握全网热点，做热点趋势的洞察者
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 模拟数据
+        const mockData = {
+            douyin: [
+                { rank: 1, title: "2026年春招最新情况", hot: 12586321, tags: ["职场", "招聘"] },
+                { rank: 2, title: "AI生成视频技术新突破", hot: 9856324, tags: ["科技", "AI"] },
+                { rank: 3, title: "某城市马拉松赛事火爆", hot: 8745213, tags: ["体育", "生活"] },
+                { rank: 4, title: "春季穿搭流行趋势", hot: 7654231, tags: ["时尚", "生活"] },
+                { rank: 5, title: "新上映电影口碑爆棚", hot: 6985421, tags: ["娱乐", "电影"] },
+                { rank: 6, title: "小学生科技发明获奖", hot: 5874236, tags: ["教育", "科技"] },
+                { rank: 7, title: "宠物经济持续升温", hot: 4752314, tags: ["生活", "宠物"] },
+                { rank: 8, title: "新能源汽车销量创新高", hot: 3985412, tags: ["科技", "汽车"] },
+                { rank: 9, title: "新式茶饮品牌融资", hot: 3256417, tags: ["美食", "商业"] },
+                { rank: 10, title: "古镇旅游成新趋势", hot: 2874512, tags: ["旅游", "生活"] }
+            ],
+            xiaohongshu: [
+                { rank: 1, title: "春季护肤干货分享", hot: 8754213, tags: ["美妆", "护肤"] },
+                { rank: 2, title: "国内小众旅游地推荐", hot: 7985412, tags: ["旅游", "生活"] },
+                { rank: 3, title: "租房改造省钱攻略", hot: 6874523, tags: ["家居", "生活"] },
+                { rank: 4, title: "减脂餐一周不重样", hot: 5986324, tags: ["美食", "健康"] },
+                { rank: 5, title: "职场通勤穿搭分享", hot: 5124789, tags: ["职场", "穿搭"] },
+                { rank: 6, title: "好用的APP推荐", hot: 4875213, tags: ["数码", "好物"] },
+                { rank: 7, title: "考研复试经验帖", hot: 4213658, tags: ["教育", "学习"] },
+                { rank: 8, title: "手冲咖啡入门指南", hot: 3874521, tags: ["美食", "生活"] },
+                { rank: 9, title: "平价护肤品测评", hot: 3254178, tags: ["美妆", "测评"] },
+                { rank: 10, title: "城市周末短途游", hot: 2985412, tags: ["旅游", "生活"] }
+            ],
+            bilibili: [
+                { rank: 1, title: "2026年最强编程语言排名", hot: 7854213, tags: ["科技", "编程"] },
+                { rank: 2, title: "独立游戏新作发布", hot: 6985412, tags: ["游戏", "科技"] },
+                { rank: 3, title: "国产动画电影预告", hot: 5874521, tags: ["动画", "娱乐"] },
+                { rank: 4, title: "AI绘画最新玩法", hot: 5124789, tags: ["科技", "AI"] },
+                { rank: 5, title: "计算机专业课讲解", hot: 4985632, tags: ["学习", "科技"] },
+                { rank: 6, title: "鬼畜新作品发布", hot: 4256317, tags: ["娱乐", "鬼畜"] },
+                { rank: 7, title: "数码产品开箱测评", hot: 3874521, tags: ["数码", "测评"] },
+                { rank: 8, title: "健身教学视频", hot: 3215478, tags: ["健身", "生活"] },
+                { rank: 9, title: "美食制作教程", hot: 2985412, tags: ["美食", "教程"] },
+                { rank: 10, title: "摄影技巧分享", hot: 2654178, tags: ["摄影", "生活"] }
+            ],
+            weibo: [
+                { rank: 1, title: "知名艺人官宣恋情", hot: 9875421, tags: ["娱乐", "明星"] },
+                { rank: 2, title: "两会最新政策解读", hot: 8745213, tags: ["时事", "政策"] },
+                { rank: 3, title: "CBA季后赛精彩对决", hot: 7854123, tags: ["体育", "篮球"] },
+                { rank: 4, title: "新剧开播热度爆表", hot: 6985412, tags: ["娱乐", "电视剧"] },
+                { rank: 5, title: "天气异常现象解释", hot: 5874231, tags: ["社会", "生活"] },
+                { rank: 6, title: "食品安全问题曝光", hot: 5213647, tags: ["社会", "民生"] },
+                { rank: 7, title: "明星演唱会官宣", hot: 4875213, tags: ["娱乐", "音乐"] },
+                { rank: 8, title: "高考改革最新消息", hot: 4215637, tags: ["教育", "高考"] },
+                { rank: 9, title: "新能源汽车补贴政策", hot: 3874521, tags: ["政策", "汽车"] },
+                { rank: 10, title: "景区游客量创新高", hot: 3215478, tags: ["旅游", "生活"] }
+            ],
+            zhihu: [
+                { rank: 1, title: "如何看待AGI的发展前景", hot: 7854213, tags: ["科技", "AI"] },
+                { rank: 2, title: "2026年互联网行业趋势", hot: 6985412, tags: ["互联网", "职场"] },
+                { rank: 3, title: "深度学习最新研究进展", hot: 5874521, tags: ["科技", "学术"] },
+                { rank: 4, title: "普通家庭如何理财", hot: 5214789, tags: ["理财", "生活"] },
+                { rank: 5, title: "大模型落地应用场景", hot: 4985632, tags: ["科技", "AI"] },
+                { rank: 6, title: "考公还是进互联网", hot: 4256317, tags: ["职场", "选择"] },
+                { rank: 7, title: "如何高效读论文", hot: 3874521, tags: ["学习", "科研"] },
+                { rank: 8, title: "远程工作体验分享", hot: 3215478, tags: ["职场", "生活"] },
+                { rank: 9, title: "未来五年创业方向", hot: 2985412, tags: ["创业", "商业"] },
+                { rank: 10, title: "如何提升编程能力", hot: 2654178, tags: ["编程", "学习"] }
+            ]
+        };
+
+        // 状态
+        let currentData = [];
+        let autoRefreshInterval = null;
+        let chart = null;
+
+        // DOM 元素
+        const refreshBtn = document.getElementById('refreshBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const autoRefresh = document.getElementById('autoRefresh');
+        const platformFilter = document.getElementById('platformFilter');
+        const platformTabs = document.querySelectorAll('.platform-tab');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const totalCount = document.getElementById('totalCount');
+        const douyinCount = document.getElementById('douyinCount');
+        const xiaohongshuCount = document.getElementById('xiaohongshuCount');
+        const bilibiliCount = document.getElementById('bilibiliCount');
+        const maxHot = document.getElementById('maxHot');
+        const hotSearchTable = document.getElementById('hotSearchTable');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            refreshData();
+            updateLastUpdateTime();
+        });
+
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['抖音', '小红书', 'B站', '微博', '知乎'],
+                    datasets: [{
+                        label: '平均热度',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            '#fe2c55',
+                            '#ff2442',
+                            '#fb7299',
+                            '#ff8c00',
+                            '#0084ff'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '平均热度'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 刷新数据
+        function refreshData() {
+            // 合并所有平台数据
+            let allData = [];
+            
+            Object.entries(mockData).forEach(([platform, items]) => {
+                items.forEach(item => {
+                    allData.push({
+                        ...item,
+                        platform,
+                        platformName: getPlatformName(platform),
+                        platformColor: getPlatformColor(platform)
+                    });
+                });
+            });
+
+            // 按热度排序
+            allData.sort((a, b) => b.hot - a.hot);
+            currentData = allData;
+
+            // 更新统计数据
+            updateStats();
+            // 更新表格
+            updateTable();
+            // 更新图表
+            updateChart();
+            // 更新时间
+            updateLastUpdateTime();
+
+            showToast('数据刷新成功');
+        }
+
+        // 获取平台名称
+        function getPlatformName(platform) {
+            const names = {
+                douyin: '抖音',
+                xiaohongshu: '小红书',
+                bilibili: 'B站',
+                weibo: '微博',
+                zhihu: '知乎'
+            };
+            return names[platform] || platform;
+        }
+
+        // 获取平台颜色
+        function getPlatformColor(platform) {
+            const colors = {
+                douyin: 'text-douyin',
+                xiaohongshu: 'text-xiaohongshu',
+                bilibili: 'text-bilibili',
+                weibo: 'text-weibo',
+                zhihu: 'text-zhihu'
+            };
+            return colors[platform] || 'text-gray-600';
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            totalCount.textContent = currentData.length;
+            douyinCount.textContent = currentData.filter(item => item.platform === 'douyin').length;
+            xiaohongshuCount.textContent = currentData.filter(item => item.platform === 'xiaohongshu').length;
+            bilibiliCount.textContent = currentData.filter(item => item.platform === 'bilibili').length;
+            
+            const max = Math.max(...currentData.map(item => item.hot));
+            maxHot.textContent = formatNumber(max);
+        }
+
+        // 更新表格
+        function updateTable(filter = 'all') {
+            let filteredData = currentData;
+            if (filter !== 'all') {
+                filteredData = currentData.filter(item => item.platform === filter);
+            }
+
+            if (filteredData.length === 0) {
+                hotSearchTable.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-gray-400">
+                            <i class="fa fa-info-circle text-xl mb-2 block"></i>
+                            暂无数据
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            hotSearchTable.innerHTML = filteredData.map((item, index) => `
+                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td class="py-4">
+                        <span class="${index < 3 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'} w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                            ${index + 1}
+                        </span>
+                    </td>
+                    <td class="py-4">
+                        <span class="font-medium ${item.platformColor}">
+                            <i class="fa ${getPlatformIcon(item.platform)} mr-1"></i>
+                            ${item.platformName}
+                        </span>
+                    </td>
+                    <td class="py-4 font-medium text-gray-800">
+                        ${item.title}
+                        ${index < 3 ? '<span class="ml-2 text-xs bg-red-100 text-primary px-2 py-1 rounded-full hot-badge">热</span>' : ''}
+                    </td>
+                    <td class="py-4 text-right font-semibold text-gray-800">
+                        ${formatNumber(item.hot)}
+                    </td>
+                    <td class="py-4">
+                        <div class="flex flex-wrap gap-1 justify-center">
+                            ${item.tags.map(tag => `
+                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                    ${tag}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 获取平台图标
+        function getPlatformIcon(platform) {
+            const icons = {
+                douyin: 'fa-music',
+                xiaohongshu: 'fa-book',
+                bilibili: 'fa-play-circle',
+                weibo: 'fa-weibo',
+                zhihu: 'fa-question-circle'
+            };
+            return icons[platform] || 'fa-link';
+        }
+
+        // 更新图表
+        function updateChart() {
+            const avgHot = [];
+            ['douyin', 'xiaohongshu', 'bilibili', 'weibo', 'zhihu'].forEach(platform => {
+                const items = currentData.filter(item => item.platform === platform);
+                const avg = items.reduce((sum, item) => sum + item.hot, 0) / items.length;
+                avgHot.push(avg);
+            });
+
+            chart.data.datasets[0].data = avgHot;
+            chart.update();
+        }
+
+        // 更新最后更新时间
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN');
+            lastUpdate.textContent = `最后更新: ${timeStr}`;
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (num >= 100000000) {
+                return (num / 100000000).toFixed(1) + '亿';
+            } else if (num >= 10000) {
+                return (num / 10000).toFixed(1) + '万';
+            }
+            return num.toString();
+        }
+
+        // 导出Markdown
+        function exportMarkdown() {
+            let markdown = '# 全网热搜汇总\n\n';
+            markdown += `> 更新时间: ${new Date().toLocaleString('zh-CN')}\n\n`;
+
+            Object.keys(mockData).forEach(platform => {
+                markdown += `## ${getPlatformName(platform)}\n\n`;
+                markdown += '| 排名 | 标题 | 热度 | 标签 |\n';
+                markdown += '|------|------|------|------|\n';
+                
+                mockData[platform].forEach(item => {
+                    const tags = item.tags.join(', ');
+                    markdown += `| ${item.rank} | ${item.title} | ${formatNumber(item.hot)} | ${tags} |\n`;
+                });
+                markdown += '\n';
+            });
+
+            const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `热搜汇总_${new Date().getTime()}.md`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showToast('Markdown 导出成功');
+        }
+
+        // 复制表格
+        function copyTable() {
+            let text = '全网热搜汇总\n\n';
+            
+            currentData.slice(0, 20).forEach((item, index) => {
+                text += `${index + 1}. [${item.platformName}] ${item.title} (热度: ${formatNumber(item.hot)})\n`;
+            });
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板');
+            });
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+
+        // 事件绑定
+        refreshBtn.addEventListener('click', refreshData);
+        exportBtn.addEventListener('click', exportMarkdown);
+        copyBtn.addEventListener('click', copyTable);
+
+        autoRefresh.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                autoRefreshInterval = setInterval(refreshData, 5 * 60 * 1000);
+                showToast('已开启自动刷新');
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                showToast('已关闭自动刷新');
+            }
+        });
+
+        platformFilter.addEventListener('change', (e) => {
+            updateTable(e.target.value);
+        });
+
+        platformTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const platform = tab.dataset.platform;
+                
+                // 更新标签状态
+                platformTabs.forEach(t => {
+                    t.classList.remove('active', 'bg-white', 'shadow-md', 'text-gray-800');
+                    t.classList.add('bg-white/70', 'text-gray-600');
+                });
+                tab.classList.add('active', 'bg-white', 'shadow-md', 'text-gray-800');
+                tab.classList.remove('bg-white/70', 'text-gray-600');
+
+                // 更新过滤
+                updateTable(platform);
+                platformFilter.value = platform;
+            });
+        });
+    </script>
+</body>
+</html>

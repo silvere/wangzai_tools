@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP 状态码查询工具 🔍</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        info: '#3b82f6',
+                        success: '#10b981',
+                        redirect: '#f59e0b',
+                        client: '#ef4444',
+                        server: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .status-badge {
+                @apply px-3 py-1 rounded-full text-sm font-medium;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-info to-server p-2 rounded-lg">
+                        <i class="fa fa-exchange text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">HTTP 状态码查询工具 🔍</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">完全离线 · 快速查询</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 搜索区域 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <div class="max-w-2xl mx-auto">
+                <label class="block text-sm font-medium text-slate-700 mb-2">输入状态码或关键词搜索</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa fa-search text-slate-400"></i>
+                    </div>
+                    <input 
+                        id="searchInput" 
+                        type="text" 
+                        class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-info focus:border-info text-lg" 
+                        placeholder="输入 404、Not Found、权限不足 等关键词..."
+                        autocomplete="off"
+                    >
+                </div>
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <span class="text-sm text-slate-500">快速搜索：</span>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="404">404</button>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="500">500</button>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="403">403</button>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="301">301</button>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="200">200</button>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="重定向">重定向</button>
+                    <button class="quick-search px-2 py-1 bg-blue-50 text-info rounded text-sm hover:bg-blue-100 transition" data-search="服务器错误">服务器错误</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分类标签 -->
+        <div class="flex flex-wrap justify-center gap-3 mb-8">
+            <button class="category-btn px-4 py-2 bg-info text-white rounded-lg font-medium active" data-category="all">
+                <i class="fa fa-list mr-1"></i> 全部
+            </button>
+            <button class="category-btn px-4 py-2 bg-info/10 text-info rounded-lg font-medium" data-category="1xx">
+                <i class="fa fa-info-circle mr-1"></i> 1xx 信息
+            </button>
+            <button class="category-btn px-4 py-2 bg-success/10 text-success rounded-lg font-medium" data-category="2xx">
+                <i class="fa fa-check-circle mr-1"></i> 2xx 成功
+            </button>
+            <button class="category-btn px-4 py-2 bg-redirect/10 text-redirect rounded-lg font-medium" data-category="3xx">
+                <i class="fa fa-exchange mr-1"></i> 3xx 重定向
+            </button>
+            <button class="category-btn px-4 py-2 bg-client/10 text-client rounded-lg font-medium" data-category="4xx">
+                <i class="fa fa-exclamation-triangle mr-1"></i> 4xx 客户端错误
+            </button>
+            <button class="category-btn px-4 py-2 bg-server/10 text-server rounded-lg font-medium" data-category="5xx">
+                <i class="fa fa-times-circle mr-1"></i> 5xx 服务器错误
+            </button>
+        </div>
+
+        <!-- 状态码列表 -->
+        <div id="statusCodes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 状态码卡片会通过JS动态生成 -->
+        </div>
+
+        <!-- 无结果提示 -->
+        <div id="noResult" class="hidden text-center py-12">
+            <div class="text-6xl mb-4">🔍</div>
+            <h3 class="text-xl font-semibold text-slate-800 mb-2">未找到匹配的状态码</h3>
+            <p class="text-slate-500">请尝试其他关键词或状态码</p>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>💡 旺仔工具百宝箱 - HTTP 状态码查询工具 | 完全本地运行，无需网络</p>
+            <p class="mt-2">包含 RFC 标准定义的所有 HTTP 状态码及详细说明，开发调试必备</p>
+        </div>
+    </footer>
+
+    <script>
+        // HTTP 状态码数据
+        const statusCodes = [
+            // 1xx - 信息响应
+            {
+                code: 100,
+                category: '1xx',
+                name: 'Continue',
+                nameCN: '继续',
+                description: '服务器已经收到请求头，并且客户端应当继续发送请求的剩余部分。',
+                color: 'info'
+            },
+            {
+                code: 101,
+                category: '1xx',
+                name: 'Switching Protocols',
+                nameCN: '切换协议',
+                description: '服务器已经理解了客户端的请求，并将通过Upgrade消息头通知客户端采用不同的协议来完成这个请求。',
+                color: 'info'
+            },
+            {
+                code: 102,
+                category: '1xx',
+                name: 'Processing',
+                nameCN: '处理中',
+                description: '服务器已经收到并正在处理请求，但无响应可用。',
+                color: 'info'
+            },
+            {
+                code: 103,
+                category: '1xx',
+                name: 'Early Hints',
+                nameCN: '早期提示',
+                description: '用于在最终响应之前返回一些响应头，帮助客户端预加载资源。',
+                color: 'info'
+            },
+
+            // 2xx - 成功响应
+            {
+                code: 200,
+                category: '2xx',
+                name: 'OK',
+                nameCN: '成功',
+                description: '请求已成功，请求所希望的响应头或数据体将随此响应返回。',
+                color: 'success'
+            },
+            {
+                code: 201,
+                category: '2xx',
+                name: 'Created',
+                nameCN: '已创建',
+                description: '请求已经被实现，而且有一个新的资源已经依据请求的需要而创建。',
+                color: 'success'
+            },
+            {
+                code: 202,
+                category: '2xx',
+                name: 'Accepted',
+                nameCN: '已接受',
+                description: '服务器已接受请求，但尚未处理。',
+                color: 'success'
+            },
+            {
+                code: 203,
+                category: '2xx',
+                name: 'Non-Authoritative Information',
+                nameCN: '非权威信息',
+                description: '服务器已成功处理了请求，但返回的实体头部元信息不是在原始服务器上有效的确定集合，而是来自本地或者第三方的拷贝。',
+                color: 'success'
+            },
+            {
+                code: 204,
+                category: '2xx',
+                name: 'No Content',
+                nameCN: '无内容',
+                description: '服务器成功处理了请求，但不需要返回任何实体内容，并且希望返回更新了的元信息。',
+                color: 'success'
+            },
+            {
+                code: 205,
+                category: '2xx',
+                name: 'Reset Content',
+                nameCN: '重置内容',
+                description: '服务器成功处理了请求，且没有返回任何内容，但是要求请求者重置文档视图。',
+                color: 'success'
+            },
+            {
+                code: 206,
+                category: '2xx',
+                name: 'Partial Content',
+                nameCN: '部分内容',
+                description: '服务器已经成功处理了部分GET请求。',
+                color: 'success'
+            },
+            {
+                code: 207,
+                category: '2xx',
+                name: 'Multi-Status',
+                nameCN: '多状态',
+                description: '代表之后的消息体将是一个XML消息，并且可能依照之前子请求数量的不同，包含一系列独立的响应代码。',
+                color: 'success'
+            },
+            {
+                code: 208,
+                category: '2xx',
+                name: 'Already Reported',
+                nameCN: '已报告',
+                description: '在DAV的使用propstat元素的响应里面使用，以避免重复列举相同绑定的多个内部成员。',
+                color: 'success'
+            },
+            {
+                code: 226,
+                category: '2xx',
+                name: 'IM Used',
+                nameCN: 'IM已使用',
+                description: '服务器已经满足了对资源的请求，并且响应是对当前实例应用的一个或多个实例操作的结果。',
+                color: 'success'
+            },
+
+            // 3xx - 重定向
+            {
+                code: 300,
+                category: '3xx',
+                name: 'Multiple Choices',
+                nameCN: '多种选择',
+                description: '被请求的资源有一系列可供选择的回馈信息，每个都有自己特定的地址和浏览器驱动的商议信息。',
+                color: 'redirect'
+            },
+            {
+                code: 301,
+                category: '3xx',
+                name: 'Moved Permanently',
+                nameCN: '永久移动',
+                description: '被请求的资源已永久移动到新位置，并且将来任何对此资源的引用都应该使用本响应返回的若干个URI之一。',
+                color: 'redirect'
+            },
+            {
+                code: 302,
+                category: '3xx',
+                name: 'Found',
+                nameCN: '临时移动',
+                description: '请求的资源现在临时从不同的URI响应请求。',
+                color: 'redirect'
+            },
+            {
+                code: 303,
+                category: '3xx',
+                name: 'See Other',
+                nameCN: '查看其他位置',
+                description: '对应当前请求的响应可以在另一个URI上被找到，而且客户端应当采用GET的方式访问那个资源。',
+                color: 'redirect'
+            },
+            {
+                code: 304,
+                category: '3xx',
+                name: 'Not Modified',
+                nameCN: '未修改',
+                description: '如果客户端发送了一个带条件的GET请求且该请求已被允许，而文档的内容（自上次访问以来或者根据请求的条件）并没有改变，则服务器应当返回这个状态码。',
+                color: 'redirect'
+            },
+            {
+                code: 305,
+                category: '3xx',
+                name: 'Use Proxy',
+                nameCN: '使用代理',
+                description: '被请求的资源必须通过指定的代理才能被访问。',
+                color: 'redirect'
+            },
+            {
+                code: 306,
+                category: '3xx',
+                name: 'Switch Proxy',
+                nameCN: '切换代理',
+                description: '在最新版的规范中，306状态码已经不再被使用。',
+                color: 'redirect'
+            },
+            {
+                code: 307,
+                category: '3xx',
+                name: 'Temporary Redirect',
+                nameCN: '临时重定向',
+                description: '请求的资源现在临时从不同的URI响应请求。',
+                color: 'redirect'
+            },
+            {
+                code: 308,
+                category: '3xx',
+                name: 'Permanent Redirect',
+                nameCN: '永久重定向',
+                description: '请求的资源已被永久移动到新位置，并且将来任何对此资源的引用都应该使用本响应返回的若干个URI之一。',
+                color: 'redirect'
+            },
+
+            // 4xx - 客户端错误
+            {
+                code: 400,
+                category: '4xx',
+                name: 'Bad Request',
+                nameCN: '错误请求',
+                description: '1. 语义有误，当前请求无法被服务器理解。2. 请求参数有误。',
+                color: 'client'
+            },
+            {
+                code: 401,
+                category: '4xx',
+                name: 'Unauthorized',
+                nameCN: '未授权',
+                description: '当前请求需要用户验证。',
+                color: 'client'
+            },
+            {
+                code: 402,
+                category: '4xx',
+                name: 'Payment Required',
+                nameCN: '需要付款',
+                description: '该状态码是为了将来可能的需求而预留的。',
+                color: 'client'
+            },
+            {
+                code: 403,
+                category: '4xx',
+                name: 'Forbidden',
+                nameCN: '禁止访问',
+                description: '服务器已经理解请求，但是拒绝执行它。',
+                color: 'client'
+            },
+            {
+                code: 404,
+                category: '4xx',
+                name: 'Not Found',
+                nameCN: '未找到',
+                description: '请求失败，请求所希望得到的资源未被在服务器上发现。',
+                color: 'client'
+            },
+            {
+                code: 405,
+                category: '4xx',
+                name: 'Method Not Allowed',
+                nameCN: '方法不允许',
+                description: '请求行中指定的请求方法不能被用于请求相应的资源。',
+                color: 'client'
+            },
+            {
+                code: 406,
+                category: '4xx',
+                name: 'Not Acceptable',
+                nameCN: '不接受',
+                description: '请求的资源的内容特性无法满足请求头中的条件，因而无法生成响应实体。',
+                color: 'client'
+            },
+            {
+                code: 407,
+                category: '4xx',
+                name: 'Proxy Authentication Required',
+                nameCN: '需要代理认证',
+                description: '客户端必须在代理服务器上进行身份验证。',
+                color: 'client'
+            },
+            {
+                code: 408,
+                category: '4xx',
+                name: 'Request Timeout',
+                nameCN: '请求超时',
+                description: '请求超时。客户端没有在服务器预备等待的时间内完成一个请求的发送。',
+                color: 'client'
+            },
+            {
+                code: 409,
+                category: '4xx',
+                name: 'Conflict',
+                nameCN: '冲突',
+                description: '由于和被请求的资源的当前状态之间存在冲突，请求无法完成。',
+                color: 'client'
+            },
+            {
+                code: 410,
+                category: '4xx',
+                name: 'Gone',
+                nameCN: '已删除',
+                description: '被请求的资源在服务器上已经不再可用，而且没有任何已知的转发地址。',
+                color: 'client'
+            },
+            {
+                code: 411,
+                category: '4xx',
+                name: 'Length Required',
+                nameCN: '需要内容长度',
+                description: '服务器拒绝在没有定义Content-Length头的情况下接受请求。',
+                color: 'client'
+            },
+            {
+                code: 412,
+                category: '4xx',
+                name: 'Precondition Failed',
+                nameCN: '前提条件失败',
+                description: '服务器在验证在请求的头字段中给出的前提条件的时候，未能满足其中的一个或者多个。',
+                color: 'client'
+            },
+            {
+                code: 413,
+                category: '4xx',
+                name: 'Payload Too Large',
+                nameCN: '请求实体过大',
+                description: '服务器拒绝处理当前请求，因为该请求提交的实体数据大小超过了服务器愿意或者能够处理的范围。',
+                color: 'client'
+            },
+            {
+                code: 414,
+                category: '4xx',
+                name: 'URI Too Long',
+                nameCN: '请求URI过长',
+                description: '请求的URI长度超过了服务器能够解释的长度，因此服务器拒绝对该请求提供服务。',
+                color: 'client'
+            },
+            {
+                code: 415,
+                category: '4xx',
+                name: 'Unsupported Media Type',
+                nameCN: '不支持的媒体类型',
+                description: '对于当前请求的方法和所请求的资源，请求中提交的实体并不是服务器中所支持的格式，因此请求被拒绝。',
+                color: 'client'
+            },
+            {
+                code: 416,
+                category: '4xx',
+                name: 'Range Not Satisfiable',
+                nameCN: '请求范围不符合要求',
+                description: '如果请求中包含了Range请求头，并且Range中指定的任何数据范围都与当前资源的可用范围不重合。',
+                color: 'client'
+            },
+            {
+                code: 417,
+                category: '4xx',
+                name: 'Expectation Failed',
+                nameCN: '期望失败',
+                description: '服务器无法满足Expect请求头的期望值。',
+                color: 'client'
+            },
+            {
+                code: 418,
+                category: '4xx',
+                name: 'I\'m a teapot',
+                nameCN: '我是一个茶壶',
+                description: '本操作被定义在1998年愚人节发布的HTCPCP/1.0规范中，是一个彩蛋。',
+                color: 'client'
+            },
+            {
+                code: 421,
+                category: '4xx',
+                name: 'Misdirected Request',
+                nameCN: '错误导向的请求',
+                description: '请求被指向到无法产生响应的服务器。',
+                color: 'client'
+            },
+            {
+                code: 422,
+                category: '4xx',
+                name: 'Unprocessable Entity',
+                nameCN: '无法处理的实体',
+                description: '请求格式正确，但是由于含有语义错误，无法响应。',
+                color: 'client'
+            },
+            {
+                code: 423,
+                category: '4xx',
+                name: 'Locked',
+                nameCN: '已锁定',
+                description: '当前资源被锁定。',
+                color: 'client'
+            },
+            {
+                code: 424,
+                category: '4xx',
+                name: 'Failed Dependency',
+                nameCN: '依赖失败',
+                description: '由于之前的某个请求发生的错误，导致当前请求失败。',
+                color: 'client'
+            },
+            {
+                code: 425,
+                category: '4xx',
+                name: 'Too Early',
+                nameCN: '太早',
+                description: '服务器不愿意冒险处理可能被重放的请求。',
+                color: 'client'
+            },
+            {
+                code: 426,
+                category: '4xx',
+                name: 'Upgrade Required',
+                nameCN: '需要升级',
+                description: '客户端应当切换到TLS/1.0。',
+                color: 'client'
+            },
+            {
+                code: 428,
+                category: '4xx',
+                name: 'Precondition Required',
+                nameCN: '需要前提条件',
+                description: '原始服务器要求该请求是有条件的，以防止"丢失更新"问题。',
+                color: 'client'
+            },
+            {
+                code: 429,
+                category: '4xx',
+                name: 'Too Many Requests',
+                nameCN: '请求过多',
+                description: '用户在给定的时间内发送了太多请求。',
+                color: 'client'
+            },
+            {
+                code: 431,
+                category: '4xx',
+                name: 'Request Header Fields Too Large',
+                nameCN: '请求头字段太大',
+                description: '服务器不愿意处理请求，因为其头字段太大。',
+                color: 'client'
+            },
+            {
+                code: 451,
+                category: '4xx',
+                name: 'Unavailable For Legal Reasons',
+                nameCN: '因法律原因不可用',
+                description: '服务器因法律原因拒绝提供访问。',
+                color: 'client'
+            },
+
+            // 5xx - 服务器错误
+            {
+                code: 500,
+                category: '5xx',
+                name: 'Internal Server Error',
+                nameCN: '服务器内部错误',
+                description: '服务器遇到了意料不到的情况，导致无法完成对请求的处理。',
+                color: 'server'
+            },
+            {
+                code: 501,
+                category: '5xx',
+                name: 'Not Implemented',
+                nameCN: '未实现',
+                description: '服务器不支持当前请求所需要的某个功能。',
+                color: 'server'
+            },
+            {
+                code: 502,
+                category: '5xx',
+                name: 'Bad Gateway',
+                nameCN: '错误网关',
+                description: '作为网关或者代理工作的服务器尝试执行请求时，从上游服务器接收到无效的响应。',
+                color: 'server'
+            },
+            {
+                code: 503,
+                category: '5xx',
+                name: 'Service Unavailable',
+                nameCN: '服务不可用',
+                description: '由于临时的服务器维护或者过载，服务器当前无法处理请求。',
+                color: 'server'
+            },
+            {
+                code: 504,
+                category: '5xx',
+                name: 'Gateway Timeout',
+                nameCN: '网关超时',
+                description: '作为网关或者代理工作的服务器尝试执行请求时，未能及时从上游服务器收到响应。',
+                color: 'server'
+            },
+            {
+                code: 505,
+                category: '5xx',
+                name: 'HTTP Version Not Supported',
+                nameCN: 'HTTP版本不支持',
+                description: '服务器不支持，或者拒绝支持在请求中使用的HTTP版本。',
+                color: 'server'
+            },
+            {
+                code: 506,
+                category: '5xx',
+                name: 'Variant Also Negotiates',
+                nameCN: '变体也协商',
+                description: '服务器存在内部配置错误，被请求的协商变体资源被配置为参与透明内容协商本身，因此不是一个合适的协商端点。',
+                color: 'server'
+            },
+            {
+                code: 507,
+                category: '5xx',
+                name: 'Insufficient Storage',
+                nameCN: '存储空间不足',
+                description: '服务器无法存储完成请求所必须的内容。',
+                color: 'server'
+            },
+            {
+                code: 508,
+                category: '5xx',
+                name: 'Loop Detected',
+                nameCN: '检测到循环',
+                description: '服务器在处理请求时检测到一个无限循环。',
+                color: 'server'
+            },
+            {
+                code: 510,
+                category: '5xx',
+                name: 'Not Extended',
+                nameCN: '未扩展',
+                description: '获取资源所需要的策略并没有被满足。',
+                color: 'server'
+            },
+            {
+                code: 511,
+                category: '5xx',
+                name: 'Network Authentication Required',
+                nameCN: '需要网络认证',
+                description: '客户端需要进行身份验证才能获得网络访问权限。',
+                color: 'server'
+            }
+        ];
+
+        // DOM 元素
+        const searchInput = document.getElementById('searchInput');
+        const statusCodesContainer = document.getElementById('statusCodes');
+        const noResult = document.getElementById('noResult');
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        const quickSearchBtns = document.querySelectorAll('.quick-search');
+
+        // 当前选中的分类
+        let currentCategory = 'all';
+
+        // 渲染状态码列表
+        function renderStatusCodes(filteredCodes = statusCodes) {
+            if (filteredCodes.length === 0) {
+                statusCodesContainer.innerHTML = '';
+                noResult.classList.remove('hidden');
+                return;
+            }
+
+            noResult.classList.add('hidden');
+            statusCodesContainer.innerHTML = filteredCodes.map(code => `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <span class="status-badge bg-${code.color}/10 text-${code.color}">${code.category}</span>
+                            <h3 class="text-2xl font-bold text-slate-800 mt-2">${code.code}</h3>
+                        </div>
+                        <button class="copy-btn p-2 text-slate-400 hover:text-${code.color} transition" data-code="${code.code} ${code.name}">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    <h4 class="font-semibold text-slate-800 mb-1">${code.name}</h4>
+                    <p class="text-${code.color} font-medium text-sm mb-3">${code.nameCN}</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">${code.description}</p>
+                </div>
+            `).join('');
+
+            // 绑定复制按钮事件
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const text = btn.getAttribute('data-code');
+                    navigator.clipboard.writeText(text).then(() => {
+                        const originalIcon = btn.innerHTML;
+                        btn.innerHTML = '<i class="fa fa-check"></i>';
+                        btn.classList.remove('text-slate-400');
+                        btn.classList.add('text-green-500');
+                        setTimeout(() => {
+                            btn.innerHTML = originalIcon;
+                            btn.classList.remove('text-green-500');
+                            btn.classList.add('text-slate-400');
+                        }, 2000);
+                    });
+                });
+            });
+        }
+
+        // 过滤状态码
+        function filterStatusCodes() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            let filtered = statusCodes;
+
+            // 分类过滤
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(code => code.category === currentCategory);
+            }
+
+            // 搜索过滤
+            if (searchTerm) {
+                filtered = filtered.filter(code => 
+                    code.code.toString().includes(searchTerm) ||
+                    code.name.toLowerCase().includes(searchTerm) ||
+                    code.nameCN.includes(searchTerm) ||
+                    code.description.includes(searchTerm)
+                );
+            }
+
+            renderStatusCodes(filtered);
+        }
+
+        // 分类按钮事件
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 更新选中状态
+                categoryBtns.forEach(b => {
+                    b.classList.remove('bg-info', 'text-white');
+                    const category = b.getAttribute('data-category');
+                    if (category === '1xx') {
+                        b.classList.add('bg-info/10', 'text-info');
+                    } else if (category === '2xx') {
+                        b.classList.add('bg-success/10', 'text-success');
+                    } else if (category === '3xx') {
+                        b.classList.add('bg-redirect/10', 'text-redirect');
+                    } else if (category === '4xx') {
+                        b.classList.add('bg-client/10', 'text-client');
+                    } else if (category === '5xx') {
+                        b.classList.add('bg-server/10', 'text-server');
+                    } else {
+                        b.classList.add('bg-info/10', 'text-info');
+                    }
+                });
+
+                btn.classList.remove('bg-info/10', 'bg-success/10', 'bg-redirect/10', 'bg-client/10', 'bg-server/10');
+                btn.classList.remove('text-info', 'text-success', 'text-redirect', 'text-client', 'text-server');
+                btn.classList.add('bg-info', 'text-white');
+
+                currentCategory = btn.getAttribute('data-category');
+                filterStatusCodes();
+            });
+        });
+
+        // 快速搜索按钮事件
+        quickSearchBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const searchTerm = btn.getAttribute('data-search');
+                searchInput.value = searchTerm;
+                filterStatusCodes();
+            });
+        });
+
+        // 搜索输入事件
+        searchInput.addEventListener('input', filterStatusCodes);
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderStatusCodes();
+        });
+    </script>
+</body>
+</html>

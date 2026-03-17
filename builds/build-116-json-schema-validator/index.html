@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Schema 验证器 ✅</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ajv@8.12.0/dist/ajv.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/json-schema-faker@0.5.6/dist/json-schema-faker.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        dark: '#0F172A',
+                        darker: '#0B1120',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-image: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .editor-line {
+                @apply font-mono text-sm leading-relaxed;
+            }
+            .error-line {
+                @apply bg-red-900/20 border-l-4 border-danger px-3 py-2 rounded-r my-1;
+            }
+            .success-line {
+                @apply bg-green-900/20 border-l-4 border-success px-3 py-2 rounded-r my-1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-darker font-inter text-slate-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold mb-3">
+                <span class="text-gradient">JSON Schema 验证器</span> ✅
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                实时验证JSON数据是否符合Schema规范，自动生成示例数据，支持批量测试，API开发、数据校验必备神器
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Panel: Editors -->
+            <div class="space-y-6">
+                <!-- Toolbar -->
+                <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl">
+                    <div class="flex flex-wrap gap-3 items-center justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="basic">
+                                📋 基础模板
+                            </button>
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="user">
+                                👤 用户模型
+                            </button>
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="api">
+                                🌐 API响应
+                            </button>
+                            <button class="template-btn bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm transition-all border border-slate-700 hover:border-primary/50" data-template="complex">
+                                🏗️ 复杂结构
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="generateExampleBtn" class="bg-primary/80 hover:bg-primary text-white px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                生成示例
+                            </button>
+                            <button id="formatBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                                </svg>
+                                格式化
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schema Editor -->
+                <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+                    <div class="bg-slate-800/50 px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                        <h3 class="font-semibold text-white">JSON Schema</h3>
+                        <div class="text-xs text-slate-400">Draft 2020-12</div>
+                    </div>
+                    <div class="p-4">
+                        <textarea id="schemaEditor" class="w-full h-[300px] bg-darker border border-slate-700/50 rounded-xl p-4 font-mono text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" placeholder="在这里输入JSON Schema...">{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "用户信息",
+  "description": "用户基本信息模型",
+  "required": ["id", "name", "email"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "用户唯一ID"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "用户姓名"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "用户邮箱地址"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 150,
+      "description": "用户年龄"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["admin", "user", "guest"],
+      "default": "user",
+      "description": "用户角色"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 0,
+      "maxItems": 10,
+      "description": "用户标签"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间"
+    }
+  }
+}</textarea>
+                    </div>
+                </div>
+
+                <!-- JSON Data Editor -->
+                <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+                    <div class="bg-slate-800/50 px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                        <h3 class="font-semibold text-white">JSON 数据</h3>
+                        <div class="flex gap-2">
+                            <button id="clearDataBtn" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded-lg transition-all">
+                                清空
+                            </button>
+                            <button id="loadExampleBtn" class="text-xs bg-primary/80 hover:bg-primary text-white px-3 py-1 rounded-lg transition-all">
+                                加载示例
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <textarea id="dataEditor" class="w-full h-[300px] bg-darker border border-slate-700/50 rounded-xl p-4 font-mono text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" placeholder="在这里输入要验证的JSON数据...">{
+  "id": 1,
+  "name": "张三",
+  "email": "zhangsan@example.com",
+  "age": 25,
+  "role": "user",
+  "tags": ["开发", "测试"],
+  "createdAt": "2026-03-10T16:00:00Z"
+}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="space-y-6">
+                <!-- Validation Result -->
+                <div class="bg-dark rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+                    <div class="bg-slate-800/50 px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                        <h3 class="font-semibold text-white">验证结果</h3>
+                        <div id="validationStatus" class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            <span class="text-sm text-green-400">验证通过</span>
+                        </div>
+                    </div>
+                    <div class="p-6 min-h-[250px]">
+                        <div id="resultContainer">
+                            <div class="success-line">
+                                <div class="font-medium text-success">✅ JSON 数据符合 Schema 规范</div>
+                                <div class="text-xs text-slate-400 mt-1">没有发现错误</div>
+                            </div>
+                        </div>
+                        
+                        <div id="errorsContainer" class="mt-4 space-y-3 hidden">
+                            <h4 class="font-medium text-danger">❌ 发现以下错误：</h4>
+                            <div id="errorsList" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                        <div class="text-3xl font-bold text-primary mb-1" id="schemaSize">0</div>
+                        <div class="text-xs text-slate-400">Schema 大小 (B)</div>
+                    </div>
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                        <div class="text-3xl font-bold text-secondary mb-1" id="dataSize">0</div>
+                        <div class="text-xs text-slate-400">数据大小 (B)</div>
+                    </div>
+                    <div class="bg-dark rounded-2xl p-4 border border-slate-700/50 shadow-xl text-center">
+                        <div class="text-3xl font-bold text-green-400 mb-1" id="validateTime">0</div>
+                        <div class="text-xs text-slate-400">验证时间 (ms)</div>
+                    </div>
+                </div>
+
+                <!-- Schema Info -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h3 class="text-xl font-semibold text-white mb-4">📋 Schema 信息</h3>
+                    <div id="schemaInfo" class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">类型：</span>
+                            <span class="text-white font-medium">object</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">必填字段：</span>
+                            <span class="text-white font-medium">id, name, email</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">总字段数：</span>
+                            <span class="text-white font-medium">7</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">标题：</span>
+                            <span class="text-white font-medium">用户信息</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tips -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h3 class="text-xl font-semibold text-white mb-4">💡 使用提示</h3>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li>• 左侧输入Schema和JSON数据，右侧实时显示验证结果</li>
+                        <li>• 支持字符串格式验证：email、date-time、uri、hostname等</li>
+                        <li>• 点击"生成示例"按钮可以根据Schema自动生成符合要求的测试数据</li>
+                        <li>• 内置常用模板，快速开始验证</li>
+                        <li>• 所有验证完全在本地完成，数据不会上传到服务器</li>
+                    </ul>
+                </div>
+
+                <!-- Export Options -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="exportSchemaBtn" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span class="text-sm font-medium">导出 Schema</span>
+                    </button>
+                    <button id="exportDataBtn" class="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl transition-all flex flex-col items-center gap-2 border border-slate-700 hover:border-primary/50">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span class="text-sm font-medium">导出数据</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-slate-500 text-sm">
+            <p>旺仔工具百宝箱 © 2026 | 纯本地运行，数据绝不上传</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize AJV
+        const ajv = new window.ajv();
+        ajv.addFormat('email', /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/);
+        ajv.addFormat('date-time', /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/);
+        ajv.addFormat('uri', /^https?:\/\/.+/);
+        ajv.addFormat('hostname', /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/);
+
+        // Templates
+        const templates = {
+            basic: {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "title": "基础对象",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "value": {
+                        "type": ["string", "number", "boolean"]
+                    }
+                }
+            },
+            user: {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "title": "用户信息",
+                "description": "用户基本信息模型",
+                "required": ["id", "name", "email"],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "用户唯一ID"
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 50,
+                        "description": "用户姓名"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "用户邮箱地址"
+                    },
+                    "age": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 150,
+                        "description": "用户年龄"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": ["admin", "user", "guest"],
+                        "default": "user",
+                        "description": "用户角色"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 0,
+                        "maxItems": 10,
+                        "description": "用户标签"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "创建时间"
+                    }
+                }
+            },
+            api: {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "title": "API响应",
+                "required": ["code", "message"],
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "响应状态码"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "响应消息"
+                    },
+                    "data": {
+                        "type": ["object", "array", "null"],
+                        "description": "响应数据"
+                    },
+                    "requestId": {
+                        "type": "string",
+                        "description": "请求ID"
+                    },
+                    "timestamp": {
+                        "type": "integer",
+                        "description": "响应时间戳"
+                    }
+                }
+            },
+            complex: {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "title": "订单信息",
+                "required": ["orderId", "userId", "items", "totalAmount"],
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "pattern": "^ORD-[0-9]{8}-[0-9]{6}$"
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "required": ["productId", "name", "price", "quantity"],
+                            "properties": {
+                                "productId": { "type": "integer" },
+                                "name": { "type": "string" },
+                                "price": { "type": "number", "minimum": 0 },
+                                "quantity": { "type": "integer", "minimum": 1 }
+                            }
+                        }
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "minimum": 0
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["pending", "paid", "shipped", "delivered", "cancelled"]
+                    },
+                    "shippingAddress": {
+                        "type": "object",
+                        "required": ["street", "city", "postalCode", "country"],
+                        "properties": {
+                            "street": { "type": "string" },
+                            "city": { "type": "string" },
+                            "postalCode": { "type": "string" },
+                            "country": { "type": "string" }
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            }
+        };
+
+        let validateTimeout;
+
+        // Update stats
+        function updateStats() {
+            const schema = document.getElementById('schemaEditor').value;
+            const data = document.getElementById('dataEditor').value;
+            document.getElementById('schemaSize').textContent = new Blob([schema]).size;
+            document.getElementById('dataSize').textContent = new Blob([data]).size;
+        }
+
+        // Parse and validate JSON
+        function parseJSON(text) {
+            try {
+                return [JSON.parse(text), null];
+            } catch (error) {
+                return [null, error];
+            }
+        }
+
+        // Validate JSON against Schema
+        function validateJSON() {
+            const schemaText = document.getElementById('schemaEditor').value;
+            const dataText = document.getElementById('dataEditor').value;
+            const resultContainer = document.getElementById('resultContainer');
+            const errorsContainer = document.getElementById('errorsContainer');
+            const errorsList = document.getElementById('errorsList');
+            const validationStatus = document.getElementById('validationStatus');
+            
+            const startTime = performance.now();
+            
+            // Parse Schema
+            const [schema, schemaError] = parseJSON(schemaText);
+            if (schemaError) {
+                validationStatus.innerHTML = '<span class="w-2 h-2 bg-danger rounded-full animate-pulse"></span><span class="text-sm text-danger">Schema 格式错误</span>';
+                resultContainer.innerHTML = `
+                    <div class="error-line">
+                        <div class="font-medium text-danger">❌ Schema JSON 格式错误</div>
+                        <div class="text-xs text-red-300 mt-1 font-mono">${schemaError.message}</div>
+                    </div>
+                `;
+                errorsContainer.classList.add('hidden');
+                return;
+            }
+            
+            // Parse Data
+            const [data, dataError] = parseJSON(dataText);
+            if (dataError) {
+                validationStatus.innerHTML = '<span class="w-2 h-2 bg-danger rounded-full animate-pulse"></span><span class="text-sm text-danger">数据格式错误</span>';
+                resultContainer.innerHTML = `
+                    <div class="error-line">
+                        <div class="font-medium text-danger">❌ 数据 JSON 格式错误</div>
+                        <div class="text-xs text-red-300 mt-1 font-mono">${dataError.message}</div>
+                    </div>
+                `;
+                errorsContainer.classList.add('hidden');
+                return;
+            }
+            
+            // Compile and validate
+            try {
+                const validate = ajv.compile(schema);
+                const valid = validate(data);
+                
+                const validateTime = Math.round(performance.now() - startTime);
+                document.getElementById('validateTime').textContent = validateTime;
+                
+                if (valid) {
+                    validationStatus.innerHTML = '<span class="w-2 h-2 bg-success rounded-full animate-pulse"></span><span class="text-sm text-success">验证通过</span>';
+                    resultContainer.innerHTML = `
+                        <div class="success-line">
+                            <div class="font-medium text-success">✅ JSON 数据符合 Schema 规范</div>
+                            <div class="text-xs text-slate-400 mt-1">没有发现错误</div>
+                        </div>
+                    `;
+                    errorsContainer.classList.add('hidden');
+                } else {
+                    validationStatus.innerHTML = `<span class="w-2 h-2 bg-danger rounded-full animate-pulse"></span><span class="text-sm text-danger">验证失败 (${validate.errors.length} 个错误)</span>`;
+                    resultContainer.innerHTML = '';
+                    errorsContainer.classList.remove('hidden');
+                    
+                    errorsList.innerHTML = validate.errors.map(error => `
+                        <div class="error-line">
+                            <div class="font-medium text-white">路径: <span class="text-danger font-mono">${error.instancePath || '/'}</span></div>
+                            <div class="text-sm text-red-300 mt-1">${error.message}</div>
+                            ${error.params ? `<div class="text-xs text-slate-400 mt-1 font-mono">${JSON.stringify(error.params)}</div>` : ''}
+                        </div>
+                    `).join('');
+                }
+                
+                // Update schema info
+                updateSchemaInfo(schema);
+                
+            } catch (error) {
+                validationStatus.innerHTML = '<span class="w-2 h-2 bg-danger rounded-full animate-pulse"></span><span class="text-sm text-danger">验证错误</span>';
+                resultContainer.innerHTML = `
+                    <div class="error-line">
+                        <div class="font-medium text-danger">❌ 验证过程出错</div>
+                        <div class="text-xs text-red-300 mt-1 font-mono">${error.message}</div>
+                    </div>
+                `;
+                errorsContainer.classList.add('hidden');
+            }
+        }
+
+        // Update schema info display
+        function updateSchemaInfo(schema) {
+            const infoContainer = document.getElementById('schemaInfo');
+            
+            const type = schema.type || 'object';
+            const required = schema.required || [];
+            const properties = schema.properties || {};
+            const title = schema.title || '未命名';
+            const propCount = Object.keys(properties).length;
+            
+            infoContainer.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="text-slate-400">类型：</span>
+                    <span class="text-white font-medium">${type}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">必填字段：</span>
+                    <span class="text-white font-medium">${required.length > 0 ? required.join(', ') : '无'}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">总字段数：</span>
+                    <span class="text-white font-medium">${propCount}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">标题：</span>
+                    <span class="text-white font-medium">${title}</span>
+                </div>
+            `;
+        }
+
+        // Debounced validate
+        function debouncedValidate() {
+            clearTimeout(validateTimeout);
+            validateTimeout = setTimeout(validateJSON, 500);
+        }
+
+        // Generate example data from schema
+        function generateExample() {
+            const schemaText = document.getElementById('schemaEditor').value;
+            const [schema, error] = parseJSON(schemaText);
+            
+            if (error) {
+                alert('Schema 格式错误，请先修正');
+                return;
+            }
+            
+            try {
+                const example = window.jsonSchemaFaker.generate(schema);
+                document.getElementById('dataEditor').value = JSON.stringify(example, null, 2);
+                updateStats();
+                debouncedValidate();
+            } catch (error) {
+                alert('生成示例失败：' + error.message);
+            }
+        }
+
+        // Format JSON
+        function formatJSON(textareaId) {
+            const textarea = document.getElementById(textareaId);
+            const [json, error] = parseJSON(textarea.value);
+            
+            if (error) {
+                alert('JSON 格式错误：' + error.message);
+                return;
+            }
+            
+            textarea.value = JSON.stringify(json, null, 2);
+            updateStats();
+            debouncedValidate();
+        }
+
+        // Export JSON
+        function exportJSON(textareaId, filename) {
+            const text = document.getElementById(textareaId).value;
+            const blob = new Blob([text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = url;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const schemaEditor = document.getElementById('schemaEditor');
+            const dataEditor = document.getElementById('dataEditor');
+            
+            // Initial validation
+            validateJSON();
+            updateStats();
+            
+            // Editor input
+            schemaEditor.addEventListener('input', () => {
+                updateStats();
+                debouncedValidate();
+            });
+            
+            dataEditor.addEventListener('input', () => {
+                updateStats();
+                debouncedValidate();
+            });
+            
+            // Template buttons
+            document.querySelectorAll('.template-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const template = btn.dataset.template;
+                    schemaEditor.value = JSON.stringify(templates[template], null, 2);
+                    generateExample();
+                });
+            });
+            
+            // Generate example button
+            document.getElementById('generateExampleBtn').addEventListener('click', generateExample);
+            
+            // Format button
+            document.getElementById('formatBtn').addEventListener('click', () => {
+                formatJSON('schemaEditor');
+                formatJSON('dataEditor');
+            });
+            
+            // Load example button
+            document.getElementById('loadExampleBtn').addEventListener('click', generateExample);
+            
+            // Clear data button
+            document.getElementById('clearDataBtn').addEventListener('click', () => {
+                if (confirm('确定要清空数据吗?')) {
+                    dataEditor.value = '';
+                    updateStats();
+                    debouncedValidate();
+                }
+            });
+            
+            // Export buttons
+            document.getElementById('exportSchemaBtn').addEventListener('click', () => {
+                exportJSON('schemaEditor', 'schema.json');
+            });
+            
+            document.getElementById('exportDataBtn').addEventListener('click', () => {
+                exportJSON('dataEditor', 'data.json');
+            });
+        });
+    </script>
+</body>
+</html>

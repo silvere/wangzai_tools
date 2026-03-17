@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS 渐变生成器 - 旺仔工具百宝箱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .gradient-preview {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(45deg, #eee 25%, transparent 25%), 
+        linear-gradient(-45deg, #eee 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #eee 75%), 
+        linear-gradient(-45deg, transparent 75%, #eee 75%);
+    }
+    .color-stop {
+      transition: transform 0.2s;
+    }
+    .color-stop:hover {
+      transform: scale(1.1);
+    }
+    .color-stop.active {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">CSS 渐变生成器 🎨</h1>
+      <p class="text-gray-600">可视化创建和预览 CSS 渐变，一键复制代码</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 左侧控制面板 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">渐变类型</h2>
+          <div class="flex flex-wrap gap-3">
+            <button id="linearBtn" class="gradient-type-btn px-4 py-2 rounded-md bg-blue-500 text-white">线性渐变</button>
+            <button id="radialBtn" class="gradient-type-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">径向渐变</button>
+            <button id="conicBtn" class="gradient-type-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">锥形渐变</button>
+          </div>
+        </div>
+
+        <!-- 线性渐变角度控制 -->
+        <div id="linearControls" class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">角度</h2>
+          <div class="flex items-center gap-4">
+            <input type="range" id="angleSlider" min="0" max="360" value="45" class="flex-1">
+            <input type="number" id="angleInput" value="45" class="w-20 px-3 py-2 border rounded-md">
+            <span class="text-gray-600">°</span>
+          </div>
+        </div>
+
+        <!-- 径向渐变形状位置 -->
+        <div id="radialControls" class="mb-6 hidden">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">形状</h2>
+          <div class="flex gap-3 mb-4 flex-wrap">
+            <button data-shape="ellipse" class="shape-btn px-3 py-2 rounded-md bg-blue-500 text-white">椭圆</button>
+            <button data-shape="circle" class="shape-btn px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">圆形</button>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">中心点</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">X (%)</label>
+              <input type="range" id="radialX" min="0" max="100" value="50" class="w-full">
+              <input type="number" id="radialXInput" value="50" class="w-full mt-1 px-3 py-2 border rounded-md">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Y (%)</label>
+              <input type="range" id="radialY" min="0" max="100" value="50" class="w-full">
+              <input type="number" id="radialYInput" value="50" class="w-full mt-1 px-3 py-2 border rounded-md">
+            </div>
+          </div>
+        </div>
+
+        <!-- 锥形渐变起始角度 -->
+        <div id="conicControls" class="mb-6 hidden">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">起始角度</h2>
+          <div class="flex items-center gap-4">
+            <input type="range" id="conicAngle" min="0" max="360" value="0" class="flex-1">
+            <input type="number" id="conicAngleInput" value="0" class="w-20 px-3 py-2 border rounded-md">
+            <span class="text-gray-600">°</span>
+          </div>
+        </div>
+
+        <!-- 色标控制 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">色标</h2>
+            <button id="addStopBtn" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">添加颜色</button>
+          </div>
+          <div id="colorStops" class="p-4 bg-gray-50 rounded-lg">
+            <!-- 色标会动态生成 -->
+          </div>
+        </div>
+
+        <!-- 预设渐变 -->
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">热门预设</h2>
+          <div id="presets" class="grid grid-cols-2 gap-3">
+            <!-- 预设会动态生成 -->
+          </div>
+        </div>
+
+        <!-- 输出代码 -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">CSS 代码</h2>
+            <button id="copyBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600">复制代码</button>
+          </div>
+          <textarea id="cssOutput" readonly class="w-full h-32 px-4 py-3 font-mono text-sm bg-gray-900 text-green-400 rounded-md"></textarea>
+          <div id="copyToast" class="hidden mt-2 p-2 bg-green-100 text-green-700 rounded-md text-center">
+            复制成功！
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧预览 -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+          <div id="previewContainer" class="gradient-preview rounded-lg overflow-hidden">
+            <div id="gradientPreview" class="w-full h-96 rounded-lg"></div>
+          </div>
+        </div>
+
+        <!-- CSS 语法说明 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">使用说明</h2>
+          <ul class="space-y-2 text-gray-600">
+            <li>• 点击色标可以选中并编辑颜色和位置</li>
+            <li>• 拖动色标可以调整颜色位置（点击色标后拖动）</li>
+            <li>• 选中色标后点击删除按钮移除色标</li>
+            <li>• 至少需要两个色标才能生成渐变</li>
+            <li>• 生成的 CSS 代码已经兼容主流浏览器</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center mt-8 text-gray-500 text-sm">
+      <p>完全本地运行，零数据上传 | 旺仔工具百宝箱 🥛</p>
+    </footer>
+  </div>
+
+  <script>
+    // 状态管理
+    const state = {
+      type: 'linear', // linear | radial | conic
+      angle: 45,
+      radial: { shape: 'ellipse', x: 50, y: 50 },
+      conic: { angle: 0 },
+      colorStops: [
+        { color: '#ff0000', position: 0 },
+        { color: '#0000ff', position: 100 }
+      ],
+      selectedStop: 0
+    };
+
+    // 预设渐变
+    const presets = [
+      {
+        name: '蓝天 🌤️',
+        stops: [
+          { color: '#2193b0', position: 0 },
+          { color: '#6dd5ed', position: 100 }
+        ]
+      },
+      {
+        name: '日出 🌅',
+        stops: [
+          { color: '#f093fb', position: 0 },
+          { color: '#f5576c', position: 50 },
+          { color: '#ffa62b', position: 100 }
+        ]
+      },
+      {
+        name: '极光 ✨',
+        stops: [
+          { color: '#00dbde', position: 0 },
+          { color: '#fc00ff', position: 100 }
+        ]
+      },
+      {
+        name: '暗夜 🌙',
+        stops: [
+          { color: '#141e30', position: 0 },
+          { color: '#243b55', position: 100 }
+        ]
+      },
+      {
+        name: '彩虹 🌈',
+        stops: [
+          { color: '#ff0000', position: 0 },
+          { color: '#ff9900', position: 16 },
+          { color: '#ffff00', position: 33 },
+          { color: '#33ff00', position: 50 },
+          { color: '#0099ff', position: 66 },
+          { color: '#3300ff', position: 83 },
+          { color: '#cc00ff', position: 100 }
+        ]
+      },
+      {
+        name: '蜜桃 🍑',
+        stops: [
+          { color: '#ffe259', position: 0 },
+          { color: '#ffa751', position: 100 }
+        ]
+      },
+      {
+        name: '薄荷 🌿',
+        stops: [
+          { color: '#a8ff78', position: 0 },
+          { color: '#78ffd6', position: 100 }
+        ]
+      },
+      {
+        name: '伦敦晚报 🗞️',
+        stops: [
+          { color: '#283048', position: 0 },
+          { color: '#859398', position: 100 }
+        ]
+      }
+    ];
+
+    // DOM 元素
+    const elements = {
+      linearBtn: document.getElementById('linearBtn'),
+      radialBtn: document.getElementById('radialBtn'),
+      conicBtn: document.getElementById('conicBtn'),
+      linearControls: document.getElementById('linearControls'),
+      radialControls: document.getElementById('radialControls'),
+      conicControls: document.getElementById('conicControls'),
+      angleSlider: document.getElementById('angleSlider'),
+      angleInput: document.getElementById('angleInput'),
+      radialX: document.getElementById('radialX'),
+      radialY: document.getElementById('radialY'),
+      radialXInput: document.getElementById('radialXInput'),
+      radialYInput: document.getElementById('radialYInput'),
+      conicAngle: document.getElementById('conicAngle'),
+      conicAngleInput: document.getElementById('conicAngleInput'),
+      colorStopsContainer: document.getElementById('colorStops'),
+      addStopBtn: document.getElementById('addStopBtn'),
+      presetsContainer: document.getElementById('presets'),
+      cssOutput: document.getElementById('cssOutput'),
+      gradientPreview: document.getElementById('gradientPreview'),
+      copyBtn: document.getElementById('copyBtn'),
+      copyToast: document.getElementById('copyToast')
+    };
+
+    // 生成 CSS 代码
+    function generateCSS() {
+      let css = '';
+      const stops = state.colorStops
+        .sort((a, b) => a.position - b.position)
+        .map(stop => `${stop.color} ${stop.position}%`)
+        .join(', ');
+
+      switch (state.type) {
+        case 'linear':
+          css = `background: linear-gradient(${state.angle}deg, ${stops});`;
+          break;
+        case 'radial':
+          css = `background: radial-gradient(${state.radial.shape} at ${state.radial.x}% ${state.radial.y}%, ${stops});`;
+          break;
+        case 'conic':
+          css = `background: conic-gradient(from ${state.conic.angle}deg, ${stops});`;
+          break;
+      }
+
+      return css;
+    }
+
+    // 更新预览
+    function updatePreview() {
+      const css = generateCSS();
+      elements.gradientPreview.style = css;
+      elements.cssOutput.value = css;
+    }
+
+    // 渲染色标
+    function renderColorStops() {
+      elements.colorStopsContainer.innerHTML = '';
+      
+      // 渐变条背景
+      const track = document.createElement('div');
+      track.className = 'relative h-8 rounded-md mb-4 overflow-hidden';
+      track.style.background = generateLinearGradientForTrack();
+      elements.colorStopsContainer.appendChild(track);
+
+      // 色标把手
+      state.colorStops.forEach((stop, index) => {
+        const stopEl = document.createElement('div');
+        stopEl.className = `color-stop absolute -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-md cursor-pointer ${index === state.selectedStop ? 'active ring-2 ring-blue-500' : ''}`;
+        stopEl.style.left = `${stop.position}%`;
+        stopEl.style.backgroundColor = stop.color;
+        stopEl.dataset.index = index;
+        
+        stopEl.addEventListener('click', () => {
+          state.selectedStop = index;
+          renderColorStops();
+          showColorEditor();
+        });
+
+        // 拖拽
+        let isDragging = false;
+        stopEl.addEventListener('mousedown', (e) => {
+          isDragging = true;
+          state.selectedStop = index;
+          e.preventDefault();
+        });
+        document.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          const rect = track.getBoundingClientRect();
+          let position = ((e.clientX - rect.left) / rect.width) * 100;
+          position = Math.max(0, Math.min(100, position));
+          state.colorStops[index].position = Math.round(position);
+          renderColorStops();
+          updatePreview();
+        });
+        document.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+
+        track.appendChild(stopEl);
+      });
+
+      // 颜色编辑器
+      if (state.colorStops.length > 0 && state.selectedStop !== null) {
+        const selected = state.colorStops[state.selectedStop];
+        const editor = document.createElement('div');
+        editor.className = 'flex items-center gap-4 mt-6';
+        
+        editor.innerHTML = `
+          <label class="text-sm font-medium text-gray-700">选中颜色:</label>
+          <input type="color" value="${selected.color}" id="colorPicker" class="w-16 h-10 rounded cursor-pointer">
+          <input type="text" id="colorHex" value="${selected.color}" class="flex-1 px-3 py-2 border rounded-md">
+          <label class="text-sm font-medium text-gray-700">位置:</label>
+          <input type="number" id="positionInput" value="${selected.position}" min="0" max="100" class="w-16 px-3 py-2 border rounded-md">
+          <button id="deleteStopBtn" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 ${state.colorStops.length <= 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${state.colorStops.length <= 2 ? 'disabled' : ''}>删除</button>
+        `;
+        
+        elements.colorStopsContainer.appendChild(editor);
+
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+          state.colorStops[state.selectedStop].color = e.target.value;
+          document.getElementById('colorHex').value = e.target.value;
+          renderColorStops();
+          updatePreview();
+        });
+
+        document.getElementById('colorHex').addEventListener('change', (e) => {
+          let color = e.target.value.trim();
+          if (!color.startsWith('#')) color = '#' + color;
+          if (/^#[0-9A-Fa-f]{6}$/.test(color) || /^#[0-9A-Fa-f]{3}$/.test(color)) {
+            state.colorStops[state.selectedStop].color = color;
+            document.getElementById('colorPicker').value = color;
+            renderColorStops();
+            updatePreview();
+          }
+        });
+
+        document.getElementById('positionInput').addEventListener('change', (e) => {
+          let pos = parseInt(e.target.value);
+          pos = Math.max(0, Math.min(100, pos));
+          state.colorStops[state.selectedStop].position = pos;
+          renderColorStops();
+          updatePreview();
+        });
+
+        document.getElementById('deleteStopBtn').addEventListener('click', () => {
+          if (state.colorStops.length > 2) {
+            state.colorStops.splice(state.selectedStop, 1);
+            state.selectedStop = Math.max(0, state.selectedStop - 1);
+            renderColorStops();
+            updatePreview();
+          }
+        });
+      }
+    }
+
+    // 为色标轨道生成渐变背景
+    function generateLinearGradientForTrack() {
+      const stops = state.colorStops
+        .sort((a, b) => a.position - b.position)
+        .map(stop => `${stop.color} ${stop.position}%`)
+        .join(', ');
+      return `linear-gradient(to right, ${stops})`;
+    }
+
+    // 渲染预设
+    function renderPresets() {
+      elements.presetsContainer.innerHTML = '';
+      presets.forEach((preset, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'preset-btn p-2 rounded-md border hover:shadow-md transition-shadow';
+        const stops = preset.stops.map(s => `${s.color} ${s.position}%`).join(', ');
+        const gradient = `linear-gradient(to right, ${stops})`;
+        btn.innerHTML = `
+          <div class="h-8 rounded mb-2" style="${gradient}"></div>
+          <div class="text-sm text-gray-700">${preset.name}</div>
+        `;
+        btn.addEventListener('click', () => {
+          state.colorStops = JSON.parse(JSON.stringify(preset.stops));
+          state.selectedStop = 0;
+          renderColorStops();
+          updatePreview();
+        });
+        elements.presetsContainer.appendChild(btn);
+      });
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 渐变类型切换
+      elements.linearBtn.addEventListener('click', () => {
+        state.type = 'linear';
+        updateTypeButtons();
+        elements.linearControls.classList.remove('hidden');
+        elements.radialControls.classList.add('hidden');
+        elements.conicControls.classList.add('hidden');
+        updatePreview();
+      });
+
+      elements.radialBtn.addEventListener('click', () => {
+        state.type = 'radial';
+        updateTypeButtons();
+        elements.linearControls.classList.add('hidden');
+        elements.radialControls.classList.remove('hidden');
+        elements.conicControls.classList.add('hidden');
+        updatePreview();
+      });
+
+      elements.conicBtn.addEventListener('click', () => {
+        state.type = 'conic';
+        updateTypeButtons();
+        elements.linearControls.classList.add('hidden');
+        elements.radialControls.classList.add('hidden');
+        elements.conicControls.classList.remove('hidden');
+        updatePreview();
+      });
+
+      function updateTypeButtons() {
+        [
+          [elements.linearBtn, 'linear'],
+          [elements.radialBtn, 'radial'],
+          [elements.conicBtn, 'conic']
+        ].forEach(([btn, type]) => {
+          if (state.type === type) {
+            btn.className = 'px-4 py-2 rounded-md bg-blue-500 text-white';
+          } else {
+            btn.className = 'px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+          }
+        });
+      }
+
+      // 线性渐变角度
+      elements.angleSlider.addEventListener('input', (e) => {
+        state.angle = parseInt(e.target.value);
+        elements.angleInput.value = state.angle;
+        updatePreview();
+      });
+      elements.angleInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        val = Math.max(0, Math.min(360, val));
+        state.angle = val;
+        elements.angleSlider.value = val;
+        updatePreview();
+      });
+
+      // 径向渐变位置
+      elements.radialX.addEventListener('input', (e) => {
+        state.radial.x = parseInt(e.target.value);
+        elements.radialXInput.value = state.radial.x;
+        updatePreview();
+      });
+      elements.radialXInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        val = Math.max(0, Math.min(100, val));
+        state.radial.x = val;
+        elements.radialX.value = val;
+        updatePreview();
+      });
+      elements.radialY.addEventListener('input', (e) => {
+        state.radial.y = parseInt(e.target.value);
+        elements.radialYInput.value = state.radial.y;
+        updatePreview();
+      });
+      elements.radialYInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        val = Math.max(0, Math.min(100, val));
+        state.radial.y = val;
+        elements.radialY.value = val;
+        updatePreview();
+      });
+
+      // 形状按钮
+      document.querySelectorAll('.shape-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.shape-btn').forEach(b => {
+            b.className = 'shape-btn px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+          });
+          btn.className = 'shape-btn px-3 py-2 rounded-md bg-blue-500 text-white';
+          state.radial.shape = btn.dataset.shape;
+          updatePreview();
+        });
+      });
+
+      // 锥形渐变角度
+      elements.conicAngle.addEventListener('input', (e) => {
+        state.conic.angle = parseInt(e.target.value);
+        elements.conicAngleInput.value = state.conic.angle;
+        updatePreview();
+      });
+      elements.conicAngleInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        val = Math.max(0, Math.min(360, val));
+        state.conic.angle = val;
+        elements.conicAngle.value = val;
+        updatePreview();
+      });
+
+      // 添加色标
+      elements.addStopBtn.addEventListener('click', () => {
+        // 在中间位置添加一个新色标，颜色是两边的插值
+        const newPosition = 50;
+        state.colorStops.push({
+          color: '#808080',
+          position: newPosition
+        });
+        state.selectedStop = state.colorStops.length - 1;
+        renderColorStops();
+        updatePreview();
+      });
+
+      // 复制按钮
+      elements.copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(elements.cssOutput.value);
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        } catch (err) {
+          // 降级方案
+          elements.cssOutput.select();
+          document.execCommand('copy');
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        }
+      });
+    }
+
+    // 显示颜色编辑器（用于初始化）
+    function showColorEditor() {
+      renderColorStops();
+    }
+
+    // 初始化
+    function init() {
+      bindEvents();
+      renderColorStops();
+      renderPresets();
+      updatePreview();
+    }
+
+    init();
+  </script>
+</body>
+</html>

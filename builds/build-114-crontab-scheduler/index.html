@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能Cron表达式生成器 ⏰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        dark: '#0F172A',
+                        darker: '#0B1120',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-image: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .cron-cell {
+                @apply w-8 h-8 flex items-center justify-center rounded-md cursor-pointer transition-all duration-200 text-sm font-medium;
+            }
+            .cron-cell-inactive {
+                @apply bg-slate-800 text-slate-400 hover:bg-slate-700;
+            }
+            .cron-cell-active {
+                @apply bg-primary text-white hover:bg-purple-500;
+            }
+            .cron-cell-range {
+                @apply bg-purple-400/30 text-purple-300;
+            }
+        }
+    </style>
+</head>
+<body class="bg-darker font-inter text-slate-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold mb-3">
+                <span class="text-gradient">智能Cron表达式生成器</span> ⏰
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                可视化点选生成Cron表达式，自动计算执行时间，支持中文自然语言解析，定时任务配置神器
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Panel: Config -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Expression Display -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white">生成结果</h2>
+                        <div class="flex gap-2">
+                            <button id="copyBtn" class="bg-primary hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                                复制表达式
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-darker rounded-xl p-4 border border-slate-700/50 mb-4">
+                        <code id="cronExpression" class="text-xl font-mono text-green-400 break-all">* * * * *</code>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-4">
+                        <p id="humanReadable" class="text-lg text-slate-300 font-medium">每分钟执行一次</p>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h2 class="text-xl font-semibold text-white mb-4">常用预设</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-xl text-left transition-all duration-200 border border-slate-700/50 hover:border-primary/50" data-cron="* * * * *">
+                            <div class="font-medium">每分钟</div>
+                            <div class="text-xs text-slate-400">* * * * *</div>
+                        </button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-xl text-left transition-all duration-200 border border-slate-700/50 hover:border-primary/50" data-cron="0 * * * *">
+                            <div class="font-medium">每小时</div>
+                            <div class="text-xs text-slate-400">0 * * * *</div>
+                        </button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-xl text-left transition-all duration-200 border border-slate-700/50 hover:border-primary/50" data-cron="0 0 * * *">
+                            <div class="font-medium">每天零点</div>
+                            <div class="text-xs text-slate-400">0 0 * * *</div>
+                        </button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-xl text-left transition-all duration-200 border border-slate-700/50 hover:border-primary/50" data-cron="0 9 * * 1-5">
+                            <div class="font-medium">工作日9点</div>
+                            <div class="text-xs text-slate-400">0 9 * * 1-5</div>
+                        </button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-xl text-left transition-all duration-200 border border-slate-700/50 hover:border-primary/50" data-cron="0 12 * * 6,0">
+                            <div class="font-medium">周末12点</div>
+                            <div class="text-xs text-slate-400">0 12 * * 6,0</div>
+                        </button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-xl text-left transition-all duration-200 border border-slate-700/50 hover:border-primary/50" data-cron="0 0 1 * *">
+                            <div class="font-medium">每月1号</div>
+                            <div class="text-xs text-slate-400">0 0 1 * *</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Field Configurators -->
+                <div class="space-y-6">
+                    <!-- Minutes -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">分钟 (0-59)</h3>
+                                <p class="text-sm text-slate-400">选择要执行的分钟</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="field-select-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="minute">全选</button>
+                                <button class="field-clear-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="minute">清空</button>
+                            </div>
+                        </div>
+                        <div id="minuteGrid" class="grid grid-cols-10 gap-2"></div>
+                        <div class="mt-4 flex gap-4 items-center text-sm text-slate-400">
+                            <div class="flex items-center gap-2">
+                                <span>间隔: </span>
+                                <input type="number" id="minuteStep" min="1" max="59" placeholder="步长" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-white text-sm">
+                                <button id="minuteApplyStep" class="bg-primary/80 hover:bg-primary text-white px-3 py-1 rounded-lg text-xs">应用</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hours -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">小时 (0-23)</h3>
+                                <p class="text-sm text-slate-400">选择要执行的小时</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="field-select-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="hour">全选</button>
+                                <button class="field-clear-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="hour">清空</button>
+                            </div>
+                        </div>
+                        <div id="hourGrid" class="grid grid-cols-12 gap-2"></div>
+                        <div class="mt-4 flex gap-4 items-center text-sm text-slate-400">
+                            <div class="flex items-center gap-2">
+                                <span>间隔: </span>
+                                <input type="number" id="hourStep" min="1" max="23" placeholder="步长" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-white text-sm">
+                                <button id="hourApplyStep" class="bg-primary/80 hover:bg-primary text-white px-3 py-1 rounded-lg text-xs">应用</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Days -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">日期 (1-31)</h3>
+                                <p class="text-sm text-slate-400">选择要执行的日期</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="field-select-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="day">全选</button>
+                                <button class="field-clear-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="day">清空</button>
+                            </div>
+                        </div>
+                        <div id="dayGrid" class="grid grid-cols-10 gap-2"></div>
+                        <div class="mt-4 flex gap-4 items-center text-sm text-slate-400">
+                            <div class="flex items-center gap-2">
+                                <span>间隔: </span>
+                                <input type="number" id="dayStep" min="1" max="31" placeholder="步长" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-white text-sm">
+                                <button id="dayApplyStep" class="bg-primary/80 hover:bg-primary text-white px-3 py-1 rounded-lg text-xs">应用</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Months -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">月份 (1-12)</h3>
+                                <p class="text-sm text-slate-400">选择要执行的月份</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="field-select-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="month">全选</button>
+                                <button class="field-clear-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="month">清空</button>
+                            </div>
+                        </div>
+                        <div id="monthGrid" class="grid grid-cols-6 gap-2"></div>
+                    </div>
+
+                    <!-- Weekdays -->
+                    <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">星期 (0-6, 0=周日)</h3>
+                                <p class="text-sm text-slate-400">选择要执行的星期</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="field-select-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="weekday">全选</button>
+                                <button class="field-clear-all text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg transition-all" data-field="weekday">清空</button>
+                            </div>
+                        </div>
+                        <div id="weekdayGrid" class="grid grid-cols-7 gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Info -->
+            <div class="space-y-8">
+                <!-- Natural Language Parser -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h2 class="text-xl font-semibold text-white mb-4">自然语言解析</h2>
+                    <div class="space-y-3">
+                        <input type="text" id="naturalInput" placeholder="例如：每周一到周五早上9点" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <button id="parseBtn" class="w-full bg-gradient-primary hover:opacity-90 text-white font-medium py-3 rounded-xl transition-all">
+                            解析为Cron表达式
+                        </button>
+                    </div>
+                    <div class="mt-4 text-sm text-slate-400">
+                        <p class="mb-2">支持的句式示例：</p>
+                        <ul class="space-y-1 text-xs">
+                            <li>• 每天凌晨3点</li>
+                            <li>• 每个工作日早上9点半</li>
+                            <li>• 每周五下午6点</li>
+                            <li>• 每月1号零点</li>
+                            <li>• 每两个小时</li>
+                            <li>• 每隔30分钟</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Execution Times -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h2 class="text-xl font-semibold text-white mb-4">未来执行时间</h2>
+                    <div id="executionTimes" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        <div class="animate-pulse-slow text-slate-400 text-sm text-center py-4">
+                            加载中...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cron Cheat Sheet -->
+                <div class="bg-dark rounded-2xl p-6 border border-slate-700/50 shadow-xl">
+                    <h2 class="text-xl font-semibold text-white mb-4">Cron语法速查表</h2>
+                    <div class="space-y-4 text-sm">
+                        <div class="bg-slate-800/50 rounded-xl p-3">
+                            <div class="font-mono text-green-400 mb-1">* * * * *</div>
+                            <div class="text-slate-300 text-xs">分钟 小时 日期 月份 星期</div>
+                        </div>
+                        <div class="space-y-2 text-slate-400">
+                            <div class="flex justify-between">
+                                <span>*</span>
+                                <span>匹配任意值</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>,</span>
+                                <span>分隔多个值 (1,3,5)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>-</span>
+                                <span>范围 (1-5)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>/</span>
+                                <span>步长 (*/5 每5个)</span>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-700/50">
+                            <h3 class="text-white font-medium mb-2">特殊表达式</h3>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-300">@yearly</span>
+                                    <span class="text-slate-400">每年 0 0 1 1 *</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-300">@monthly</span>
+                                    <span class="text-slate-400">每月 0 0 1 * *</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-300">@weekly</span>
+                                    <span class="text-slate-400">每周 0 0 * * 0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-300">@daily</span>
+                                    <span class="text-slate-400">每天 0 0 * * *</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-300">@hourly</span>
+                                    <span class="text-slate-400">每小时 0 * * * *</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-slate-500 text-sm">
+            <p>旺仔工具百宝箱 © 2026 | 纯本地运行，数据绝不上传</p>
+        </div>
+    </div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+        const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+        // State
+        const state = {
+            minute: new Set(),
+            hour: new Set(),
+            day: new Set(),
+            month: new Set(),
+            weekday: new Set()
+        };
+
+        // Initialize all fields as * (all selected)
+        function initializeState() {
+            for (let i = 0; i < 60; i++) state.minute.add(i);
+            for (let i = 0; i < 24; i++) state.hour.add(i);
+            for (let i = 1; i <= 31; i++) state.day.add(i);
+            for (let i = 1; i <= 12; i++) state.month.add(i);
+            for (let i = 0; i < 7; i++) state.weekday.add(i);
+        }
+
+        // Generate grid for a field
+        function generateGrid(containerId, field, start, end, labels = null) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            for (let i = start; i <= end; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cron-cell cron-cell-active';
+                cell.dataset.value = i;
+                cell.dataset.field = field;
+                cell.textContent = labels ? labels[i - start] : i;
+                
+                cell.addEventListener('click', (e) => {
+                    const value = parseInt(e.target.dataset.value);
+                    const field = e.target.dataset.field;
+                    
+                    if (e.shiftKey && state[field].size > 0) {
+                        // Range selection
+                        const values = Array.from(state[field]).sort((a, b) => a - b);
+                        const last = values[values.length - 1];
+                        const min = Math.min(last, value);
+                        const max = Math.max(last, value);
+                        
+                        for (let v = min; v <= max; v++) {
+                            state[field].add(v);
+                        }
+                    } else {
+                        // Toggle single value
+                        if (state[field].has(value)) {
+                            state[field].delete(value);
+                        } else {
+                            state[field].add(value);
+                        }
+                    }
+                    
+                    updateGrid(field);
+                    updateCronExpression();
+                });
+                
+                container.appendChild(cell);
+            }
+        }
+
+        // Update grid appearance based on state
+        function updateGrid(field) {
+            const cells = document.querySelectorAll(`[data-field="${field}"]`);
+            cells.forEach(cell => {
+                const value = parseInt(cell.dataset.value);
+                if (state[field].has(value)) {
+                    cell.classList.remove('cron-cell-inactive');
+                    cell.classList.add('cron-cell-active');
+                } else {
+                    cell.classList.remove('cron-cell-active');
+                    cell.classList.add('cron-cell-inactive');
+                }
+            });
+        }
+
+        // Convert state to cron field string
+        function fieldToString(field, min, max) {
+            const values = Array.from(state[field]).sort((a, b) => a - b);
+            
+            if (values.length === 0) return '*';
+            if (values.length === max - min + 1) return '*';
+            
+            // Check for step pattern
+            if (values.length > 1) {
+                const step = values[1] - values[0];
+                let isStep = true;
+                for (let i = 2; i < values.length; i++) {
+                    if (values[i] - values[i-1] !== step) {
+                        isStep = false;
+                        break;
+                    }
+                }
+                if (isStep && values[0] === min && values[values.length-1] + step > max) {
+                    return `*/${step}`;
+                }
+            }
+            
+            // Check for ranges
+            const ranges = [];
+            let start = values[0];
+            let prev = values[0];
+            
+            for (let i = 1; i < values.length; i++) {
+                if (values[i] !== prev + 1) {
+                    ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                    start = values[i];
+                }
+                prev = values[i];
+            }
+            ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+            
+            return ranges.join(',');
+        }
+
+        // Generate full cron expression
+        function generateCronExpression() {
+            const minute = fieldToString('minute', 0, 59);
+            const hour = fieldToString('hour', 0, 23);
+            const day = fieldToString('day', 1, 31);
+            const month = fieldToString('month', 1, 12);
+            const weekday = fieldToString('weekday', 0, 6);
+            
+            return `${minute} ${hour} ${day} ${month} ${weekday}`;
+        }
+
+        // Generate human readable description
+        function generateHumanReadable(cron) {
+            const [minute, hour, day, month, weekday] = cron.split(' ');
+            
+            let desc = '';
+            
+            // Time part
+            if (minute === '*' && hour === '*') {
+                desc += '每分钟';
+            } else if (minute === '0' && hour === '*') {
+                desc += '每小时';
+            } else if (hour !== '*') {
+                const hourStr = hour.includes(',') ? hour : `${hour}点`;
+                const minuteStr = minute === '0' ? '' : `${minute}分`;
+                desc += `${hourStr}${minuteStr}`;
+            } else {
+                desc += `每小时的第${minute}分钟`;
+            }
+            
+            // Date part
+            if (day !== '*' || month !== '*' || weekday !== '*') {
+                if (weekday !== '*' && day !== '*') {
+                    desc += `，每月${day}号和星期${weekday.replace('0', '日')}`;
+                } else if (weekday !== '*') {
+                    const weekdayStr = weekday.replace('0', '日');
+                    desc += `，每周${weekdayStr}`;
+                } else if (day !== '*') {
+                    desc += `，每月${day}号`;
+                }
+                
+                if (month !== '*') {
+                    desc += `，${month}月`;
+                }
+            }
+            
+            desc += '执行';
+            
+            // Special cases
+            if (cron === '0 0 * * *') return '每天零点执行';
+            if (cron === '0 0 * * 1-5') return '每个工作日零点执行';
+            if (cron === '0 9 * * 1-5') return '每个工作日早上9点执行';
+            if (cron === '0 12 * * 6,0') return '周末中午12点执行';
+            if (cron === '0 0 1 * *') return '每月1号零点执行';
+            
+            return desc;
+        }
+
+        // Parse natural language to cron
+        function parseNaturalLanguage(text) {
+            text = text.toLowerCase();
+            
+            // Time patterns
+            if (text.includes('每分钟')) return '* * * * *';
+            if (text.includes('每小时')) return '0 * * * *';
+            if (text.includes('每天')) {
+                if (text.match(/(\d{1,2})[点.:时]/)) {
+                    const hour = text.match(/(\d{1,2})[点.:时]/)[1];
+                    const minuteMatch = text.match(/[点.:时](\d{1,2})[分]?/);
+                    const minute = minuteMatch ? minuteMatch[1] : '0';
+                    return `${minute} ${hour} * * *`;
+                }
+                return '0 0 * * *';
+            }
+            if (text.includes('工作日') || text.includes('周一到周五') || text.includes('星期一到星期五')) {
+                if (text.match(/(\d{1,2})[点.:时]/)) {
+                    const hour = text.match(/(\d{1,2})[点.:时]/)[1];
+                    const minuteMatch = text.match(/[点.:时](\d{1,2})[分]?/);
+                    const minute = minuteMatch ? minuteMatch[1] : '0';
+                    return `${minute} ${hour} * * 1-5`;
+                }
+                return '0 9 * * 1-5';
+            }
+            if (text.includes('周末') || text.includes('周六周日') || text.includes('星期六星期天')) {
+                if (text.match(/(\d{1,2})[点.:时]/)) {
+                    const hour = text.match(/(\d{1,2})[点.:时]/)[1];
+                    const minuteMatch = text.match(/[点.:时](\d{1,2})[分]?/);
+                    const minute = minuteMatch ? minuteMatch[1] : '0';
+                    return `${minute} ${hour} * * 6,0`;
+                }
+                return '0 12 * * 6,0';
+            }
+            if (text.includes('每周')) {
+                const weekMatch = text.match(/周(.)/);
+                if (weekMatch) {
+                    const dayMap = {'日':0,'天':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6};
+                    const weekday = dayMap[weekMatch[1]];
+                    if (text.match(/(\d{1,2})[点.:时]/)) {
+                        const hour = text.match(/(\d{1,2})[点.:时]/)[1];
+                        const minuteMatch = text.match(/[点.:时](\d{1,2})[分]?/);
+                        const minute = minuteMatch ? minuteMatch[1] : '0';
+                        return `${minute} ${hour} * * ${weekday}`;
+                    }
+                    return `0 0 * * ${weekday}`;
+                }
+                return '0 0 * * 0';
+            }
+            if (text.includes('每月')) {
+                if (text.match(/(\d{1,2})[号日]/)) {
+                    const day = text.match(/(\d{1,2})[号日]/)[1];
+                    if (text.match(/(\d{1,2})[点.:时]/)) {
+                        const hour = text.match(/(\d{1,2})[点.:时]/)[1];
+                        const minuteMatch = text.match(/[点.:时](\d{1,2})[分]?/);
+                        const minute = minuteMatch ? minuteMatch[1] : '0';
+                        return `${minute} ${hour} ${day} * *`;
+                    }
+                    return `0 0 ${day} * *`;
+                }
+                return '0 0 1 * *';
+            }
+            if (text.includes('每隔') || text.includes('每')) {
+                if (text.match(/(\d{1,2})小时/)) {
+                    const hours = text.match(/(\d{1,2})小时/)[1];
+                    return `0 */${hours} * * *`;
+                }
+                if (text.match(/(\d{1,2})分钟/)) {
+                    const mins = text.match(/(\d{1,2})分钟/)[1];
+                    return `*/${mins} * * * *`;
+                }
+            }
+            
+            return '* * * * *';
+        }
+
+        // Calculate next execution times
+        function calculateNextRuns(cron, count = 10) {
+            const [minutePart, hourPart, dayPart, monthPart, weekdayPart] = cron.split(' ');
+            const times = [];
+            let current = DateTime.now().startOf('minute').plus({ minutes: 1 });
+            
+            function matches(value, part, min, max) {
+                if (part === '*') return true;
+                
+                // Step syntax */n
+                if (part.startsWith('*/')) {
+                    const step = parseInt(part.slice(2));
+                    return value % step === 0;
+                }
+                
+                // List of values
+                if (part.includes(',')) {
+                    return part.split(',').some(p => {
+                        if (p.includes('-')) {
+                            const [start, end] = p.split('-').map(Number);
+                            return value >= start && value <= end;
+                        }
+                        return parseInt(p) === value;
+                    });
+                }
+                
+                // Range
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(Number);
+                    return value >= start && value <= end;
+                }
+                
+                return parseInt(part) === value;
+            }
+            
+            while (times.length < count && times.length < 20) {
+                const minute = current.minute;
+                const hour = current.hour;
+                const day = current.day;
+                const month = current.month;
+                const weekday = current.weekday % 7; // luxon uses 1-7, convert to 0-6
+                
+                if (
+                    matches(minute, minutePart, 0, 59) &&
+                    matches(hour, hourPart, 0, 23) &&
+                    matches(day, dayPart, 1, 31) &&
+                    matches(month, monthPart, 1, 12) &&
+                    matches(weekday, weekdayPart, 0, 6)
+                ) {
+                    times.push(current);
+                }
+                
+                current = current.plus({ minutes: 1 });
+            }
+            
+            return times;
+        }
+
+        // Update execution times display
+        function updateExecutionTimes(cron) {
+            const container = document.getElementById('executionTimes');
+            const times = calculateNextRuns(cron);
+            
+            if (times.length === 0) {
+                container.innerHTML = '<div class="text-red-400 text-sm text-center py-4">未找到匹配的执行时间</div>';
+                return;
+            }
+            
+            container.innerHTML = times.map((time, index) => {
+                const now = DateTime.now();
+                const diff = time.diff(now, ['days', 'hours', 'minutes']);
+                let relative = '';
+                
+                if (diff.days > 0) relative += `${diff.days}天`;
+                if (diff.hours > 0) relative += `${diff.hours}小时`;
+                if (diff.minutes > 0) relative += `${diff.minutes}分钟`;
+                if (relative === '') relative = '即将执行';
+                else relative += '后';
+                
+                return `
+                    <div class="bg-slate-800/50 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                            <div class="text-white font-medium">${time.toFormat('yyyy-MM-dd HH:mm')}</div>
+                            <div class="text-xs text-slate-400">${weekdays[time.weekday % 7]}</div>
+                        </div>
+                        <div class="text-xs text-primary">${relative}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update entire UI
+        function updateCronExpression() {
+            const cron = generateCronExpression();
+            document.getElementById('cronExpression').textContent = cron;
+            document.getElementById('humanReadable').textContent = generateHumanReadable(cron);
+            updateExecutionTimes(cron);
+        }
+
+        // Load cron expression into state
+        function loadCron(cron) {
+            const [minuteStr, hourStr, dayStr, monthStr, weekdayStr] = cron.split(' ');
+            
+            function parseField(fieldStr, min, max) {
+                const values = new Set();
+                
+                if (fieldStr === '*') {
+                    for (let i = min; i <= max; i++) values.add(i);
+                    return values;
+                }
+                
+                // Step syntax
+                if (fieldStr.startsWith('*/')) {
+                    const step = parseInt(fieldStr.slice(2));
+                    for (let i = min; i <= max; i += step) {
+                        values.add(i);
+                    }
+                    return values;
+                }
+                
+                // Split by commas
+                const parts = fieldStr.split(',');
+                parts.forEach(part => {
+                    if (part.includes('-')) {
+                        const [start, end] = part.split('-').map(Number);
+                        for (let i = start; i <= end; i++) {
+                            values.add(i);
+                        }
+                    } else {
+                        values.add(parseInt(part));
+                    }
+                });
+                
+                return values;
+            }
+            
+            state.minute = parseField(minuteStr, 0, 59);
+            state.hour = parseField(hourStr, 0, 23);
+            state.day = parseField(dayStr, 1, 31);
+            state.month = parseField(monthStr, 1, 12);
+            state.weekday = parseField(weekdayStr, 0, 6);
+            
+            // Update all grids
+            updateGrid('minute');
+            updateGrid('hour');
+            updateGrid('day');
+            updateGrid('month');
+            updateGrid('weekday');
+            
+            updateCronExpression();
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeState();
+            
+            // Generate grids
+            generateGrid('minuteGrid', 'minute', 0, 59);
+            generateGrid('hourGrid', 'hour', 0, 23);
+            generateGrid('dayGrid', 'day', 1, 31);
+            generateGrid('monthGrid', 'month', 1, 12, months);
+            generateGrid('weekdayGrid', 'weekday', 0, 6, weekdays);
+            
+            updateCronExpression();
+            
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cron = btn.dataset.cron;
+                    loadCron(cron);
+                });
+            });
+            
+            // Copy button
+            document.getElementById('copyBtn').addEventListener('click', async () => {
+                const cron = document.getElementById('cronExpression').textContent;
+                await navigator.clipboard.writeText(cron);
+                
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path> 已复制';
+                btn.classList.add('bg-green-600');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('bg-green-600');
+                }, 2000);
+            });
+            
+            // Parse button
+            document.getElementById('parseBtn').addEventListener('click', () => {
+                const input = document.getElementById('naturalInput').value.trim();
+                if (!input) return;
+                
+                const cron = parseNaturalLanguage(input);
+                loadCron(cron);
+            });
+            
+            // Natural input enter
+            document.getElementById('naturalInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('parseBtn').click();
+                }
+            });
+            
+            // Field select all / clear
+            document.querySelectorAll('.field-select-all').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const field = btn.dataset.field;
+                    const ranges = {
+                        minute: [0, 59],
+                        hour: [0, 23],
+                        day: [1, 31],
+                        month: [1, 12],
+                        weekday: [0, 6]
+                    };
+                    const [min, max] = ranges[field];
+                    
+                    state[field].clear();
+                    for (let i = min; i <= max; i++) {
+                        state[field].add(i);
+                    }
+                    
+                    updateGrid(field);
+                    updateCronExpression();
+                });
+            });
+            
+            document.querySelectorAll('.field-clear-all').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const field = btn.dataset.field;
+                    state[field].clear();
+                    updateGrid(field);
+                    updateCronExpression();
+                });
+            });
+            
+            // Step apply buttons
+            document.getElementById('minuteApplyStep').addEventListener('click', () => {
+                const step = parseInt(document.getElementById('minuteStep').value);
+                if (step >= 1 && step <= 59) {
+                    state.minute.clear();
+                    for (let i = 0; i < 60; i += step) {
+                        state.minute.add(i);
+                    }
+                    updateGrid('minute');
+                    updateCronExpression();
+                }
+            });
+            
+            document.getElementById('hourApplyStep').addEventListener('click', () => {
+                const step = parseInt(document.getElementById('hourStep').value);
+                if (step >= 1 && step <= 23) {
+                    state.hour.clear();
+                    for (let i = 0; i < 24; i += step) {
+                        state.hour.add(i);
+                    }
+                    updateGrid('hour');
+                    updateCronExpression();
+                }
+            });
+            
+            document.getElementById('dayApplyStep').addEventListener('click', () => {
+                const step = parseInt(document.getElementById('dayStep').value);
+                if (step >= 1 && step <= 31) {
+                    state.day.clear();
+                    for (let i = 1; i <= 31; i += step) {
+                        state.day.add(i);
+                    }
+                    updateGrid('day');
+                    updateCronExpression();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

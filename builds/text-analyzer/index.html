@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文字统计分析器 | Text Analyzer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f1a;--card:#1a1a2e;--border:#2a2a4a;--text:#e8e8f0;--text2:#8888aa;--accent:#6c63ff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--pink:#f472b6;--blue:#60a5fa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:24px;text-align:center;margin-bottom:4px}
+.subtitle{text-align:center;color:var(--text2);font-size:13px;margin-bottom:20px}
+.editor{position:relative;margin-bottom:16px}
+textarea{width:100%;height:220px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-family:inherit;outline:none;resize:vertical;line-height:1.8}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:#555}
+.clear-btn{position:absolute;top:10px;right:10px;background:var(--border);border:none;color:var(--text2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px}
+.clear-btn:hover{background:var(--accent);color:#fff}
+.presets{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.preset{padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:12px}
+.preset:hover{border-color:var(--accent);color:var(--accent)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-v{font-size:26px;font-weight:700}
+.stat-v.purple{color:var(--accent2)}.stat-v.green{color:var(--green)}.stat-v.orange{color:var(--orange)}.stat-v.pink{color:var(--pink)}.stat-v.blue{color:var(--blue)}
+.stat-l{font-size:11px;color:var(--text2);margin-top:3px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.section h3{font-size:14px;margin-bottom:12px;color:var(--accent2)}
+.bar-chart{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:flex;align-items:center;gap:8px}
+.bar-label{font-size:12px;color:var(--text2);min-width:60px;text-align:right}
+.bar-wrap{flex:1;height:20px;background:var(--border);border-radius:4px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:4px;transition:width .3s;min-width:2px}
+.bar-val{font-size:11px;color:var(--text2);min-width:50px}
+.freq-list{display:flex;flex-wrap:wrap;gap:6px}
+.freq-item{padding:4px 10px;border-radius:6px;background:var(--border);font-size:13px;display:flex;align-items:center;gap:4px}
+.freq-item .ch{color:var(--accent2);font-weight:600}
+.freq-item .ct{color:var(--text2);font-size:11px}
+.time-row{display:flex;gap:16px;flex-wrap:wrap}
+.time-card{flex:1;min-width:120px;text-align:center;padding:12px;background:var(--border);border-radius:8px}
+.time-card .tv{font-size:20px;font-weight:700;color:var(--green)}
+.time-card .tl{font-size:11px;color:var(--text2);margin-top:2px}
+.copy-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-size:12px;transition:all .2s}
+.copy-btn:hover{background:var(--accent);color:#fff}
+.footer{text-align:center;color:var(--text2);font-size:11px;margin-top:16px;padding:12px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>✍️ 文字统计分析器</h1>
+<p class="subtitle">粘贴文字，一秒看清字数、阅读时间、字符构成、高频词</p>
+
+<div class="presets">
+<button class="preset" onclick="loadSample(0)">📝 公众号示例</button>
+<button class="preset" onclick="loadSample(1)">💻 技术文档</button>
+<button class="preset" onclick="loadSample(2)">📖 文学片段</button>
+</div>
+
+<div class="editor">
+<textarea id="input" placeholder="在这里粘贴或输入文字..." oninput="analyze()"></textarea>
+<button class="clear-btn" onclick="document.getElementById('input').value='';analyze()" title="清空">✕</button>
+</div>
+
+<div class="stats-grid" id="statsGrid"></div>
+
+<div class="section">
+<h3>⏱️ 时间估算</h3>
+<div class="time-row" id="timeRow"></div>
+</div>
+
+<div class="section">
+<h3>📊 字符构成</h3>
+<div class="bar-chart" id="barChart"></div>
+</div>
+
+<div class="section">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<h3 style="margin:0">🔤 高频字符 Top 15</h3>
+</div>
+<div class="freq-list" id="freqList"></div>
+</div>
+
+<div style="text-align:center;margin-top:12px">
+<button class="copy-btn" onclick="copyStats()">📋 复制统计结果</button>
+</div>
+
+<div class="footer">✍️ 文字统计分析器 · 为内容创作者打造 · 零外部依赖</div>
+</div>
+
+<script>
+const SAMPLES=[
+`人工智能正在重塑我们的工作方式。从代码生成到内容创作，从数据分析到客户服务，AI工具已经渗透到几乎每一个行业。
+
+但真正的问题不是"AI能做什么"，而是"我们该如何与AI协作"。最优秀的从业者不是被AI替代的人，而是学会驾驭AI的人。
+
+三个关键建议：
+1. 把AI当作思维伙伴，而非执行工具
+2. 培养提问能力，好的prompt是一种新技能
+3. 保持批判性思维，AI的输出需要人类判断
+
+未来属于那些既懂技术又懂人性的人。`,
+`## API 接口文档
+
+### POST /api/v1/chat/completions
+
+请求参数：
+- model (string): 模型名称，如 "gpt-4" 或 "claude-3"
+- messages (array): 消息数组，每条包含 role 和 content
+- temperature (float): 采样温度，范围 0-2，默认 1.0
+- max_tokens (int): 最大生成 token 数
+
+返回格式：
+\`\`\`json
+{
+  "id": "chatcmpl-xxx",
+  "choices": [{"message": {"role": "assistant", "content": "..."}}],
+  "usage": {"prompt_tokens": 10, "completion_tokens": 20}
+}
+\`\`\`
+
+注意：请求频率限制为 60 次/分钟。超出限制将返回 429 状态码。`,
+`月光透过半掩的窗帘洒进来，在地板上画出一道银白色的光带。她坐在书桌前，手指轻轻翻动着泛黄的书页，空气中弥漫着旧纸张特有的气息。
+
+时钟滴答作响，指针已经越过了午夜。整栋楼都安静下来了，只有她房间的灯还亮着。这是她最喜欢的时刻——世界沉睡，而她在文字里醒着。
+
+一杯凉透的茶搁在手边，茶叶沉到了杯底。她已经忘了它的存在，就像忘了时间的流逝。书里的故事比现实更真实，至少在这个深夜是这样。`
+];
+
+function analyze(){
+const t=document.getElementById('input').value;
+const len=t.length;
+const chinese=(t.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)||[]).length;
+const english=(t.match(/[a-zA-Z]/g)||[]).length;
+const digits=(t.match(/[0-9]/g)||[]).length;
+const cnPunc=(t.match(/[，。！？、；：""''（）【】《》—…·～]/g)||[]).length;
+const enPunc=(t.match(/[.,!?;:'"()\[\]{}<>\-\/\\@#$%^&*_+=|`~]/g)||[]).length;
+const spaces=(t.match(/\s/g)||[]).length;
+const other=len-chinese-english-digits-cnPunc-enPunc-spaces;
+const lines=t?t.split('\n').length:0;
+const paragraphs=t?t.split(/\n\s*\n/).filter(p=>p.trim()).length:0;
+const sentences=(t.match(/[。！？.!?]+/g)||[]).length;
+const enWords=(t.match(/[a-zA-Z]+/g)||[]).length;
+const noSpace=len-spaces;
+
+// Reading time: Chinese ~400 chars/min, English ~200 words/min
+const readMin=chinese/400+enWords/200;
+// Speaking time: Chinese ~250 chars/min
+const speakMin=chinese/250+enWords/150;
+// Typing time: ~50 chars/min for Chinese
+const typeMin=chinese/50+enWords/40;
+
+document.getElementById('statsGrid').innerHTML=[
+{v:len,l:'总字符数',c:'purple'},
+{v:noSpace,l:'不含空格',c:'purple'},
+{v:chinese,l:'中文字符',c:'pink'},
+{v:english,l:'英文字母',c:'blue'},
+{v:enWords,l:'英文单词',c:'blue'},
+{v:digits,l:'数字',c:'orange'},
+{v:sentences,l:'句子数',c:'green'},
+{v:paragraphs,l:'段落数',c:'green'},
+].map(s=>`<div class="stat"><div class="stat-v ${s.c}">${s.v}</div><div class="stat-l">${s.l}</div></div>`).join('');
+
+document.getElementById('timeRow').innerHTML=[
+{v:fmtTime(readMin),l:'📖 默读时间'},
+{v:fmtTime(speakMin),l:'🎤 朗读时间'},
+{v:fmtTime(typeMin),l:'⌨️ 打字时间'},
+].map(t=>`<div class="time-card"><div class="tv">${t.v}</div><div class="tl">${t.l}</div></div>`).join('');
+
+const total=Math.max(len,1);
+const bars=[
+{label:'中文',val:chinese,color:'var(--pink)'},
+{label:'英文',val:english,color:'var(--blue)'},
+{label:'数字',val:digits,color:'var(--orange)'},
+{label:'标点',val:cnPunc+enPunc,color:'var(--accent2)'},
+{label:'空白',val:spaces,color:'var(--text2)'},
+];
+document.getElementById('barChart').innerHTML=bars.map(b=>{
+const pct=(b.val/total*100);
+return `<div class="bar-row"><span class="bar-label">${b.label}</span><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${b.color}"></div></div><span class="bar-val">${b.val} (${pct.toFixed(1)}%)</span></div>`;
+}).join('');
+
+// Frequency analysis - exclude spaces and common punctuation
+const chars=t.replace(/[\s，。！？、；：""''（）【】《》—…·～.,!?;:'"()\[\]{}<>\-\/\\@#$%^&*_+=|`~\n\r\t]/g,'');
+const freq={};
+for(const c of chars)freq[c]=(freq[c]||0)+1;
+const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,15);
+document.getElementById('freqList').innerHTML=top.length?top.map(([ch,ct])=>
+`<div class="freq-item"><span class="ch">${ch}</span><span class="ct">×${ct}</span></div>`
+).join(''):'<span style="color:var(--text2);font-size:13px">输入文字后显示高频字符</span>';
+}
+
+function fmtTime(min){
+if(min<1)return Math.round(min*60)+'秒';
+if(min<60)return Math.round(min)+'分钟';
+return Math.floor(min/60)+'时'+Math.round(min%60)+'分';
+}
+
+function loadSample(i){document.getElementById('input').value=SAMPLES[i];analyze()}
+
+function copyStats(){
+const t=document.getElementById('input').value;
+if(!t){alert('请先输入文字');return}
+const len=t.length;
+const chinese=(t.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)||[]).length;
+const english=(t.match(/[a-zA-Z]/g)||[]).length;
+const enWords=(t.match(/[a-zA-Z]+/g)||[]).length;
+const sentences=(t.match(/[。！？.!?]+/g)||[]).length;
+const paragraphs=t.split(/\n\s*\n/).filter(p=>p.trim()).length;
+const readMin=chinese/400+enWords/200;
+const txt=`📊 文字统计\n总字符: ${len} | 中文: ${chinese} | 英文: ${english}\n句子: ${sentences} | 段落: ${paragraphs}\n阅读时间: ${fmtTime(readMin)}`;
+navigator.clipboard.writeText(txt).then(()=>alert('已复制！'));
+}
+
+analyze();
+</script>
+</body>
+</html>

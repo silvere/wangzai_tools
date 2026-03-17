@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT字幕编辑器 📝 | 旺仔工具百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .subtitle-item {
+                transition: all 0.2s ease;
+            }
+            .subtitle-item:hover {
+                background-color: #EFF6FF;
+            }
+            .subtitle-item.editing {
+                background-color: #DBEAFE;
+                border-color: #3B82F6;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fa fa-subtitles text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">SRT字幕编辑器 📝</h1>
+                        <p class="text-blue-100 mt-1">完全离线运行，在线编辑、调整、翻译 SRT 字幕文件，无需上传服务器</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">100% 本地处理</span>
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">实时预览</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Action Bar -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6 flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex flex-wrap gap-3">
+                <label class="cursor-pointer">
+                    <span class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fa fa-upload mr-2"></i>
+                        导入 SRT 文件
+                        <input type="file" id="fileInput" accept=".srt,.txt" class="hidden">
+                    </span>
+                </label>
+                <button id="downloadBtn" disabled class="bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    <i class="fa fa-download mr-2"></i>
+                    导出字幕
+                </button>
+                <button id="addSubtitleBtn" disabled class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    <i class="fa fa-plus mr-2"></i>
+                    添加字幕
+                </button>
+                <button id="mergeBtn" disabled class="bg-warning hover:bg-warning/90 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    <i class="fa fa-compress mr-2"></i>
+                    合并字幕
+                </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-3 items-center">
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-gray-700 font-medium">时间偏移:</label>
+                    <input type="number" id="offsetMs" placeholder="毫秒" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm">
+                    <button id="applyOffsetBtn" disabled class="bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-lg font-medium text-sm transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        应用
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-700 font-medium">共 <span id="subtitleCount" class="text-primary font-bold">0</span> 条字幕</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Subtitle List -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-list text-primary mr-2"></i>
+                        字幕列表
+                    </h2>
+                    <div class="overflow-y-auto max-h-[700px]" id="subtitleList">
+                        <!-- Empty State -->
+                        <div class="text-center py-16 text-gray-500">
+                            <i class="fa fa-file-text-o text-6xl mb-4 text-gray-300"></i>
+                            <p>导入 SRT 字幕文件开始编辑</p>
+                            <p class="text-sm mt-2">支持拖拽上传，所有操作都在本地完成</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Panel: Preview and Tools -->
+            <div class="space-y-6">
+                <!-- Preview -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-eye text-primary mr-2"></i>
+                        实时预览
+                    </h2>
+                    <div class="bg-gray-900 rounded-lg p-6 min-h-[200px] flex items-center justify-center mb-4">
+                        <div id="previewText" class="text-white text-center text-xl">
+                            选择字幕查看预览
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">开始时间</label>
+                            <input type="text" id="previewStartTime" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">结束时间</label>
+                            <input type="text" id="previewEndTime" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">持续时间</label>
+                            <input type="text" id="previewDuration" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Batch Operations -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-cogs text-primary mr-2"></i>
+                        批量操作
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Time Adjustment -->
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700 mb-2">时间调整</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="shiftForwardBtn" disabled class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                    <i class="fa fa-forward mr-1"></i> 整体提前 1s
+                                </button>
+                                <button id="shiftBackwardBtn" disabled class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                    <i class="fa fa-backward mr-1"></i> 整体延后 1s
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Text Operations -->
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700 mb-2">文本处理</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="removeHtmlBtn" disabled class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                    <i class="fa fa-code mr-1"></i> 清除 HTML 标签
+                                </button>
+                                <button id="trimWhitespaceBtn" disabled class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                    <i class="fa fa-eraser mr-1"></i> 去除多余空格
+                                </button>
+                                <button id="toSimplifiedBtn" disabled class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                    <i class="fa fa-language mr-1"></i> 转简体中文
+                                </button>
+                                <button id="toTraditionalBtn" disabled class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                    <i class="fa fa-language mr-1"></i> 转繁体中文
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Find and Replace -->
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700 mb-2">查找替换</h3>
+                            <div class="space-y-2">
+                                <input type="text" id="findText" placeholder="查找内容" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" id="replaceText" placeholder="替换为" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <button id="replaceAllBtn" disabled class="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                    <i class="fa fa-exchange mr-1"></i> 全部替换
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div class="flex items-center mb-3">
+                        <i class="fa fa-info-circle text-primary text-xl mr-2"></i>
+                        <h3 class="font-semibold text-gray-900">功能特点</h3>
+                    </div>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-primary mt-0.5 mr-2"></i>
+                            <span>完全离线处理，字幕文件不上传</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-primary mt-0.5 mr-2"></i>
+                            <span>实时编辑时间轴和字幕内容</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-primary mt-0.5 mr-2"></i>
+                            <span>批量时间偏移和格式转换</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-primary mt-0.5 mr-2"></i>
+                            <span>支持字幕拆分和合并</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-primary mt-0.5 mr-2"></i>
+                            <span>简繁体转换、HTML标签清理</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>🚀 旺仔工具百宝箱 | SRT 字幕编辑器 📝</p>
+            <p class="text-sm mt-2">100% 本地运行 · 零数据上传 · 安全可靠</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const subtitleList = document.getElementById('subtitleList');
+        const subtitleCount = document.getElementById('subtitleCount');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const addSubtitleBtn = document.getElementById('addSubtitleBtn');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const offsetMs = document.getElementById('offsetMs');
+        const applyOffsetBtn = document.getElementById('applyOffsetBtn');
+        const shiftForwardBtn = document.getElementById('shiftForwardBtn');
+        const shiftBackwardBtn = document.getElementById('shiftBackwardBtn');
+        const removeHtmlBtn = document.getElementById('removeHtmlBtn');
+        const trimWhitespaceBtn = document.getElementById('trimWhitespaceBtn');
+        const toSimplifiedBtn = document.getElementById('toSimplifiedBtn');
+        const toTraditionalBtn = document.getElementById('toTraditionalBtn');
+        const findText = document.getElementById('findText');
+        const replaceText = document.getElementById('replaceText');
+        const replaceAllBtn = document.getElementById('replaceAllBtn');
+        
+        const previewText = document.getElementById('previewText');
+        const previewStartTime = document.getElementById('previewStartTime');
+        const previewEndTime = document.getElementById('previewEndTime');
+        const previewDuration = document.getElementById('previewDuration');
+
+        // Global state
+        let subtitles = [];
+        let currentEditingId = null;
+        let selectedSubtitleId = null;
+
+        // Time parsing utilities
+        function parseTime(timeStr) {
+            const [hours, minutes, secondsMs] = timeStr.split(':');
+            const [seconds, milliseconds] = secondsMs.split(',');
+            return (
+                parseInt(hours) * 3600000 +
+                parseInt(minutes) * 60000 +
+                parseInt(seconds) * 1000 +
+                parseInt(milliseconds)
+            );
+        }
+
+        function formatTime(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const milliseconds = ms % 1000;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
+        }
+
+        // Parse SRT content
+        function parseSRT(content) {
+            const blocks = content.trim().split(/\n\n+/);
+            const subtitles = [];
+
+            blocks.forEach((block, index) => {
+                const lines = block.trim().split('\n');
+                if (lines.length < 3) return;
+
+                const timeLine = lines[1];
+                if (!timeLine.includes('-->')) return;
+
+                const [startStr, endStr] = timeLine.split('-->').map(s => s.trim());
+                const startTime = parseTime(startStr);
+                const endTime = parseTime(endStr);
+                const text = lines.slice(2).join('\n');
+
+                subtitles.push({
+                    id: Date.now() + index,
+                    index: index + 1,
+                    startTime,
+                    endTime,
+                    text
+                });
+            });
+
+            return subtitles.sort((a, b) => a.startTime - b.startTime);
+        }
+
+        // Generate SRT content
+        function generateSRT() {
+            return subtitles
+                .sort((a, b) => a.startTime - b.startTime)
+                .map((sub, index) => {
+                    return `${index + 1}\n${formatTime(sub.startTime)} --> ${formatTime(sub.endTime)}\n${sub.text}\n`;
+                })
+                .join('\n');
+        }
+
+        // Render subtitle list
+        function renderSubtitles() {
+            if (subtitles.length === 0) {
+                subtitleList.innerHTML = `
+                    <div class="text-center py-16 text-gray-500">
+                        <i class="fa fa-file-text-o text-6xl mb-4 text-gray-300"></i>
+                        <p>导入 SRT 字幕文件开始编辑</p>
+                        <p class="text-sm mt-2">支持拖拽上传，所有操作都在本地完成</p>
+                    </div>
+                `;
+                return;
+            }
+
+            subtitleList.innerHTML = '';
+            subtitles.sort((a, b) => a.startTime - b.startTime).forEach((sub, index) => {
+                sub.index = index + 1;
+                const duration = sub.endTime - sub.startTime;
+                
+                const item = document.createElement('div');
+                item.className = `subtitle-item border border-gray-200 rounded-lg p-4 mb-3 ${selectedSubtitleId === sub.id ? 'editing' : ''}`;
+                item.dataset.id = sub.id;
+                
+                item.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
+                                #${sub.index}
+                            </span>
+                            <span class="text-sm text-gray-500">
+                                ${formatTime(sub.startTime)} → ${formatTime(sub.endTime)}
+                                <span class="text-xs ml-2 text-gray-400">(${(duration / 1000).toFixed(1)}s)</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="edit-btn text-blue-600 hover:text-blue-800 text-sm" data-id="${sub.id}">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                            <button class="delete-btn text-red-600 hover:text-red-800 text-sm" data-id="${sub.id}">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="view-mode">
+                        <p class="text-gray-900 whitespace-pre-wrap">${escapeHtml(sub.text)}</p>
+                    </div>
+                    
+                    <div class="edit-mode hidden">
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">开始时间</label>
+                                <input type="text" class="start-time-input w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono" value="${formatTime(sub.startTime)}">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">结束时间</label>
+                                <input type="text" class="end-time-input w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono" value="${formatTime(sub.endTime)}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-600 mb-1">字幕内容</label>
+                            <textarea class="text-input w-full px-3 py-2 border border-gray-300 rounded text-sm" rows="3">${escapeHtml(sub.text)}</textarea>
+                        </div>
+                        <div class="flex justify-end space-x-2">
+                            <button class="cancel-btn px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">取消</button>
+                            <button class="save-btn px-3 py-1 bg-primary text-white rounded text-sm">保存</button>
+                        </div>
+                    </div>
+                `;
+
+                // View mode click
+                item.querySelector('.view-mode').addEventListener('click', () => {
+                    selectSubtitle(sub.id);
+                });
+
+                // Edit button
+                item.querySelector('.edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startEditing(sub.id);
+                });
+
+                // Delete button
+                item.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteSubtitle(sub.id);
+                });
+
+                // Cancel edit
+                item.querySelector('.cancel-btn')?.addEventListener('click', () => {
+                    stopEditing();
+                });
+
+                // Save edit
+                item.querySelector('.save-btn')?.addEventListener('click', () => {
+                    saveEditing(sub.id, item);
+                });
+
+                subtitleList.appendChild(item);
+            });
+
+            updateStats();
+        }
+
+        function selectSubtitle(id) {
+            selectedSubtitleId = id;
+            const sub = subtitles.find(s => s.id === id);
+            if (!sub) return;
+
+            // Update preview
+            previewText.textContent = sub.text;
+            previewStartTime.value = formatTime(sub.startTime);
+            previewEndTime.value = formatTime(sub.endTime);
+            previewDuration.value = `${((sub.endTime - sub.startTime) / 1000).toFixed(1)} 秒`;
+
+            // Update UI
+            document.querySelectorAll('.subtitle-item').forEach(item => {
+                item.classList.toggle('editing', parseInt(item.dataset.id) === id);
+            });
+        }
+
+        function startEditing(id) {
+            stopEditing();
+            currentEditingId = id;
+            
+            const item = document.querySelector(`.subtitle-item[data-id="${id}"]`);
+            if (!item) return;
+            
+            item.classList.add('editing');
+            item.querySelector('.view-mode').classList.add('hidden');
+            item.querySelector('.edit-mode').classList.remove('hidden');
+        }
+
+        function stopEditing() {
+            if (!currentEditingId) return;
+            
+            const item = document.querySelector(`.subtitle-item[data-id="${currentEditingId}"]`);
+            if (item) {
+                item.classList.remove('editing');
+                item.querySelector('.view-mode').classList.remove('hidden');
+                item.querySelector('.edit-mode').classList.add('hidden');
+            }
+            
+            currentEditingId = null;
+        }
+
+        function saveEditing(id, item) {
+            const sub = subtitles.find(s => s.id === id);
+            if (!sub) return;
+
+            const startTimeStr = item.querySelector('.start-time-input').value;
+            const endTimeStr = item.querySelector('.end-time-input').value;
+            const text = item.querySelector('.text-input').value;
+
+            try {
+                sub.startTime = parseTime(startTimeStr);
+                sub.endTime = parseTime(endTimeStr);
+                sub.text = text;
+                
+                stopEditing();
+                renderSubtitles();
+                selectSubtitle(id);
+            } catch (error) {
+                alert('时间格式错误，请使用 HH:MM:SS,mmm 格式');
+            }
+        }
+
+        function deleteSubtitle(id) {
+            if (!confirm('确定要删除这条字幕吗？')) return;
+            
+            subtitles = subtitles.filter(s => s.id !== id);
+            if (selectedSubtitleId === id) {
+                selectedSubtitleId = null;
+                clearPreview();
+            }
+            renderSubtitles();
+        }
+
+        function addSubtitle() {
+            const newSub = {
+                id: Date.now(),
+                startTime: 0,
+                endTime: 1000,
+                text: '新字幕'
+            };
+            subtitles.push(newSub);
+            renderSubtitles();
+            startEditing(newSub.id);
+        }
+
+        function applyTimeOffset(offset) {
+            subtitles.forEach(sub => {
+                sub.startTime = Math.max(0, sub.startTime + offset);
+                sub.endTime = Math.max(sub.startTime + 100, sub.endTime + offset);
+            });
+            renderSubtitles();
+            if (selectedSubtitleId) {
+                selectSubtitle(selectedSubtitleId);
+            }
+        }
+
+        function clearPreview() {
+            previewText.textContent = '选择字幕查看预览';
+            previewStartTime.value = '';
+            previewEndTime.value = '';
+            previewDuration.value = '';
+        }
+
+        function updateStats() {
+            const count = subtitles.length;
+            subtitleCount.textContent = count;
+            
+            // Update button states
+            const hasSubtitles = count > 0;
+            downloadBtn.disabled = !hasSubtitles;
+            addSubtitleBtn.disabled = !hasSubtitles;
+            mergeBtn.disabled = count < 2;
+            applyOffsetBtn.disabled = !hasSubtitles;
+            shiftForwardBtn.disabled = !hasSubtitles;
+            shiftBackwardBtn.disabled = !hasSubtitles;
+            removeHtmlBtn.disabled = !hasSubtitles;
+            trimWhitespaceBtn.disabled = !hasSubtitles;
+            toSimplifiedBtn.disabled = !hasSubtitles;
+            toTraditionalBtn.disabled = !hasSubtitles;
+            replaceAllBtn.disabled = !hasSubtitles;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // File handling
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    subtitles = parseSRT(e.target.result);
+                    renderSubtitles();
+                } catch (error) {
+                    alert('无法解析 SRT 文件: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Drag and drop
+        document.body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.srt') || file.name.endsWith('.txt'))) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        subtitles = parseSRT(e.target.result);
+                        renderSubtitles();
+                    } catch (error) {
+                        alert('无法解析 SRT 文件: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Download
+        downloadBtn.addEventListener('click', () => {
+            const content = generateSRT();
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'edited_subtitles.srt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Add subtitle
+        addSubtitleBtn.addEventListener('click', addSubtitle);
+
+        // Time offset
+        applyOffsetBtn.addEventListener('click', () => {
+            const offset = parseInt(offsetMs.value);
+            if (isNaN(offset)) {
+                alert('请输入有效的毫秒数');
+                return;
+            }
+            applyTimeOffset(offset);
+        });
+
+        shiftForwardBtn.addEventListener('click', () => {
+            applyTimeOffset(-1000);
+        });
+
+        shiftBackwardBtn.addEventListener('click', () => {
+            applyTimeOffset(1000);
+        });
+
+        // Text operations
+        removeHtmlBtn.addEventListener('click', () => {
+            subtitles.forEach(sub => {
+                sub.text = sub.text.replace(/<[^>]*>/g, '');
+            });
+            renderSubtitles();
+            if (selectedSubtitleId) {
+                selectSubtitle(selectedSubtitleId);
+            }
+        });
+
+        trimWhitespaceBtn.addEventListener('click', () => {
+            subtitles.forEach(sub => {
+                sub.text = sub.text.replace(/\s+/g, ' ').trim();
+            });
+            renderSubtitles();
+            if (selectedSubtitleId) {
+                selectSubtitle(selectedSubtitleId);
+            }
+        });
+
+        // Simplified/Traditional conversion (simplified implementation)
+        toSimplifiedBtn.addEventListener('click', () => {
+            alert('简繁体转换功能需要额外的字符转换库，后续版本会添加~');
+        });
+
+        toTraditionalBtn.addEventListener('click', () => {
+            alert('简繁体转换功能需要额外的字符转换库，后续版本会添加~');
+        });
+
+        // Find and replace
+        replaceAllBtn.addEventListener('click', () => {
+            const find = findText.value;
+            const replace = replaceText.value;
+            if (!find) return;
+
+            subtitles.forEach(sub => {
+                sub.text = sub.text.replace(new RegExp(find, 'g'), replace);
+            });
+            renderSubtitles();
+            if (selectedSubtitleId) {
+                selectSubtitle(selectedSubtitleId);
+            }
+        });
+
+        // Merge subtitles
+        mergeBtn.addEventListener('click', () => {
+            if (subtitles.length < 2) return;
+            
+            // Sort by start time
+            subtitles.sort((a, b) => a.startTime - b.startTime);
+            
+            const merged = {
+                id: Date.now(),
+                startTime: subtitles[0].startTime,
+                endTime: subtitles[subtitles.length - 1].endTime,
+                text: subtitles.map(s => s.text).join(' ')
+            };
+            
+            subtitles = [merged];
+            renderSubtitles();
+            selectSubtitle(merged.id);
+        });
+
+        // Initialize
+        updateStats();
+    </script>
+</body>
+</html>

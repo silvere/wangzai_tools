@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短链接生成器 🔗</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .input-focus {
+            transition: all 0.3s ease;
+        }
+        
+        .input-focus:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .url-item {
+            transition: all 0.3s ease;
+        }
+        
+        .url-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-gray-800">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-3">
+                <i class="fas fa-link mr-3"></i>短链接生成器
+            </h1>
+            <p class="text-xl text-white/90 font-light">
+                快速缩短链接，一键生成二维码，访问统计一目了然
+            </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="stats-card rounded-2xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">总生成数</p>
+                        <p class="text-3xl font-bold" id="totalCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-hashtag"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card rounded-2xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">总访问量</p>
+                        <p class="text-3xl font-bold" id="totalClicks">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-mouse-pointer"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card rounded-2xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">今日生成</p>
+                        <p class="text-3xl font-bold" id="todayCount">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-3xl card-shadow p-8 mb-8">
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2 text-lg">
+                    <i class="fas fa-globe mr-2"></i>原始链接
+                </label>
+                <input 
+                    type="url" 
+                    id="originalUrl" 
+                    placeholder="https://example.com/very/long/url/that/needs/shortening"
+                    class="w-full px-6 py-4 rounded-xl border-2 border-gray-200 input-focus outline-none text-lg"
+                >
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-tag mr-2"></i>自定义短码（可选）
+                    </label>
+                    <input 
+                        type="text" 
+                        id="customCode" 
+                        placeholder="例如: my-link"
+                        class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 input-focus outline-none"
+                    >
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-clock mr-2"></i>有效期（可选）
+                    </label>
+                    <select id="expiry" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 input-focus outline-none">
+                        <option value="never">永久有效</option>
+                        <option value="1h">1小时</option>
+                        <option value="1d">1天</option>
+                        <option value="7d">7天</option>
+                        <option value="30d">30天</option>
+                        <option value="1y">1年</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 mb-6">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="generateQr" class="w-5 h-5 text-purple-600" checked>
+                    <span class="ml-2 text-gray-700 font-medium">生成二维码</span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="trackClicks" class="w-5 h-5 text-purple-600" checked>
+                    <span class="ml-2 text-gray-700 font-medium">跟踪访问</span>
+                </label>
+            </div>
+
+            <button 
+                id="generateBtn" 
+                class="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-lg btn-hover"
+            >
+                <i class="fas fa-magic mr-2"></i>生成短链接
+            </button>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="hidden bg-white rounded-3xl card-shadow p-8 mb-8">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-500 text-3xl mb-4">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">生成成功！</h2>
+                <p class="text-gray-600">你的短链接已准备就绪</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-2xl p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1 mr-4">
+                        <p class="text-sm text-gray-500 mb-1">短链接</p>
+                        <a id="shortUrl" href="#" target="_blank" class="text-xl font-semibold text-purple-600 hover:underline break-all"></a>
+                    </div>
+                    <button id="copyShortBtn" class="copy-btn px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium">
+                        <i class="fas fa-copy mr-1"></i>复制
+                    </button>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4">
+                    <p class="text-sm text-gray-500 mb-1">原始链接</p>
+                    <p class="text-gray-700 break-all text-sm" id="originalUrlDisplay"></p>
+                </div>
+            </div>
+
+            <div id="qrSection" class="text-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">二维码</h3>
+                <div id="qrcode" class="inline-block p-4 bg-white border-2 border-gray-200 rounded-xl mb-3"></div>
+                <button id="downloadQrBtn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition">
+                    <i class="fas fa-download mr-1"></i>下载二维码
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 rounded-xl p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>
+                        <span class="font-semibold text-gray-700">创建时间</span>
+                    </div>
+                    <p id="createTime" class="text-gray-600"></p>
+                </div>
+                <div class="bg-orange-50 rounded-xl p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-hourglass-end text-orange-500 mr-2"></i>
+                        <span class="font-semibold text-gray-700">有效期</span>
+                    </div>
+                    <p id="expiryTime" class="text-gray-600"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent URLs -->
+        <div class="bg-white rounded-3xl card-shadow p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-history mr-3 text-purple-600"></i>最近生成
+                </h2>
+                <button id="clearAllBtn" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition">
+                    <i class="fas fa-trash mr-1"></i>清空全部
+                </button>
+            </div>
+
+            <div id="urlList" class="space-y-4">
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                    <p class="text-lg">还没有生成任何短链接</p>
+                    <p class="text-sm mt-1">生成的链接会保存在这里</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/70 text-sm">
+            <p>💡 所有数据本地存储，无需上传到服务器，安全可靠</p>
+            <p class="mt-1">短链接使用本地重定向，完全离线可用</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        // App State
+        let urls = JSON.parse(localStorage.getItem('shortUrls') || '[]');
+        
+        // DOM Elements
+        const originalUrlInput = document.getElementById('originalUrl');
+        const customCodeInput = document.getElementById('customCode');
+        const expirySelect = document.getElementById('expiry');
+        const generateQrCheckbox = document.getElementById('generateQr');
+        const trackClicksCheckbox = document.getElementById('trackClicks');
+        const generateBtn = document.getElementById('generateBtn');
+        const resultSection = document.getElementById('resultSection');
+        const shortUrlEl = document.getElementById('shortUrl');
+        const originalUrlDisplay = document.getElementById('originalUrlDisplay');
+        const copyShortBtn = document.getElementById('copyShortBtn');
+        const qrcodeEl = document.getElementById('qrcode');
+        const qrSection = document.getElementById('qrSection');
+        const downloadQrBtn = document.getElementById('downloadQrBtn');
+        const createTimeEl = document.getElementById('createTime');
+        const expiryTimeEl = document.getElementById('expiryTime');
+        const urlListEl = document.getElementById('urlList');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const totalCountEl = document.getElementById('totalCount');
+        const totalClicksEl = document.getElementById('totalClicks');
+        const todayCountEl = document.getElementById('todayCount');
+
+        // Initialize
+        updateStats();
+        renderUrlList();
+
+        // Generate Short Code
+        function generateShortCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Calculate Expiry Time
+        function getExpiryTime(expiryOption) {
+            const now = new Date();
+            switch(expiryOption) {
+                case '1h': now.setHours(now.getHours() + 1); break;
+                case '1d': now.setDate(now.getDate() + 1); break;
+                case '7d': now.setDate(now.getDate() + 7); break;
+                case '30d': now.setDate(now.getDate() + 30); break;
+                case '1y': now.setFullYear(now.getFullYear() + 1); break;
+                default: return null;
+            }
+            return now.toISOString();
+        }
+
+        // Format Date
+        function formatDate(dateString) {
+            if (!dateString) return '永久有效';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Generate QR Code
+        async function generateQRCode(url) {
+            try {
+                qrcodeEl.innerHTML = '';
+                const canvas = await QRCode.toCanvas(url, {
+                    width: 180,
+                    margin: 2,
+                    color: {
+                        dark: '#667eea',
+                        light: '#ffffff'
+                    }
+                });
+                qrcodeEl.appendChild(canvas);
+            } catch (err) {
+                console.error('QR generation error:', err);
+            }
+        }
+
+        // Copy to Clipboard
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return true;
+            }
+        }
+
+        // Update Stats
+        function updateStats() {
+            totalCountEl.textContent = urls.length;
+            const totalClicks = urls.reduce((sum, url) => sum + (url.clicks || 0), 0);
+            totalClicksEl.textContent = totalClicks;
+            
+            const today = new Date().toDateString();
+            const todayCount = urls.filter(url => 
+                new Date(url.createdAt).toDateString() === today
+            ).length;
+            todayCountEl.textContent = todayCount;
+        }
+
+        // Render URL List
+        function renderUrlList() {
+            if (urls.length === 0) {
+                urlListEl.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg">还没有生成任何短链接</p>
+                        <p class="text-sm mt-1">生成的链接会保存在这里</p>
+                    </div>
+                `;
+                return;
+            }
+
+            urlListEl.innerHTML = urls.slice().reverse().map(url => {
+                const isExpired = url.expiresAt && new Date() > new Date(url.expiresAt);
+                const shortUrl = `${window.location.origin}${window.location.pathname}#${url.code}`;
+                
+                return `
+                    <div class="url-item bg-gray-50 rounded-xl p-4 border border-gray-200 ${isExpired ? 'opacity-60' : ''}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1 mr-4">
+                                <a href="${shortUrl}" target="_blank" class="text-lg font-semibold text-purple-600 hover:underline break-all">
+                                    ${shortUrl}
+                                </a>
+                                <p class="text-sm text-gray-500 mt-1 break-all">${url.originalUrl}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="copy-btn p-2 bg-purple-100 text-purple-700 rounded-lg" onclick="copyUrl('${url.code}')" title="复制链接">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="p-2 bg-red-100 text-red-600 rounded-lg" onclick="deleteUrl('${url.id}')" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-4 text-sm">
+                            <div class="flex items-center text-gray-600">
+                                <i class="fas fa-calendar mr-1"></i>
+                                ${formatDate(url.createdAt)}
+                            </div>
+                            <div class="flex items-center ${isExpired ? 'text-red-600' : 'text-gray-600'}">
+                                <i class="fas fa-hourglass mr-1"></i>
+                                ${isExpired ? '已过期' : formatDate(url.expiresAt)}
+                            </div>
+                            <div class="flex items-center text-blue-600">
+                                <i class="fas fa-mouse-pointer mr-1"></i>
+                                ${url.clicks || 0} 次访问
+                            </div>
+                            ${isExpired ? '<span class="px-2 py-0.5 bg-red-100 text-red-600 rounded text-xs font-medium">已过期</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Copy URL
+        window.copyUrl = async function(code) {
+            const url = `${window.location.origin}${window.location.pathname}#${code}`;
+            await copyToClipboard(url);
+            alert('链接已复制到剪贴板！');
+        }
+
+        // Delete URL
+        window.deleteUrl = function(id) {
+            if (confirm('确定要删除这个短链接吗？')) {
+                urls = urls.filter(url => url.id !== id);
+                localStorage.setItem('shortUrls', JSON.stringify(urls));
+                updateStats();
+                renderUrlList();
+            }
+        }
+
+        // Generate Button Click
+        generateBtn.addEventListener('click', async () => {
+            const originalUrl = originalUrlInput.value.trim();
+            
+            if (!originalUrl) {
+                alert('请输入要缩短的链接');
+                originalUrlInput.focus();
+                return;
+            }
+
+            // Validate URL
+            try {
+                new URL(originalUrl);
+            } catch (e) {
+                alert('请输入有效的URL地址（包含http://或https://）');
+                originalUrlInput.focus();
+                return;
+            }
+
+            // Check custom code
+            let code = customCodeInput.value.trim() || generateShortCode();
+            code = code.replace(/[^a-zA-Z0-9-_]/g, '');
+            
+            if (urls.some(url => url.code === code)) {
+                alert('这个短码已经被使用了，请换一个');
+                customCodeInput.focus();
+                return;
+            }
+
+            // Create URL object
+            const newUrl = {
+                id: Date.now().toString(),
+                code: code,
+                originalUrl: originalUrl,
+                createdAt: new Date().toISOString(),
+                expiresAt: getExpiryTime(expirySelect.value),
+                clicks: 0,
+                trackClicks: trackClicksCheckbox.checked
+            };
+
+            // Add to list
+            urls.push(newUrl);
+            localStorage.setItem('shortUrls', JSON.stringify(urls));
+
+            // Update UI
+            const shortUrl = `${window.location.origin}${window.location.pathname}#${code}`;
+            shortUrlEl.href = shortUrl;
+            shortUrlEl.textContent = shortUrl;
+            originalUrlDisplay.textContent = originalUrl;
+            createTimeEl.textContent = formatDate(newUrl.createdAt);
+            expiryTimeEl.textContent = formatDate(newUrl.expiresAt);
+
+            // Generate QR if needed
+            if (generateQrCheckbox.checked) {
+                qrSection.classList.remove('hidden');
+                await generateQRCode(shortUrl);
+            } else {
+                qrSection.classList.add('hidden');
+            }
+
+            resultSection.classList.remove('hidden');
+            updateStats();
+            renderUrlList();
+
+            // Scroll to result
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Copy Short URL
+        copyShortBtn.addEventListener('click', async () => {
+            await copyToClipboard(shortUrlEl.textContent);
+            copyShortBtn.innerHTML = '<i class="fas fa-check mr-1"></i>已复制';
+            setTimeout(() => {
+                copyShortBtn.innerHTML = '<i class="fas fa-copy mr-1"></i>复制';
+            }, 2000);
+        });
+
+        // Download QR Code
+        downloadQrBtn.addEventListener('click', () => {
+            const canvas = qrcodeEl.querySelector('canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `qrcode-${shortUrlEl.textContent.split('#')[1]}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        });
+
+        // Clear All
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有短链接吗？此操作不可恢复！')) {
+                urls = [];
+                localStorage.removeItem('shortUrls');
+                updateStats();
+                renderUrlList();
+                resultSection.classList.add('hidden');
+            }
+        });
+
+        // Handle Hash Routing (Redirect)
+        window.addEventListener('hashchange', () => {
+            const code = window.location.hash.slice(1);
+            if (!code) return;
+
+            const url = urls.find(u => u.code === code);
+            if (!url) {
+                alert('短链接不存在或已过期');
+                return;
+            }
+
+            // Check expiry
+            if (url.expiresAt && new Date() > new Date(url.expiresAt)) {
+                alert('短链接已过期');
+                return;
+            }
+
+            // Track click
+            if (url.trackClicks) {
+                url.clicks = (url.clicks || 0) + 1;
+                localStorage.setItem('shortUrls', JSON.stringify(urls));
+                updateStats();
+                renderUrlList();
+            }
+
+            // Redirect
+            window.open(url.originalUrl, '_blank');
+        });
+
+        // Check hash on load
+        if (window.location.hash) {
+            window.dispatchEvent(new Event('hashchange'));
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to generate
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                generateBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

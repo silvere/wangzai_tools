@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unicode 字符检查器 | Character Inspector</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242836;--border:#2e3348;--text:#e4e6f0;--text2:#8b8fa8;--accent:#6c7cff;--green:#4ade80;--orange:#ffcc80;--red:#f87171;--cyan:#80deea;--pink:#f0abfc}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header h1{font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px}
+.stats{font-size:12px;color:var(--text2)}
+.main{max-width:1000px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+.card h2{font-size:13px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+textarea{width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;font-family:'SF Mono',Monaco,'Fira Code',monospace;resize:vertical;min-height:80px;outline:none;line-height:1.6}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--text2)}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.alerts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.alert{padding:8px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px}
+.alert.warn{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+.alert.info{background:rgba(108,124,255,.1);border:1px solid rgba(108,124,255,.3);color:var(--accent)}
+.char-grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.char-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;min-width:90px;cursor:pointer;transition:all .15s;text-align:center}
+.char-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.char-card.invisible{border-color:var(--red);border-style:dashed}
+.char-card.selected{border-color:var(--accent);background:rgba(108,124,255,.1)}
+.char-display{font-size:28px;line-height:1.3;font-family:'SF Mono',Monaco,monospace;min-height:38px;display:flex;align-items:center;justify-content:center}
+.char-display.invisible-char{background:var(--red);color:#fff;font-size:10px;border-radius:4px;padding:2px 6px;min-height:auto}
+.char-code{font-size:10px;color:var(--cyan);font-family:monospace;margin-top:2px}
+.char-name{font-size:9px;color:var(--text2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.detail{display:none;margin-top:12px}
+.detail.show{display:block}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.detail-item{background:var(--surface2);border-radius:6px;padding:10px 12px}
+.detail-item .label{font-size:10px;color:var(--text2);margin-bottom:3px}
+.detail-item .value{font-size:13px;font-family:monospace;color:var(--green);word-break:break-all}
+.detail-item .value.hex{color:var(--orange)}
+.detail-item .value.name{color:var(--pink);font-family:sans-serif;font-size:12px}
+.summary-bar{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text2)}
+.summary-bar span{display:flex;align-items:center;gap:4px}
+.summary-bar .count{color:var(--green);font-weight:600}
+.view-toggle{display:flex;gap:4px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span>🔍</span> Unicode 字符检查器</h1>
+  <div class="stats" id="stats"></div>
+</div>
+<div class="main">
+  <div class="card">
+    <h2>📝 输入文本</h2>
+    <textarea id="input" placeholder="粘贴或输入任何文本... 支持 emoji、中文、特殊字符、不可见字符等" oninput="analyze()">Hello 你好 🌍 café</textarea>
+    <div class="toolbar">
+      <button class="btn" onclick="loadSample('invisible')">🔬 隐藏字符示例</button>
+      <button class="btn" onclick="loadSample('emoji')">😀 Emoji 示例</button>
+      <button class="btn" onclick="loadSample('confusable')">👀 易混淆字符</button>
+      <button class="btn" onclick="loadSample('cjk')">🀄 CJK 示例</button>
+      <button class="btn" onclick="document.getElementById('input').value='';analyze()">清空</button>
+    </div>
+    <div class="alerts" id="alerts"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0">💎 字符详情</h2>
+      <div class="summary-bar" id="summary"></div>
+    </div>
+    <div class="char-grid" id="charGrid"></div>
+    <div class="detail" id="detail"></div>
+  </div>
+</div>
+
+<script>
+const INVISIBLE={0x00:'NULL',0x01:'SOH',0x02:'STX',0x03:'ETX',0x04:'EOT',0x05:'ENQ',0x06:'ACK',0x07:'BEL',0x08:'BS',0x09:'TAB',0x0A:'LF',0x0B:'VT',0x0C:'FF',0x0D:'CR',0x0E:'SO',0x0F:'SI',0x10:'DLE',0x1B:'ESC',0x7F:'DEL',0x200B:'ZWSP',0x200C:'ZWNJ',0x200D:'ZWJ',0x200E:'LRM',0x200F:'RLM',0x2028:'LSEP',0x2029:'PSEP',0x202A:'LRE',0x202B:'RLE',0x202C:'PDF',0x202D:'LRO',0x202E:'RLO',0xFEFF:'BOM',0x00A0:'NBSP',0x2060:'WJ',0x2061:'FA',0x2062:'IT',0x2063:'IS',0x2064:'IP',0x180E:'MVS',0x034F:'CGJ'};
+
+const CATEGORIES={Lu:'大写字母',Ll:'小写字母',Lt:'标题字母',Lm:'修饰字母',Lo:'其他字母',Mn:'非间距标记',Mc:'间距标记',Me:'封闭标记',Nd:'十进制数字',Nl:'字母数字',No:'其他数字',Pc:'连接标点',Pd:'破折号',Ps:'开括号',Pe:'闭括号',Pi:'前引号',Pf:'后引号',Po:'其他标点',Sm:'数学符号',Sc:'货币符号',Sk:'修饰符号',So:'其他符号',Zs:'空格',Zl:'行分隔',Zp:'段分隔',Cc:'控制字符',Cf:'格式字符',Cs:'代理对',Co:'私用区',Cn:'未分配'};
+
+function getCategory(cp){
+  if(cp<=0x1F||cp===0x7F||(cp>=0x80&&cp<=0x9F))return'Cc';
+  if(cp>=0x200B&&cp<=0x200F||cp>=0x202A&&cp<=0x202E||cp===0xFEFF||cp>=0x2060&&cp<=0x2064||cp===0x180E||cp===0x034F)return'Cf';
+  if(cp>=0x4E00&&cp<=0x9FFF||cp>=0x3400&&cp<=0x4DBF)return'Lo';
+  if(cp>=0x0041&&cp<=0x005A||cp>=0x00C0&&cp<=0x00D6)return'Lu';
+  if(cp>=0x0061&&cp<=0x007A||cp>=0x00E0&&cp<=0x00F6)return'Ll';
+  if(cp>=0x0030&&cp<=0x0039)return'Nd';
+  if(cp===0x20)return'Zs';
+  if(cp===0xA0)return'Zs';
+  if(cp>=0x2000&&cp<=0x200A)return'Zs';
+  if(cp>=0x1F600&&cp<=0x1F64F||cp>=0x1F300&&cp<=0x1F5FF||cp>=0x1F680&&cp<=0x1F6FF||cp>=0x1F900&&cp<=0x1F9FF||cp>=0x1FA00&&cp<=0x1FA6F||cp>=0x1FA70&&cp<=0x1FAFF||cp>=0x2600&&cp<=0x26FF||cp>=0x2700&&cp<=0x27BF)return'So';
+  if(cp>=0x3000&&cp<=0x303F)return'Po';
+  return'Lo';
+}
+
+function toUTF8(cp){
+  if(cp<=0x7F)return[cp];
+  if(cp<=0x7FF)return[0xC0|(cp>>6),0x80|(cp&0x3F)];
+  if(cp<=0xFFFF)return[0xE0|(cp>>12),0x80|((cp>>6)&0x3F),0x80|(cp&0x3F)];
+  return[0xF0|(cp>>18),0x80|((cp>>12)&0x3F),0x80|((cp>>6)&0x3F),0x80|(cp&0x3F)];
+}
+
+function toUTF16(cp){
+  if(cp<=0xFFFF)return[cp];
+  const s=cp-0x10000;
+  return[0xD800+(s>>10),0xDC00+(s&0x3FF)];
+}
+
+function isInvisible(cp){return cp in INVISIBLE||getCategory(cp)==='Cc'||getCategory(cp)==='Cf'}
+
+let selectedIdx=-1;
+
+function analyze(){
+  const text=document.getElementById('input').value;
+  const codePoints=[...text].map(c=>c.codePointAt(0));
+  
+  // Stats
+  const total=codePoints.length;
+  const bytes=new TextEncoder().encode(text).length;
+  const invisCount=codePoints.filter(cp=>isInvisible(cp)).length;
+  document.getElementById('stats').textContent=`${total} 字符 · ${bytes} 字节 (UTF-8) · ${text.length} UTF-16 码元`;
+  
+  // Alerts
+  let alerts='';
+  if(invisCount>0)alerts+=`<div class="alert warn">⚠️ 检测到 ${invisCount} 个不可见/控制字符</div>`;
+  const hasZWS=codePoints.some(cp=>[0x200B,0x200C,0x200D,0xFEFF,0x2060].includes(cp));
+  if(hasZWS)alerts+=`<div class="alert warn">⚠️ 包含零宽字符 — 可能导致字符串比较失败</div>`;
+  const hasRTL=codePoints.some(cp=>[0x200E,0x200F,0x202A,0x202B,0x202C,0x202D,0x202E].includes(cp));
+  if(hasRTL)alerts+=`<div class="alert warn">⚠️ 包含双向控制字符 — 可能被用于 Trojan Source 攻击</div>`;
+  document.getElementById('alerts').innerHTML=alerts;
+  
+  // Summary
+  const cats={};
+  codePoints.forEach(cp=>{const c=getCategory(cp);cats[c]=(cats[c]||0)+1});
+  let summary='';
+  for(const[k,v]of Object.entries(cats).sort((a,b)=>b[1]-a[1])){
+    summary+=`<span>${CATEGORIES[k]||k}: <span class="count">${v}</span></span>`;
+  }
+  document.getElementById('summary').innerHTML=summary;
+  
+  // Char grid
+  let grid='';
+  const chars=[...text];
+  chars.forEach((ch,i)=>{
+    const cp=ch.codePointAt(0);
+    const inv=isInvisible(cp);
+    const hex='U+'+cp.toString(16).toUpperCase().padStart(4,'0');
+    const name=INVISIBLE[cp]||'';
+    grid+=`<div class="char-card${inv?' invisible':''}${i===selectedIdx?' selected':''}" onclick="selectChar(${i})">`;
+    if(inv){
+      grid+=`<div class="char-display invisible-char">${name||'CTRL'}</div>`;
+    }else{
+      grid+=`<div class="char-display">${ch}</div>`;
+    }
+    grid+=`<div class="char-code">${hex}</div>`;
+    if(name)grid+=`<div class="char-name">${name}</div>`;
+    grid+=`</div>`;
+  });
+  document.getElementById('charGrid').innerHTML=grid;
+  
+  if(selectedIdx>=0&&selectedIdx<chars.length)showDetail(selectedIdx);
+  else document.getElementById('detail').className='detail';
+}
+
+function selectChar(i){
+  selectedIdx=i;
+  analyze();
+  showDetail(i);
+}
+
+function showDetail(i){
+  const chars=[...document.getElementById('input').value];
+  if(i>=chars.length)return;
+  const ch=chars[i];
+  const cp=ch.codePointAt(0);
+  const utf8=toUTF8(cp);
+  const utf16=toUTF16(cp);
+  const cat=getCategory(cp);
+  const inv=isInvisible(cp);
+  
+  let html='<div class="detail-grid">';
+  html+=item('字符',inv?(INVISIBLE[cp]||'CTRL'):ch,'');
+  html+=item('Unicode',`U+${cp.toString(16).toUpperCase().padStart(4,'0')} (${cp})`,'hex');
+  html+=item('分类',`${cat} — ${CATEGORIES[cat]||'未知'}`,'name');
+  html+=item('UTF-8',utf8.map(b=>'0x'+b.toString(16).toUpperCase().padStart(2,'0')).join(' ')+` (${utf8.length} 字节)`,'hex');
+  html+=item('UTF-16',utf16.map(u=>'0x'+u.toString(16).toUpperCase().padStart(4,'0')).join(' ')+` (${utf16.length*2} 字节)`,'hex');
+  html+=item('HTML 实体',`&#${cp}; / &#x${cp.toString(16)};`,'');
+  html+=item('CSS/JS 转义',cp>0xFFFF?`\\u{${cp.toString(16)}}`:`\\u${cp.toString(16).padStart(4,'0')}`,'');
+  html+=item('Python',cp>0xFFFF?`\\U${cp.toString(16).padStart(8,'0')}`:`\\u${cp.toString(16).padStart(4,'0')}`,'');
+  html+=item('二进制',cp.toString(2).padStart(Math.ceil(cp.toString(2).length/8)*8,'0').match(/.{8}/g).join(' '),'hex');
+  if(inv)html+=item('⚠️ 警告','这是一个不可见/控制字符','name');
+  html+='</div>';
+  
+  const el=document.getElementById('detail');
+  el.innerHTML=html;
+  el.className='detail show';
+}
+
+function item(label,value,cls){
+  return`<div class="detail-item"><div class="label">${label}</div><div class="value ${cls}">${value}</div></div>`;
+}
+
+const SAMPLES={
+  invisible:'Hello\u200BWorld\u200C\u200D\uFEFF\u00A0test\u2060',
+  emoji:'👨‍👩‍👧‍👦 🏳️‍🌈 👩🏽‍💻 🇨🇳 ❤️ 🎉 ✨ 🔥',
+  confusable:'аbс vs abc (Cyrillic а vs Latin a)\nΗello vs Hello (Greek Η vs Latin H)\nⅠ vs I (Roman Ⅰ vs Latin I)',
+  cjk:'漢字 かな カナ 한글 〇一二三 ㄅㄆㄇ 「引号」 【括号】'
+};
+
+function loadSample(key){
+  document.getElementById('input').value=SAMPLES[key];
+  selectedIdx=-1;
+  analyze();
+}
+
+analyze();
+</script>
+</body>
+</html>

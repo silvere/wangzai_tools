@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS Box Shadow 可视化生成器 - 旺仔工具百宝箱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .preview-box {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(45deg, #eee 25%, transparent 25%), 
+        linear-gradient(-45deg, #eee 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #eee 75%), 
+        linear-gradient(-45deg, transparent 75%, #eee 75%);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">CSS Box Shadow 可视化生成器 🌚</h1>
+      <p class="text-gray-600">拖拽可视化调整阴影参数，实时预览，一键复制CSS代码</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 左侧控制面板 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- 偏移 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">水平偏移 (h-offset): <span id="hOffsetValue">10px</span></label>
+          </div>
+          <input type="range" id="hOffsetSlider" min="-50" max="50" value="10" class="w-full">
+        </div>
+
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">垂直偏移 (v-offset): <span id="vOffsetValue">10px</span></label>
+          </div>
+          <input type="range" id="vOffsetSlider" min="-50" max="50" value="10" class="w-full">
+        </div>
+
+        <!-- 模糊半径 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">模糊半径 (blur): <span id="blurValue">15px</span></label>
+          </div>
+          <input type="range" id="blurSlider" min="0" max="100" value="15" class="w-full">
+        </div>
+
+        <!-- 扩散半径 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">扩散半径 (spread): <span id="spreadValue">0px</span></label>
+          </div>
+          <input type="range" id="spreadSlider" min="-20" max="50" value="0" class="w-full">
+        </div>
+
+        <!-- 阴影颜色 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">阴影颜色</label>
+          </div>
+          <div class="flex items-center gap-4">
+            <input type="color" id="shadowColor" value="#000000" class="w-16 h-10 rounded cursor-pointer">
+            <input type="text" id="shadowColorHex" value="#000000" class="flex-1 px-3 py-2 border rounded-md">
+          </div>
+        </div>
+
+        <!-- 透明度 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">透明度: <span id="opacityValue">0.5</span></label>
+          </div>
+          <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.5" class="w-full">
+        </div>
+
+        <!-- 阴影类型 -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">阴影类型</label>
+          <div class="flex gap-3">
+            <button id="outlineBtn" class="shadow-type-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">外阴影</button>
+            <button id="insetBtn" class="shadow-type-btn px-4 py-2 rounded-md bg-blue-500 text-white">内阴影</button>
+          </div>
+        </div>
+
+        <!-- 多层阴影 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <label class="text-sm font-medium text-gray-700">多层阴影 (当前: <span id="layerCount">1</span> 层)</label>
+            <div class="flex gap-2">
+              <button id="addLayerBtn" class="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600">+ 添加</button>
+              <button id="removeLayerBtn" class="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600" ${layerCount <= 1 ? 'disabled' : ''}>- 删除</button>
+            </div>
+          </div>
+          <div class="text-sm text-gray-500">点击添加可以叠加多层阴影，做出更酷的效果！</div>
+        </div>
+
+        <!-- 预设 -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-gray-800 mb-3">常用预设</h2>
+          <div id="presets" class="grid grid-cols-2 gap-2">
+            <!-- 预设由 JS 生成 -->
+          </div>
+        </div>
+
+        <!-- 输出代码 -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">生成的 CSS</h2>
+            <button id="copyBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600">复制代码</button>
+          </div>
+          <textarea id="cssOutput" readonly class="w-full h-28 px-4 py-3 font-mono text-sm bg-gray-900 text-green-400 rounded-md"></textarea>
+          <div id="copyToast" class="hidden mt-2 p-2 bg-green-100 text-green-700 rounded-md text-center">
+            复制成功！
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧预览 -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+          <div class="preview-box rounded-lg p-8">
+            <div id="previewBox" class="w-full h-[400px] bg-white rounded-lg flex items-center justify-center">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-800 mb-2">预览盒子</div>
+                <div class="text-gray-500">阴影效果在这里展示</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Box Shadow 速查表 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Box Shadow 语法速查</h2>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p><code class="bg-gray-100 px-2 py-1 rounded">box-shadow: [h-offset] [v-offset] [blur] [spread] [color] [inset];</code></p>
+            <ul class="space-y-1 ml-4 list-disc">
+              <li><strong>h-offset</strong>: 水平偏移，正数向右，负数向左</li>
+              <li><strong>v-offset</strong>: 垂直偏移，正数向下，负数向上</li>
+              <li><strong>blur</strong>: 模糊半径，值越大阴影越模糊，默认为 0</li>
+              <li><strong>spread</strong>: 扩散半径，正数放大阴影，负数缩小阴影</li>
+              <li><strong>color</strong>: 阴影颜色，默认黑色</li>
+              <li><strong>inset</strong>: 改为内阴影，默认外阴影</li>
+            </ul>
+            <p class="text-gray-500 mt-2">💡 多层阴影用逗号分隔，支持无限叠加！</p>
+          </div>
+        </div>
+
+        <!-- 常用效果提示 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">常用阴影效果参考</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">浮卡轻微阴影</div>
+              <code class="text-xs">box-shadow: 0 2px 8px rgba(0,0,0,0.1);</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">中度卡片阴影</div>
+              <code class="text-xs">box-shadow: 0 4px 12px rgba(0,0,0,0.15);</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">漂浮效果</div>
+              <code class="text-xs">box-shadow: 0 10px 25px rgba(0,0,0,0.2);</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">按钮按下内阴影</div>
+              <code class="text-xs">box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center mt-8 text-gray-500 text-sm">
+      <p>完全本地运行，零数据上传 | 旺仔工具百宝箱 🥛</p>
+    </footer>
+  </div>
+
+  <script>
+    // 状态
+    const state = {
+      layers: [
+        {
+          hOffset: 10,
+          vOffset: 10,
+          blur: 15,
+          spread: 0,
+          color: '#000000',
+          opacity: 0.5,
+          inset: true
+        }
+      ],
+      currentLayer: 0
+    };
+
+    // 预设
+    const presets = [
+      {
+        name: '轻微浮卡',
+        layers: [{ hOffset: 0, vOffset: 2, blur: 8, spread: 0, color: '#000000', opacity: 0.1, inset: false }]
+      },
+      {
+        name: '中度卡片',
+        layers: [{ hOffset: 0, vOffset: 4, blur: 12, spread: 0, color: '#000000', opacity: 0.15, inset: false }]
+      },
+      {
+        name: '漂浮大阴影',
+        layers: [{ hOffset: 0, vOffset: 10, blur: 25, spread: 0, color: '#000000', opacity: 0.2, inset: false }]
+      },
+      {
+        name: '按钮内凹',
+        layers: [{ hOffset: 0, vOffset: 2, blur: 4, spread: 0, color: '#000000', opacity: 0.2, inset: true }]
+      },
+      {
+        name: '霓虹蓝色',
+        layers: [{ hOffset: 0, vOffset: 0, blur: 15, spread: 5, color: '#0088ff', opacity: 0.6, inset: false }]
+      },
+      {
+        name: '红粉色渐变',
+        layers: [
+          { hOffset: 5, vOffset: 5, blur: 10, spread: 0, color: '#ff0055', opacity: 0.5, inset: false },
+          { hOffset: -5, vOffset: -5, blur: 10, spread: 0, color: '#0055ff', opacity: 0.5, inset: false }
+        ]
+      },
+      {
+        name: '多层软阴影',
+        layers: [
+          { hOffset: 0, vOffset: 1, blur: 1, spread: 0, color: '#000000', opacity: 0.05, inset: false },
+          { hOffset: 0, vOffset: 5, blur: 10, spread: 0, color: '#000000', opacity: 0.1, inset: false },
+          { hOffset: 0, vOffset: 15, blur: 30, spread: 0, color: '#000000', opacity: 0.15, inset: false }
+        ]
+      },
+      {
+        name: '上方投影',
+        layers: [{ hOffset: 0, vOffset: -5, blur: 10, spread: 0, color: '#000000', opacity: 0.15, inset: false }]
+      }
+    ];
+
+    // DOM 元素
+    const elements = {
+      hOffsetSlider: document.getElementById('hOffsetSlider'),
+      hOffsetValue: document.getElementById('hOffsetValue'),
+      vOffsetSlider: document.getElementById('vOffsetSlider'),
+      vOffsetValue: document.getElementById('vOffsetValue'),
+      blurSlider: document.getElementById('blurSlider'),
+      blurValue: document.getElementById('blurValue'),
+      spreadSlider: document.getElementById('spreadSlider'),
+      spreadValue: document.getElementById('spreadValue'),
+      shadowColor: document.getElementById('shadowColor'),
+      shadowColorHex: document.getElementById('shadowColorHex'),
+      opacitySlider: document.getElementById('opacitySlider'),
+      opacityValue: document.getElementById('opacityValue'),
+      outlineBtn: document.getElementById('outlineBtn'),
+      insetBtn: document.getElementById('insetBtn'),
+      layerCount: document.getElementById('layerCount'),
+      addLayerBtn: document.getElementById('addLayerBtn'),
+      removeLayerBtn: document.getElementById('removeLayerBtn'),
+      previewBox: document.getElementById('previewBox'),
+      cssOutput: document.getElementById('cssOutput'),
+      copyBtn: document.getElementById('copyBtn'),
+      copyToast: document.getElementById('copyToast'),
+      presetsContainer: document.getElementById('presets')
+    };
+
+    // 获取当前图层
+    function currentLayer() {
+      return state.layers[state.currentLayer];
+    }
+
+    // 生成 CSS
+    function generateCSS() {
+      const shadowParts = state.layers.map(layer => {
+        const rgba = hexToRgba(layer.color, layer.opacity);
+        let part = `${layer.hOffset}px ${layer.vOffset}px ${layer.blur}px ${layer.spread}px ${rgba}`;
+        if (layer.inset) {
+          part += ' inset';
+        }
+        return part;
+      });
+      return `box-shadow: ${shadowParts.join(', ')};`;
+    }
+
+    // HEX 转 RGBA
+    function hexToRgba(hex, opacity) {
+      hex = hex.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    // 更新预览
+    function updatePreview() {
+      const css = generateCSS();
+      elements.previewBox.style.boxShadow = css.replace('box-shadow: ', '');
+      elements.cssOutput.value = css;
+    }
+
+    // 更新 UI 控件显示
+    function updateUIFields() {
+      const layer = currentLayer();
+      elements.hOffsetSlider.value = layer.hOffset;
+      elements.vOffsetSlider.value = layer.vOffset;
+      elements.blurSlider.value = layer.blur;
+      elements.spreadSlider.value = layer.spread;
+      elements.shadowColor.value = layer.color;
+      elements.shadowColorHex.value = layer.color;
+      elements.opacitySlider.value = layer.opacity;
+      
+      elements.hOffsetValue.textContent = layer.hOffset + 'px';
+      elements.vOffsetValue.textContent = layer.vOffset + 'px';
+      elements.blurValue.textContent = layer.blur + 'px';
+      elements.spreadValue.textContent = layer.spread + 'px';
+      elements.opacityValue.textContent = layer.opacity.toFixed(2);
+      elements.layerCount.textContent = state.layers.length;
+      
+      // 更新阴影类型按钮
+      if (layer.inset) {
+        elements.outlineBtn.className = 'shadow-type-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+        elements.insetBtn.className = 'shadow-type-btn px-4 py-2 rounded-md bg-blue-500 text-white';
+      } else {
+        elements.outlineBtn.className = 'shadow-type-btn px-4 py-2 rounded-md bg-blue-500 text-white';
+        elements.insetBtn.className = 'shadow-type-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+      }
+
+      // 更新删除按钮状态
+      if (state.layers.length <= 1) {
+        elements.removeLayerBtn.disabled = true;
+        elements.removeLayerBtn.className = 'px-3 py-1 bg-red-300 text-white rounded-md cursor-not-allowed';
+      } else {
+        elements.removeLayerBtn.disabled = false;
+        elements.removeLayerBtn.className = 'px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600';
+      }
+    }
+
+    // 渲染预设
+    function renderPresets() {
+      elements.presetsContainer.innerHTML = '';
+      presets.forEach((preset, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-left';
+        btn.textContent = preset.name;
+        btn.addEventListener('click', () => {
+          state.layers = JSON.parse(JSON.stringify(preset.layers));
+          state.currentLayer = 0;
+          updateUIFields();
+          updatePreview();
+        });
+        elements.presetsContainer.appendChild(btn);
+      });
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 滑块事件
+      elements.hOffsetSlider.addEventListener('input', e => {
+        currentLayer().hOffset = parseInt(e.target.value);
+        elements.hOffsetValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.vOffsetSlider.addEventListener('input', e => {
+        currentLayer().vOffset = parseInt(e.target.value);
+        elements.vOffsetValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.blurSlider.addEventListener('input', e => {
+        currentLayer().blur = parseInt(e.target.value);
+        elements.blurValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.spreadSlider.addEventListener('input', e => {
+        currentLayer().spread = parseInt(e.target.value);
+        elements.spreadValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.opacitySlider.addEventListener('input', e => {
+        currentLayer().opacity = parseFloat(e.target.value);
+        elements.opacityValue.textContent = parseFloat(e.target.value).toFixed(2);
+        updatePreview();
+      });
+
+      // 颜色
+      elements.shadowColor.addEventListener('input', e => {
+        currentLayer().color = e.target.value;
+        elements.shadowColorHex.value = e.target.value;
+        updatePreview();
+      });
+
+      elements.shadowColorHex.addEventListener('change', e => {
+        let color = e.target.value.trim();
+        if (!color.startsWith('#')) color = '#' + color;
+        if (/^#[0-9A-Fa-f]{6}$/.test(color) || /^#[0-9A-Fa-f]{3}$/.test(color)) {
+          currentLayer().color = color;
+          elements.shadowColor.value = color;
+          updatePreview();
+        }
+      });
+
+      // 阴影类型
+      elements.outlineBtn.addEventListener('click', () => {
+        currentLayer().inset = false;
+        updateUIFields();
+        updatePreview();
+      });
+
+      elements.insetBtn.addEventListener('click', () => {
+        currentLayer().inset = true;
+        updateUIFields();
+        updatePreview();
+      });
+
+      // 添加/删除层
+      elements.addLayerBtn.addEventListener('click', () => {
+        // 复制当前层作为新层
+        const newLayer = JSON.parse(JSON.stringify(currentLayer()));
+        state.layers.push(newLayer);
+        state.currentLayer = state.layers.length - 1;
+        updateUIFields();
+        updatePreview();
+      });
+
+      elements.removeLayerBtn.addEventListener('click', () => {
+        if (state.layers.length > 1) {
+          state.layers.splice(state.currentLayer, 1);
+          state.currentLayer = Math.max(0, state.currentLayer - 1);
+          updateUIFields();
+          updatePreview();
+        }
+      });
+
+      // 复制按钮
+      elements.copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(elements.cssOutput.value);
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        } catch (err) {
+          elements.cssOutput.select();
+          document.execCommand('copy');
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        }
+      });
+    }
+
+    // 初始化
+    function init() {
+      bindEvents();
+      renderPresets();
+      updateUIFields();
+      updatePreview();
+    }
+
+    init();
+  </script>
+</body>
+</html>

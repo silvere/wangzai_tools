@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 AI 面试题库</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--card:#12122a;--border:#1e1e40;--accent:#7c83ff;--accent2:#4ade80;--text:#e0e0e0;--dim:#888}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.header{text-align:center;padding:32px 16px 20px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header h1{font-size:1.6em;color:#fff}
+.header .sub{color:var(--dim);font-size:0.85em;margin-top:6px}
+.stats{display:flex;gap:16px;justify-content:center;margin-top:12px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 16px;text-align:center}
+.stat .num{font-size:1.3em;color:var(--accent);font-weight:700}
+.stat .label{font-size:0.75em;color:var(--dim)}
+.search-bar{margin-bottom:16px}
+.search-bar input{width:100%;background:#0d0d20;border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:10px;font-size:0.9em;outline:none}
+.search-bar input:focus{border-color:var(--accent)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-btn{background:var(--card);border:1px solid var(--border);color:var(--dim);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8em;transition:all 0.2s}
+.filter-btn:hover{border-color:var(--accent);color:#fff}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.level-filters{display:flex;gap:8px;margin-bottom:20px}
+.level-btn{background:var(--card);border:1px solid var(--border);color:var(--dim);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8em}
+.level-btn:hover{border-color:var(--accent);color:#fff}
+.level-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.cat-section{margin-bottom:8px}
+.cat-title{color:#fff;font-size:1em;margin:16px 0 8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.qa-card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color 0.2s}
+.qa-card:hover{border-color:#333}
+.qa-card.hidden{display:none}
+.qa-header{padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.qa-level{padding:2px 10px;border-radius:6px;font-size:0.75em;font-weight:600;flex-shrink:0}
+.qa-question{flex:1;color:#fff;font-size:0.9em;font-weight:500}
+.qa-arrow{color:var(--dim);transition:transform 0.3s;font-size:0.8em}
+.qa-card.open .qa-arrow{transform:rotate(180deg)}
+.qa-body{max-height:0;overflow:hidden;transition:max-height 0.4s ease;padding:0 16px}
+.qa-card.open .qa-body{max-height:800px;padding:0 16px 16px}
+.qa-body p{color:var(--dim);font-size:0.88em;line-height:1.8}
+.qa-tags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.tag{background:#1a1a3e;color:var(--accent);padding:2px 10px;border-radius:6px;font-size:0.75em}
+.match-count{color:var(--dim);font-size:0.85em;margin-bottom:12px}
+.footer{text-align:center;padding:24px;color:#444;font-size:0.8em}
+@media(max-width:600px){.stats{gap:8px}.stat{padding:6px 10px}.qa-header{padding:10px 12px}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <h1>🎯 AI 面试题库</h1>
+  <div class="sub">大模型 / Agent / RAG 方向面试高频题 · 点击展开答案</div>
+  <div class="stats">
+    <div class="stat"><div class="num">15</div><div class="label">题目总数</div></div>
+    <div class="stat"><div class="num">6</div><div class="label">知识领域</div></div>
+    <div class="stat"><div class="num">5</div><div class="label">高级题目</div></div>
+  </div>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="🔍 搜索题目、关键词..." oninput="filterAll()">
+</div>
+
+<div class="filters"><button class="filter-btn active" onclick="filterCat('all',this)">全部</button><button class="filter-btn" onclick="filterCat('大模型基础',this)">🧠 大模型基础</button><button class="filter-btn" onclick="filterCat('RAG 与应用',this)">🔍 RAG 与应用</button><button class="filter-btn" onclick="filterCat('AI Agent',this)">🤖 AI Agent</button><button class="filter-btn" onclick="filterCat('训练与优化',this)">⚙️ 训练与优化</button><button class="filter-btn" onclick="filterCat('评测与安全',this)">🛡️ 评测与安全</button><button class="filter-btn" onclick="filterCat('行业趋势',this)">📈 行业趋势</button></div>
+<div class="level-filters">
+  <button class="level-btn active" onclick="filterLevel('all',this)">全部难度</button>
+  <button class="level-btn" onclick="filterLevel('中级',this)">中级</button>
+  <button class="level-btn" onclick="filterLevel('高级',this)">高级</button>
+</div>
+
+<div class="match-count" id="matchCount">15 道题目</div>
+
+<div class="cat-section"><h3 class="cat-title">🧠 大模型基础</h3>
+<div class="qa-card" data-cat="大模型基础" data-level="中级" data-text="transformer 中 self-attention 的计算复杂度是多少？为什么这是一个问题？ self-attention 的计算复杂度是 o(n²d)，其中 n 是序列长度，d 是维度。这意味着随着序列长度增加，计算量和内存占用呈平方增长。这是处理长文本的主要瓶颈。解决方案包括：稀疏注意力（如 longformer 的滑动窗口）、线性注意力（如 linear transformer）、flash attention（通过 io 感知的分块计算优化）、以及分组查询注意力 gqa（减少 kv 头数量）。 transformer 注意力机制 复杂度">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">Transformer 中 Self-Attention 的计算复杂度是多少？为什么这是一个问题？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>Self-Attention 的计算复杂度是 O(n²d)，其中 n 是序列长度，d 是维度。这意味着随着序列长度增加，计算量和内存占用呈平方增长。这是处理长文本的主要瓶颈。解决方案包括：稀疏注意力（如 Longformer 的滑动窗口）、线性注意力（如 Linear Transformer）、Flash Attention（通过 IO 感知的分块计算优化）、以及分组查询注意力 GQA（减少 KV 头数量）。</p>
+    <div class="qa-tags"><span class="tag">Transformer</span><span class="tag">注意力机制</span><span class="tag">复杂度</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="大模型基础" data-level="中级" data-text="解释 kv cache 的原理和作用。为什么它对推理性能至关重要？ 在自回归生成中，每生成一个新 token 都需要对之前所有 token 做注意力计算。kv cache 缓存了之前 token 的 key 和 value 矩阵，避免重复计算。没有 kv cache，生成 n 个 token 的复杂度是 o(n³)；有了 kv cache 降为 o(n²)。代价是内存占用：对于 70b 模型、4096 序列长度，kv cache 可能占用数十 gb 显存。优化方法包括 gqa（减少 kv 头）、pagedattention（vllm 的分页管理）、量化 kv cache 等。 推理优化 kv cache 显存">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">解释 KV Cache 的原理和作用。为什么它对推理性能至关重要？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>在自回归生成中，每生成一个新 token 都需要对之前所有 token 做注意力计算。KV Cache 缓存了之前 token 的 Key 和 Value 矩阵，避免重复计算。没有 KV Cache，生成 n 个 token 的复杂度是 O(n³)；有了 KV Cache 降为 O(n²)。代价是内存占用：对于 70B 模型、4096 序列长度，KV Cache 可能占用数十 GB 显存。优化方法包括 GQA（减少 KV 头）、PagedAttention（vLLM 的分页管理）、量化 KV Cache 等。</p>
+    <div class="qa-tags"><span class="tag">推理优化</span><span class="tag">KV Cache</span><span class="tag">显存</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="大模型基础" data-level="高级" data-text="什么是 rlhf？它的训练流程是怎样的？有什么替代方案？ rlhf（reinforcement learning from human feedback）通过人类反馈来对齐模型行为。流程：1）sft 阶段：用高质量数据微调基础模型；2）奖励模型训练：收集人类偏好数据（a vs b），训练奖励模型；3）ppo 优化：用奖励模型的信号通过 ppo 算法优化策略模型。替代方案：dpo（direct preference optimization）直接从偏好数据优化，跳过奖励模型训练，更简单稳定；grpo（group relative policy optimization）deepseek 提出的方法，不需要 critic 模型。 rlhf 对齐 dpo 训练">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#f59e0b20;color:#f59e0b">高级</span>
+    <span class="qa-question">什么是 RLHF？它的训练流程是怎样的？有什么替代方案？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>RLHF（Reinforcement Learning from Human Feedback）通过人类反馈来对齐模型行为。流程：1）SFT 阶段：用高质量数据微调基础模型；2）奖励模型训练：收集人类偏好数据（A vs B），训练奖励模型；3）PPO 优化：用奖励模型的信号通过 PPO 算法优化策略模型。替代方案：DPO（Direct Preference Optimization）直接从偏好数据优化，跳过奖励模型训练，更简单稳定；GRPO（Group Relative Policy Optimization）DeepSeek 提出的方法，不需要 critic 模型。</p>
+    <div class="qa-tags"><span class="tag">RLHF</span><span class="tag">对齐</span><span class="tag">DPO</span><span class="tag">训练</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="大模型基础" data-level="高级" data-text="moe（mixture of experts）架构的优势和挑战是什么？ moe 用门控网络将输入路由到部分专家网络，实现「大参数量、小计算量」。优势：1）同等计算预算下可以扩大模型容量；2）每个 token 只激活部分参数（如 deepseek-v3 的 671b 总参数只激活 37b）。挑战：1）负载均衡：部分专家可能过载或闲置，需要辅助损失函数；2）通信开销：分布式训练时专家分布在不同 gpu，需要 all-to-all 通信；3）推理时显存：虽然计算量小，但所有专家参数都需要加载到显存；4）训练不稳定：路由决策的离散性导致训练波动。 moe 架构 deepseek">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#f59e0b20;color:#f59e0b">高级</span>
+    <span class="qa-question">MoE（Mixture of Experts）架构的优势和挑战是什么？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>MoE 用门控网络将输入路由到部分专家网络，实现「大参数量、小计算量」。优势：1）同等计算预算下可以扩大模型容量；2）每个 token 只激活部分参数（如 DeepSeek-V3 的 671B 总参数只激活 37B）。挑战：1）负载均衡：部分专家可能过载或闲置，需要辅助损失函数；2）通信开销：分布式训练时专家分布在不同 GPU，需要 All-to-All 通信；3）推理时显存：虽然计算量小，但所有专家参数都需要加载到显存；4）训练不稳定：路由决策的离散性导致训练波动。</p>
+    <div class="qa-tags"><span class="tag">MoE</span><span class="tag">架构</span><span class="tag">DeepSeek</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="大模型基础" data-level="高级" data-text="解释 rope（旋转位置编码）的核心思想，以及它相比绝对位置编码的优势。 rope 通过旋转矩阵将位置信息编码到 query 和 key 中。核心思想：将 token 的位置信息表示为复数空间中的旋转角度，使得两个 token 的注意力分数只依赖于它们的相对位置差。优势：1）天然支持相对位置编码，无需额外参数；2）具有良好的外推性，可通过 ntk-aware 缩放或 yarn 等方法扩展到更长序列；3）计算高效，只需要逐元素旋转操作。几乎所有主流开源模型（llama、qwen、mistral）都采用 rope。 位置编码 rope 长上下文">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#f59e0b20;color:#f59e0b">高级</span>
+    <span class="qa-question">解释 RoPE（旋转位置编码）的核心思想，以及它相比绝对位置编码的优势。</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>RoPE 通过旋转矩阵将位置信息编码到 Query 和 Key 中。核心思想：将 token 的位置信息表示为复数空间中的旋转角度，使得两个 token 的注意力分数只依赖于它们的相对位置差。优势：1）天然支持相对位置编码，无需额外参数；2）具有良好的外推性，可通过 NTK-aware 缩放或 YaRN 等方法扩展到更长序列；3）计算高效，只需要逐元素旋转操作。几乎所有主流开源模型（Llama、Qwen、Mistral）都采用 RoPE。</p>
+    <div class="qa-tags"><span class="tag">位置编码</span><span class="tag">RoPE</span><span class="tag">长上下文</span></div>
+  </div>
+</div></div><div class="cat-section"><h3 class="cat-title">🔍 RAG 与应用</h3>
+<div class="qa-card" data-cat="RAG 与应用" data-level="中级" data-text="rag 系统的核心流程是什么？有哪些常见的优化策略？ rag（retrieval-augmented generation）核心流程：1）索引：将文档切分为 chunks，用 embedding 模型编码为向量，存入向量数据库；2）检索：将用户查询编码为向量，在向量库中做相似度搜索，召回 top-k 相关片段；3）生成：将检索到的片段作为上下文，与用户问题一起输入 llm 生成回答。优化策略：查询改写（hyde、多查询）、混合检索（向量+关键词 bm25）、重排序（cross-encoder reranker）、分块策略优化（语义分块、父子文档）、self-rag（模型自主决定是否需要检索）。 rag 检索 向量数据库">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">RAG 系统的核心流程是什么？有哪些常见的优化策略？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>RAG（Retrieval-Augmented Generation）核心流程：1）索引：将文档切分为 chunks，用 embedding 模型编码为向量，存入向量数据库；2）检索：将用户查询编码为向量，在向量库中做相似度搜索，召回 top-k 相关片段；3）生成：将检索到的片段作为上下文，与用户问题一起输入 LLM 生成回答。优化策略：查询改写（HyDE、多查询）、混合检索（向量+关键词 BM25）、重排序（Cross-encoder reranker）、分块策略优化（语义分块、父子文档）、Self-RAG（模型自主决定是否需要检索）。</p>
+    <div class="qa-tags"><span class="tag">RAG</span><span class="tag">检索</span><span class="tag">向量数据库</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="RAG 与应用" data-level="中级" data-text="向量数据库有哪些选择？它们的核心区别是什么？ 主流选择：1）milvus/zilliz：开源分布式向量数据库，支持多种索引（ivf、hnsw、diskann），适合大规模生产环境；2）pinecone：全托管云服务，开箱即用，适合快速原型；3）weaviate：支持混合搜索（向量+关键词），内置模块化架构；4）qdrant：rust 实现，性能优秀，支持过滤搜索；5）chromadb：轻量级，适合开发和小规模应用；6）faiss：meta 的库，不是数据库但索引性能极强。核心区别在于：规模（单机 vs 分布式）、托管方式（自建 vs 云服务）、过滤能力、以及是否支持混合搜索。 向量数据库 rag 基础设施">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">向量数据库有哪些选择？它们的核心区别是什么？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>主流选择：1）Milvus/Zilliz：开源分布式向量数据库，支持多种索引（IVF、HNSW、DiskANN），适合大规模生产环境；2）Pinecone：全托管云服务，开箱即用，适合快速原型；3）Weaviate：支持混合搜索（向量+关键词），内置模块化架构；4）Qdrant：Rust 实现，性能优秀，支持过滤搜索；5）ChromaDB：轻量级，适合开发和小规模应用；6）FAISS：Meta 的库，不是数据库但索引性能极强。核心区别在于：规模（单机 vs 分布式）、托管方式（自建 vs 云服务）、过滤能力、以及是否支持混合搜索。</p>
+    <div class="qa-tags"><span class="tag">向量数据库</span><span class="tag">RAG</span><span class="tag">基础设施</span></div>
+  </div>
+</div></div><div class="cat-section"><h3 class="cat-title">🤖 AI Agent</h3>
+<div class="qa-card" data-cat="AI Agent" data-level="中级" data-text="什么是 react 框架？它解决了什么问题？ react（reasoning + acting）让 llm 交替进行推理（thought）和行动（action），形成 thought → action → observation 的循环。解决的问题：纯推理（cot）无法与外部环境交互获取信息；纯行动（如直接调用工具）缺乏规划和反思能力。react 将两者结合：模型先思考下一步该做什么（thought），然后执行动作（action），观察结果（observation），再继续推理。这是目前大多数 agent 框架的基础范式。局限性：长链路中错误会累积，且每步都需要完整的 llm 调用，成本较高。 agent react 工具调用">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">什么是 ReAct 框架？它解决了什么问题？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>ReAct（Reasoning + Acting）让 LLM 交替进行推理（Thought）和行动（Action），形成 Thought → Action → Observation 的循环。解决的问题：纯推理（CoT）无法与外部环境交互获取信息；纯行动（如直接调用工具）缺乏规划和反思能力。ReAct 将两者结合：模型先思考下一步该做什么（Thought），然后执行动作（Action），观察结果（Observation），再继续推理。这是目前大多数 Agent 框架的基础范式。局限性：长链路中错误会累积，且每步都需要完整的 LLM 调用，成本较高。</p>
+    <div class="qa-tags"><span class="tag">Agent</span><span class="tag">ReAct</span><span class="tag">工具调用</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="AI Agent" data-level="中级" data-text="function calling 和 tool use 的实现原理是什么？ function calling 让 llm 输出结构化的函数调用指令，而非自然语言。实现原理：1）在 system prompt 或特殊 token 中定义可用函数的 schema（名称、参数、描述）；2）模型训练时加入函数调用格式的数据，学会在合适时机输出函数调用的 json；3）运行时，框架解析模型输出的函数调用，执行对应函数，将结果返回给模型继续生成。关键挑战：参数提取的准确性、多函数选择的正确性、嵌套/并行调用的处理。openai、anthropic、google 都有各自的 function calling 协议，社区也有 gorilla、toolbench 等开源方案。 agent function calling 工具">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">Function Calling 和 Tool Use 的实现原理是什么？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>Function Calling 让 LLM 输出结构化的函数调用指令，而非自然语言。实现原理：1）在 system prompt 或特殊 token 中定义可用函数的 schema（名称、参数、描述）；2）模型训练时加入函数调用格式的数据，学会在合适时机输出函数调用的 JSON；3）运行时，框架解析模型输出的函数调用，执行对应函数，将结果返回给模型继续生成。关键挑战：参数提取的准确性、多函数选择的正确性、嵌套/并行调用的处理。OpenAI、Anthropic、Google 都有各自的 Function Calling 协议，社区也有 Gorilla、ToolBench 等开源方案。</p>
+    <div class="qa-tags"><span class="tag">Agent</span><span class="tag">Function Calling</span><span class="tag">工具</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="AI Agent" data-level="高级" data-text="多智能体系统（multi-agent）的常见架构模式有哪些？ 常见架构：1）主从模式：一个 orchestrator agent 负责任务分解和调度，多个 worker agent 执行具体子任务（如 autogen）；2）辩论模式：多个 agent 对同一问题给出不同观点，通过多轮辩论达成共识（如 chatdev 的设计-编码-测试角色）；3）流水线模式：agent 按顺序处理，每个 agent 负责一个阶段（如 规划→编码→审查→测试）；4）层级模式：多层 agent，上层负责高层规划，下层负责具体执行；5）市场模式：agent 通过竞标/协商来分配任务。关键挑战：通信效率、一致性维护、错误传播控制。 multi-agent 架构 协作">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#f59e0b20;color:#f59e0b">高级</span>
+    <span class="qa-question">多智能体系统（Multi-Agent）的常见架构模式有哪些？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>常见架构：1）主从模式：一个 Orchestrator Agent 负责任务分解和调度，多个 Worker Agent 执行具体子任务（如 AutoGen）；2）辩论模式：多个 Agent 对同一问题给出不同观点，通过多轮辩论达成共识（如 ChatDev 的设计-编码-测试角色）；3）流水线模式：Agent 按顺序处理，每个 Agent 负责一个阶段（如 规划→编码→审查→测试）；4）层级模式：多层 Agent，上层负责高层规划，下层负责具体执行；5）市场模式：Agent 通过竞标/协商来分配任务。关键挑战：通信效率、一致性维护、错误传播控制。</p>
+    <div class="qa-tags"><span class="tag">Multi-Agent</span><span class="tag">架构</span><span class="tag">协作</span></div>
+  </div>
+</div></div><div class="cat-section"><h3 class="cat-title">⚙️ 训练与优化</h3>
+<div class="qa-card" data-cat="训练与优化" data-level="中级" data-text="lora 的原理是什么？为什么它能有效减少微调成本？ lora（low-rank adaptation）的核心思想：预训练权重矩阵的更新可以用低秩分解来近似。具体做法：冻结原始权重 w，添加旁路 δw = ba，其中 b∈r^(d×r)、a∈r^(r×k)，r << min(d,k)。这样可训练参数从 d×k 降为 (d+k)×r。例如 r=16 时，7b 模型的可训练参数只有原来的 0.1%。有效的原因：1）预训练模型的权重更新通常是低秩的；2）低秩约束起到正则化作用，防止过拟合；3）推理时可以将 lora 权重合并回原始权重，无额外延迟。变体：qlora（量化基础模型+lora）、dora（分解方向和幅度）。 lora 微调 参数高效">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">LoRA 的原理是什么？为什么它能有效减少微调成本？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>LoRA（Low-Rank Adaptation）的核心思想：预训练权重矩阵的更新可以用低秩分解来近似。具体做法：冻结原始权重 W，添加旁路 ΔW = BA，其中 B∈R^(d×r)、A∈R^(r×k)，r << min(d,k)。这样可训练参数从 d×k 降为 (d+k)×r。例如 r=16 时，7B 模型的可训练参数只有原来的 0.1%。有效的原因：1）预训练模型的权重更新通常是低秩的；2）低秩约束起到正则化作用，防止过拟合；3）推理时可以将 LoRA 权重合并回原始权重，无额外延迟。变体：QLoRA（量化基础模型+LoRA）、DoRA（分解方向和幅度）。</p>
+    <div class="qa-tags"><span class="tag">LoRA</span><span class="tag">微调</span><span class="tag">参数高效</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="训练与优化" data-level="中级" data-text="模型量化的主要方法有哪些？各自的优缺点？ 主要方法：1）ptq（训练后量化）：gptq（逐层量化，用校准数据最小化量化误差）、awq（保护重要权重通道）、gguf/llama.cpp（cpu 友好的混合量化）；2）qat（量化感知训练）：训练时模拟量化误差，精度更高但需要训练；3）常见精度：fp16→int8（几乎无损）、int4（轻微损失，性价比最高）、int2/int3（损失明显，需要特殊方法）。优缺点：ptq 简单快速但精度略低；qat 精度好但需要训练资源；int4 是目前最佳平衡点。实践建议：生产环境用 awq/gptq int4，开发测试用 gguf 在 cpu 上跑。 量化 推理优化 部署">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">模型量化的主要方法有哪些？各自的优缺点？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>主要方法：1）PTQ（训练后量化）：GPTQ（逐层量化，用校准数据最小化量化误差）、AWQ（保护重要权重通道）、GGUF/llama.cpp（CPU 友好的混合量化）；2）QAT（量化感知训练）：训练时模拟量化误差，精度更高但需要训练；3）常见精度：FP16→INT8（几乎无损）、INT4（轻微损失，性价比最高）、INT2/INT3（损失明显，需要特殊方法）。优缺点：PTQ 简单快速但精度略低；QAT 精度好但需要训练资源；INT4 是目前最佳平衡点。实践建议：生产环境用 AWQ/GPTQ INT4，开发测试用 GGUF 在 CPU 上跑。</p>
+    <div class="qa-tags"><span class="tag">量化</span><span class="tag">推理优化</span><span class="tag">部署</span></div>
+  </div>
+</div></div><div class="cat-section"><h3 class="cat-title">🛡️ 评测与安全</h3>
+<div class="qa-card" data-cat="评测与安全" data-level="中级" data-text="如何评估一个 llm 的真实能力？常用的 benchmark 有哪些局限性？ 评估维度：1）知识：mmlu、gpqa、simpleqa；2）推理：gsm8k、math、arc-agi；3）代码：humaneval、swe-bench、livecodebench；4）指令遵循：ifeval、alpacaeval；5）对话：chatbot arena（人类投票）。局限性：1）数据污染：公开 benchmark 可能被纳入训练数据；2）过拟合：模型可能针对特定 benchmark 优化而非真正提升能力；3）静态性：固定题目无法反映模型在新问题上的表现（livecodebench 通过持续更新解决）；4）评测偏差：自动评测可能与人类判断不一致。最可靠的方法：结合 chatbot arena 的人类评测 + 动态更新的 benchmark + 实际应用场景测试。 评测 benchmark 数据污染">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">如何评估一个 LLM 的真实能力？常用的 benchmark 有哪些局限性？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>评估维度：1）知识：MMLU、GPQA、SimpleQA；2）推理：GSM8K、MATH、ARC-AGI；3）代码：HumanEval、SWE-bench、LiveCodeBench；4）指令遵循：IFEval、AlpacaEval；5）对话：Chatbot Arena（人类投票）。局限性：1）数据污染：公开 benchmark 可能被纳入训练数据；2）过拟合：模型可能针对特定 benchmark 优化而非真正提升能力；3）静态性：固定题目无法反映模型在新问题上的表现（LiveCodeBench 通过持续更新解决）；4）评测偏差：自动评测可能与人类判断不一致。最可靠的方法：结合 Chatbot Arena 的人类评测 + 动态更新的 benchmark + 实际应用场景测试。</p>
+    <div class="qa-tags"><span class="tag">评测</span><span class="tag">Benchmark</span><span class="tag">数据污染</span></div>
+  </div>
+</div>
+<div class="qa-card" data-cat="评测与安全" data-level="中级" data-text="什么是 prompt injection？如何防御？ prompt injection 是通过精心构造的输入来覆盖或绕过系统提示词，让模型执行非预期行为。类型：1）直接注入：在用户输入中包含「忽略之前的指令」等指令；2）间接注入：在模型会读取的外部数据（网页、文档）中嵌入恶意指令。防御策略：1）输入过滤：检测和过滤可疑的指令性文本；2）分隔符：用明确的分隔符区分系统指令和用户输入；3）权限控制：限制模型可执行的操作范围；4）输出验证：检查模型输出是否符合预期格式；5）多层防御：结合多种策略；6）专门的安全模型：用额外模型检测注入尝试。目前没有完美解决方案，是活跃的研究领域。 安全 prompt injection 防御">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#3b82f620;color:#3b82f6">中级</span>
+    <span class="qa-question">什么是 prompt injection？如何防御？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>Prompt injection 是通过精心构造的输入来覆盖或绕过系统提示词，让模型执行非预期行为。类型：1）直接注入：在用户输入中包含「忽略之前的指令」等指令；2）间接注入：在模型会读取的外部数据（网页、文档）中嵌入恶意指令。防御策略：1）输入过滤：检测和过滤可疑的指令性文本；2）分隔符：用明确的分隔符区分系统指令和用户输入；3）权限控制：限制模型可执行的操作范围；4）输出验证：检查模型输出是否符合预期格式；5）多层防御：结合多种策略；6）专门的安全模型：用额外模型检测注入尝试。目前没有完美解决方案，是活跃的研究领域。</p>
+    <div class="qa-tags"><span class="tag">安全</span><span class="tag">Prompt Injection</span><span class="tag">防御</span></div>
+  </div>
+</div></div><div class="cat-section"><h3 class="cat-title">📈 行业趋势</h3>
+<div class="qa-card" data-cat="行业趋势" data-level="高级" data-text="test-time scaling（推理时扩展）的核心思想是什么？为什么它是当前的重要趋势？ 核心思想：与其在训练时投入更多计算（更大模型、更多数据），不如在推理时投入更多计算来提升性能。方法包括：1）多次采样+投票（self-consistency）；2）长链推理（o1/o3 的内部 cot）；3）搜索+验证（生成多个候选，用验证器选最优）；4）迭代修正（反复检查和修改输出）。重要性：1）训练扩展面临数据和算力瓶颈；2）推理时扩展可以按需分配，简单问题少花计算，难题多花计算；3）用户愿意为更好的结果等待更长时间；4）这是 o1/o3、deepseek-r1 等模型的核心技术路线。局限：推理成本增加、延迟增大、对多步任务效果递减（catts 论文的发现）。 test-time scaling 趋势 o1">
+  <div class="qa-header" onclick="this.parentElement.classList.toggle('open')">
+    <span class="qa-level" style="background:#f59e0b20;color:#f59e0b">高级</span>
+    <span class="qa-question">Test-Time Scaling（推理时扩展）的核心思想是什么？为什么它是当前的重要趋势？</span>
+    <span class="qa-arrow">▼</span>
+  </div>
+  <div class="qa-body">
+    <p>核心思想：与其在训练时投入更多计算（更大模型、更多数据），不如在推理时投入更多计算来提升性能。方法包括：1）多次采样+投票（Self-Consistency）；2）长链推理（o1/o3 的内部 CoT）；3）搜索+验证（生成多个候选，用验证器选最优）；4）迭代修正（反复检查和修改输出）。重要性：1）训练扩展面临数据和算力瓶颈；2）推理时扩展可以按需分配，简单问题少花计算，难题多花计算；3）用户愿意为更好的结果等待更长时间；4）这是 o1/o3、DeepSeek-R1 等模型的核心技术路线。局限：推理成本增加、延迟增大、对多步任务效果递减（CATTS 论文的发现）。</p>
+    <div class="qa-tags"><span class="tag">Test-Time Scaling</span><span class="tag">趋势</span><span class="tag">o1</span></div>
+  </div>
+</div></div>
+
+<div class="footer">🥛 旺仔 · Build #11 · Made for 老大<br>题库持续更新中，欢迎提出补充建议</div>
+</div>
+
+<script>
+let currentCat = 'all';
+let currentLevel = 'all';
+
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  filterAll();
+}
+
+function filterLevel(level, el) {
+  currentLevel = level;
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  filterAll();
+}
+
+function filterAll() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const cards = document.querySelectorAll('.qa-card');
+  let count = 0;
+
+  cards.forEach(card => {
+    const cat = card.getAttribute('data-cat');
+    const level = card.getAttribute('data-level');
+    const text = card.getAttribute('data-text');
+
+    let show = true;
+    if (currentCat !== 'all' && cat !== currentCat) show = false;
+    if (currentLevel !== 'all' && level !== currentLevel) show = false;
+    if (query && !text.includes(query)) show = false;
+
+    card.classList.toggle('hidden', !show);
+    if (show) count++;
+  });
+
+  document.getElementById('matchCount').textContent = count + ' 道题目';
+
+  // Show/hide category sections
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    const visible = sec.querySelectorAll('.qa-card:not(.hidden)').length;
+    sec.style.display = visible ? 'block' : 'none';
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark Cheat Sheet - 速查表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .filter-group select, .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        
+        .benchmarks {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .benchmark-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .benchmark-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .benchmark-card.hidden {
+            display: none;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        
+        .benchmark-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .category-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .category-代码能力 { background: #4caf50; }
+        .category-推理与数学 { background: #2196F3; }
+        .category-知识与理解 { background: #ff9800; }
+        .category-指令遵循 { background: #9c27b0; }
+        .category-Agent { background: #f44336; }
+        .category-多模态 { background: #00bcd4; }
+        .category-长上下文 { background: #795548; }
+        .category-安全与鲁棒性 { background: #607d8b; }
+        .category-工具调用 { background: #e91e63; }
+        .category-综合对话 { background: #3f51b5; }
+        
+        .card-content {
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .card-section {
+            margin-bottom: 12px;
+        }
+        
+        .card-section-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .card-section-content {
+            color: #666;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        
+        .insight {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 3px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .filters {
+                display: none;
+            }
+            
+            .benchmark-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Benchmark Cheat Sheet</h1>
+            <p>大模型评测基准速查表 - 快速查阅关键信息</p>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>分类筛选</label>
+                <select id="categoryFilter">
+                    <option value="all">全部分类</option>
+                    <option value="代码能力">代码能力</option>
+                    <option value="推理与数学">推理与数学</option>
+                    <option value="知识与理解">知识与理解</option>
+                    <option value="指令遵循">指令遵循</option>
+                    <option value="Agent">Agent</option>
+                    <option value="多模态">多模态</option>
+                    <option value="长上下文">长上下文</option>
+                    <option value="安全与鲁棒性">安全与鲁棒性</option>
+                    <option value="工具调用">工具调用</option>
+                    <option value="综合对话">综合对话</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>搜索</label>
+                <input type="text" id="searchInput" placeholder="搜索benchmark名称...">
+            </div>
+        </div>
+        
+        <div class="benchmarks" id="benchmarks"></div>
+    </div>
+    
+    <script>
+        const benchmarks = [
+            {
+                name: "HumanEval",
+                category: "代码能力",
+                source: "OpenAI",
+                description: "164道Python编程题，测试代码生成能力",
+                keyPoints: [
+                    "最经典的代码benchmark",
+                    "题目相对简单，顶级模型已接近100%",
+                    "存在严重的数据污染问题"
+                ],
+                warnings: "数据污染严重，高分不代表真实编程能力",
+                insights: "应结合LiveCodeBench等动态benchmark评测",
+                topModels: "GPT-4o: 92%, Claude Opus 4: 90%, DeepSeek V3: 89%"
+            },
+            {
+                name: "MMLU",
+                category: "知识与理解",
+                source: "UC Berkeley",
+                description: "15,908题，57个学科，四选一多选题",
+                keyPoints: [
+                    "行业标准，几乎所有模型都会报告",
+                    "顶级模型已接近人类平均水平(89.8%)",
+                    "四选一太简单，容易被"破解""
+                ],
+                warnings: "数据污染无法避免，高分可能是记忆而非理解",
+                insights: "必须结合MMLU-Pro评测，关注下降幅度",
+                topModels: "GPT-4o: 88.7%, Claude Opus 4: 88.3%, Gemini 1.5 Pro: 86.5%"
+            },
+            {
+                name: "MMLU-Pro",
+                category: "知识与理解",
+                source: "TIGER-Lab",
+                description: "12,000题，十选一，更难的干扰项",
+                keyPoints: [
+                    "MMLU的升级版，难度大幅提升",
+                    "模型表现普遍下降15-20%",
+                    "更能区分真实理解和记忆"
+                ],
+                warnings: "题目数量较少，某些学科样本不足",
+                insights: "MMLU到MMLU-Pro的下降幅度揭示模型的"水分"",
+                topModels: "Claude Opus 4: 75.2%, GPT-4o: 72.6%, Gemini 1.5 Pro: 68.9%"
+            },
+            {
+                name: "GPQA",
+                category: "知识与理解",
+                source: "NYU",
+                description: "448题，PhD级别专业知识，Google-Proof",
+                keyPoints: [
+                    "极端难度，PhD专家正确率仅65%",
+                    "测试知识的边界而非常见知识",
+                    "人类基准不明确(65% vs 34%)"
+                ],
+                warnings: "实用性存疑，更像压力测试而非标准评测",
+                insights: "高分可能是数据污染，应结合领域专家评估",
+                topModels: "o1-preview: 60.2%, Claude Opus 4: 59.8%, GPT-4o: 56.1%"
+            },
+            {
+                name: "GSM8K",
+                category: "推理与数学",
+                source: "OpenAI",
+                description: "8,500道小学数学应用题",
+                keyPoints: [
+                    "测试基础数学推理能力",
+                    "顶级模型已接近100%",
+                    "CoT提示词效果显著"
+                ],
+                warnings: "题目太简单，已无法区分顶级模型",
+                insights: "应升级到MATH或AIME评测更强推理能力",
+                topModels: "GPT-4o: 95.8%, Claude Opus 4: 95.0%, o1: 96.4%"
+            },
+            {
+                name: "MATH",
+                category: "推理与数学",
+                source: "UC Berkeley",
+                description: "12,500道高中到大学数学竞赛题",
+                keyPoints: [
+                    "难度远超GSM8K",
+                    "需要多步推理和数学知识",
+                    "推理模型(o1/o3)提升显著"
+                ],
+                warnings: "题目格式固定，可能存在过拟合",
+                insights: "o1系列在此benchmark上的突破代表推理能力质变",
+                topModels: "o3: 96.7%, o1: 94.8%, GPT-4o: 76.6%"
+            },
+            {
+                name: "SWE-bench",
+                category: "代码能力",
+                source: "Princeton NLP",
+                description: "2,294个真实GitHub issue，测试代码修复能力",
+                keyPoints: [
+                    "最接近真实编程场景",
+                    "需要理解代码库、定位bug、编写修复",
+                    "顶级模型表现仍然很低(<50%)"
+                ],
+                warnings: "评测成本高，运行时间长",
+                insights: "真正测试实用编程能力，比HumanEval有价值得多",
+                topModels: "Claude Opus 4: 48.9%, GPT-4o: 43.8%, DeepSeek V3: 40.2%"
+            },
+            {
+                name: "Chatbot Arena",
+                category: "指令遵循",
+                source: "LMSYS",
+                description: "人类投票排名，真实对话场景",
+                keyPoints: [
+                    "最接近真实用户体验",
+                    "动态更新，难以作弊",
+                    "但存在投票偏见"
+                ],
+                warnings: "投票者可能偏好某种风格，不完全客观",
+                insights: "应结合benchmark分数和Arena排名综合评估",
+                topModels: "GPT-4o: 1285 Elo, Claude Opus 4: 1278 Elo, Gemini 1.5 Pro: 1260 Elo"
+            },
+            {
+                name: "MMMU",
+                category: "多模态",
+                source: "IN.AI",
+                description: "11,500题，大学级别多模态理解",
+                keyPoints: [
+                    "测试图文理解能力",
+                    "涵盖艺术、科学、工程等领域",
+                    "需要OCR、图表理解、视觉推理"
+                ],
+                warnings: "题目质量参差不齐，某些题目有歧义",
+                insights: "多模态能力的重要指标，但不是唯一指标",
+                topModels: "GPT-4o: 69.1%, Gemini 1.5 Pro: 62.2%, Claude Opus 4: 59.4%"
+            },
+            {
+                name: "BFCL",
+                category: "工具调用",
+                source: "UC Berkeley / Gorilla",
+                description: "2,000+函数调用测试，多种场景",
+                keyPoints: [
+                    "测试工具调用准确性",
+                    "包含简单和复杂函数调用",
+                    "实用性强，接近真实应用"
+                ],
+                warnings: "评测标准较严格，小错误也会失分",
+                insights: "工具调用是AI Agent的核心能力，值得重点关注",
+                topModels: "GPT-4o: 88.3%, Claude Opus 4: 84.7%, Gemini 1.5 Pro: 82.1%"
+            }
+        ];
+        
+        function renderBenchmarks() {
+            const container = document.getElementById('benchmarks');
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            
+            container.innerHTML = benchmarks.map(b => {
+                const matchCategory = categoryFilter === 'all' || b.category === categoryFilter;
+                const matchSearch = b.name.toLowerCase().includes(searchQuery) || 
+                                   b.description.toLowerCase().includes(searchQuery);
+                
+                const hidden = !matchCategory || !matchSearch ? 'hidden' : '';
+                
+                return `
+                    <div class="benchmark-card ${hidden}">
+                        <div class="card-header">
+                            <div class="benchmark-name">${b.name}</div>
+                            <div class="category-badge category-${b.category}">${b.category}</div>
+                        </div>
+                        
+                        <div class="card-content">
+                            <div class="card-section">
+                                <div class="card-section-title">📝 简介</div>
+                                <div class="card-section-content">${b.description}</div>
+                            </div>
+                            
+                            <div class="card-section">
+                                <div class="card-section-title">🎯 关键点</div>
+                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                    ${b.keyPoints.map(p => `<li>${p}</li>`).join('')}
+                                </ul>
+                            </div>
+                            
+                            ${b.warnings ? `<div class="warning">⚠️ ${b.warnings}</div>` : ''}
+                            ${b.insights ? `<div class="insight">💡 ${b.insights}</div>` : ''}
+                            
+                            <div class="card-section" style="margin-top: 15px;">
+                                <div class="card-section-title">🏆 顶级模型</div>
+                                <div class="card-section-content">${b.topModels}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 初始化
+        renderBenchmarks();
+        
+        // 事件监听
+        document.getElementById('categoryFilter').addEventListener('change', renderBenchmarks);
+        document.getElementById('searchInput').addEventListener('input', renderBenchmarks);
+    </script>
+</body>
+</html>

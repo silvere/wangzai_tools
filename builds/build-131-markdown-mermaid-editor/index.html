@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Mermaid 实时编辑器 🎨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/bash.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .editor-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            }
+            .btn-hover {
+                transition: all 0.2s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .prose-custom h1 {
+                @apply text-2xl font-bold text-slate-800 mb-4 mt-6;
+            }
+            .prose-custom h2 {
+                @apply text-xl font-semibold text-slate-800 mb-3 mt-5;
+            }
+            .prose-custom h3 {
+                @apply text-lg font-semibold text-slate-800 mb-2 mt-4;
+            }
+            .prose-custom p {
+                @apply text-slate-700 mb-3 leading-relaxed;
+            }
+            .prose-custom ul, .prose-custom ol {
+                @apply ml-6 mb-3;
+            }
+            .prose-custom li {
+                @apply text-slate-700 mb-1 leading-relaxed;
+            }
+            .prose-custom code {
+                @apply bg-slate-100 px-1.5 py-0.5 rounded text-pink-600 text-sm font-mono;
+            }
+            .prose-custom pre {
+                @apply bg-slate-50 p-4 rounded-lg mb-4 overflow-x-auto;
+            }
+            .prose-custom pre code {
+                @apply bg-transparent p-0 text-slate-700;
+            }
+            .prose-custom blockquote {
+                @apply border-l-4 border-primary pl-4 italic text-slate-600 mb-3;
+            }
+            .prose-custom table {
+                @apply w-full border-collapse mb-4;
+            }
+            .prose-custom th, .prose-custom td {
+                @apply border border-slate-300 px-3 py-2 text-sm;
+            }
+            .prose-custom th {
+                @apply bg-slate-100 font-semibold text-slate-800;
+            }
+            .prose-custom a {
+                @apply text-primary hover:underline;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-indigo-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg">
+                        <i class="fa fa-pencil-square-o text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">Markdown Mermaid 实时编辑器 🎨</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">完全本地运行 · 实时渲染</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 功能按钮栏 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+            <div class="flex flex-wrap gap-3 items-center">
+                <button id="templateBtn" class="px-4 py-2 bg-indigo-50 text-primary rounded-lg font-medium hover:bg-indigo-100 transition btn-hover">
+                    <i class="fa fa-file-text-o mr-1"></i>插入模板
+                </button>
+                <button id="clearBtn" class="px-4 py-2 bg-slate-50 text-slate-700 rounded-lg font-medium hover:bg-slate-100 transition btn-hover">
+                    <i class="fa fa-eraser mr-1"></i>清空
+                </button>
+                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                <button id="copyMarkdownBtn" class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition btn-hover">
+                    <i class="fa fa-copy mr-1"></i>复制Markdown
+                </button>
+                <button id="copyHtmlBtn" class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium hover:bg-purple-100 transition btn-hover">
+                    <i class="fa fa-code mr-1"></i>复制HTML
+                </button>
+                <button id="downloadBtn" class="px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium hover:bg-green-100 transition btn-hover">
+                    <i class="fa fa-download mr-1"></i>导出文件
+                </button>
+                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                <button id="viewToggle" class="px-4 py-2 bg-amber-50 text-amber-700 rounded-lg font-medium hover:bg-amber-100 transition btn-hover">
+                    <i class="fa fa-columns mr-1"></i>并排视图
+                </button>
+            </div>
+        </div>
+
+        <!-- 模板选择弹窗 -->
+        <div id="templateModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="p-6 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-slate-800">选择 Mermaid 模板</h3>
+                        <button id="closeModal" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="flowchart">
+                            <p class="font-medium text-slate-800">流程图 (Flowchart)</p>
+                            <p class="text-xs text-slate-500 mt-1">流程、步骤、逻辑关系</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="sequence">
+                            <p class="font-medium text-slate-800">时序图 (Sequence Diagram)</p>
+                            <p class="text-xs text-slate-500 mt-1">系统交互、消息时序</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="class">
+                            <p class="font-medium text-slate-800">类图 (Class Diagram)</p>
+                            <p class="text-xs text-slate-500 mt-1">面向对象设计、类结构</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="state">
+                            <p class="font-medium text-slate-800">状态图 (State Diagram)</p>
+                            <p class="text-xs text-slate-500 mt-1">状态流转、状态机</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="er">
+                            <p class="font-medium text-slate-800">ER图 (Entity Relationship)</p>
+                            <p class="text-xs text-slate-500 mt-1">数据库设计、实体关系</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="pie">
+                            <p class="font-medium text-slate-800">饼图 (Pie Chart)</p>
+                            <p class="text-xs text-slate-500 mt-1">占比统计、数据可视化</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="gantt">
+                            <p class="font-medium text-slate-800">甘特图 (Gantt Chart)</p>
+                            <p class="text-xs text-slate-500 mt-1">项目进度、时间规划</p>
+                        </button>
+                        <button class="template-item text-left p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition" data-template="mindmap">
+                            <p class="font-medium text-slate-800">思维导图 (Mindmap)</p>
+                            <p class="text-xs text-slate-500 mt-1">头脑风暴、思路梳理</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑器区域 -->
+        <div id="editorContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- 输入区域 -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center">
+                        <i class="fa fa-pencil mr-2 text-primary"></i>Markdown 输入
+                    </h2>
+                    <div class="text-xs text-slate-500">
+                        <span id="editorStats">0 字符 | 0 行</span>
+                    </div>
+                </div>
+                <div class="relative">
+                    <textarea id="markdownInput" class="w-full h-[70vh] p-4 border border-slate-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-primary focus:border-primary editor-shadow resize-none" placeholder="在此输入 Markdown 内容，支持 Mermaid 图表..."># Markdown Mermaid 编辑器示例
+
+这是一个完全本地运行的 Markdown 编辑器，支持实时渲染 Mermaid 图表。
+
+## 🌟 功能特点
+
+- ✅ 纯前端实现，无需服务器，零数据上传
+- 🎨 支持所有 Mermaid 图表类型
+- 📝 完整的 Markdown 语法支持，代码高亮
+- 📋 一键导出 Markdown、HTML、图片
+- 💾 自动保存草稿，刷新不丢失内容
+
+## 📊 Mermaid 流程图示例
+
+```mermaid
+flowchart LR
+    A[开始] --> B{是否需要画图?}
+    B -->|是| C[使用 Mermaid 语法]
+    B -->|否| D[直接写 Markdown]
+    C --> E[实时渲染图表]
+    D --> E
+    E --> F[导出分享]
+    F --> G[完成]
+```
+
+## 📈 Mermaid 饼图示例
+
+```mermaid
+pie title 项目时间分配
+    "需求分析" : 20
+    "开发" : 40
+    "测试" : 25
+    "文档" : 15
+```
+
+## 💻 代码高亮示例
+
+```python
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+# 生成前10个斐波那契数
+print(list(fibonacci(10)))
+```
+
+## 🎯 使用方法
+
+1. 在左侧输入 Markdown 内容
+2. 右侧会实时渲染预览
+3. 点击顶部按钮可以插入模板、导出文件
+4. 支持所有标准 Markdown 语法和 Mermaid 图表</textarea>
+                </div>
+            </div>
+
+            <!-- 预览区域 -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center">
+                        <i class="fa fa-eye mr-2 text-secondary"></i>实时预览
+                    </h2>
+                    <button id="copyImageBtn" class="px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 transition btn-hover">
+                        <i class="fa fa-file-image-o mr-1"></i>复制图片
+                    </button>
+                </div>
+                <div class="relative">
+                    <div id="previewArea" class="w-full h-[70vh] p-6 bg-white border border-slate-300 rounded-xl overflow-auto editor-shadow prose-custom"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示信息 -->
+        <div id="successAlert" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-check-circle mr-2"></i>
+                <span id="successMessage">操作成功！</span>
+            </div>
+        </div>
+
+        <div id="errorAlert" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                <span id="errorMessage">操作失败，请重试。</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>💡 旺仔工具百宝箱 - Markdown Mermaid 实时编辑器 | 完全本地运行，数据安全可靠</p>
+            <p class="mt-2">支持流程图、时序图、类图、ER图、甘特图、思维导图等10+种图表类型</p>
+        </div>
+    </footer>
+
+    <script>
+        // 初始化 Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+        });
+
+        // DOM 元素
+        const markdownInput = document.getElementById('markdownInput');
+        const previewArea = document.getElementById('previewArea');
+        const templateBtn = document.getElementById('templateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+        const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const viewToggle = document.getElementById('viewToggle');
+        const editorContainer = document.getElementById('editorContainer');
+        const editorStats = document.getElementById('editorStats');
+        const copyImageBtn = document.getElementById('copyImageBtn');
+        const templateModal = document.getElementById('templateModal');
+        const closeModal = document.getElementById('closeModal');
+        const templateItems = document.querySelectorAll('.template-item');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // 视图模式
+        let isSplitView = true;
+
+        // Mermaid 模板
+        const templates = {
+            flowchart: `\`\`\`mermaid
+flowchart LR
+    A[开始] --> B{条件判断}
+    B -->|是| C[执行操作1]
+    B -->|否| D[执行操作2]
+    C --> E[结束]
+    D --> E
+\`\`\``,
+            sequence: `\`\`\`mermaid
+sequenceDiagram
+    participant 用户
+    participant 前端
+    participant 后端
+    participant 数据库
+
+    用户 ->> 前端: 提交请求
+    前端 ->> 后端: 发送API请求
+    后端 ->> 数据库: 查询数据
+    数据库 -->> 后端: 返回结果
+    后端 -->> 前端: 返回响应
+    前端 -->> 用户: 展示结果
+\`\`\``,
+            class: `\`\`\`mermaid
+classDiagram
+    class Animal {
+        +String name
+        +int age
+        +eat()
+        +sleep()
+    }
+    class Dog {
+        +String breed
+        +bark()
+    }
+    class Cat {
+        +String color
+        +meow()
+    }
+    Animal <|-- Dog
+    Animal <|-- Cat
+\`\`\``,
+            state: `\`\`\`mermaid
+stateDiagram-v2
+    [*] --> 未开始
+    未开始 --> 进行中: 开始任务
+    进行中 --> 已完成: 任务完成
+    进行中 --> 暂停: 暂停任务
+    暂停 --> 进行中: 恢复任务
+    进行中 --> 失败: 任务失败
+    失败 --> [*]
+    已完成 --> [*]
+\`\`\``,
+            er: `\`\`\`mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+    CUSTOMER {
+        int id PK
+        string name
+        string email
+    }
+    ORDER {
+        int id PK
+        int customer_id FK
+        date order_date
+    }
+    LINE-ITEM {
+        int id PK
+        int order_id FK
+        string product_name
+        int quantity
+        float price
+    }
+\`\`\``,
+            pie: `\`\`\`mermaid
+pie title 技术栈占比
+    "Python" : 40
+    "JavaScript" : 30
+    "Java" : 15
+    "其他" : 15
+\`\`\``,
+            gantt: `\`\`\`mermaid
+gantt
+    title 项目开发计划
+    dateFormat  YYYY-MM-DD
+    section 需求阶段
+    需求分析     :done,    des1, 2026-03-01, 3d
+    原型设计     :active,  des2, after des1, 4d
+    section 开发阶段
+    前端开发     :         dev1, after des2, 10d
+    后端开发     :         dev2, after des2, 12d
+    联调测试     :         test, after dev1, 5d
+    section 上线阶段
+    部署上线     :         deploy, after test, 2d
+    验收交付     :         accept, after deploy, 2d
+\`\`\``,
+            mindmap: `\`\`\`mermaid
+mindmap
+    root((项目规划))
+        需求分析
+            用户调研
+            竞品分析
+            需求文档
+        产品设计
+            功能架构
+            UI设计
+            交互设计
+        技术实现
+            前端开发
+            后端开发
+            数据库设计
+        测试上线
+            功能测试
+            性能优化
+            部署上线
+\`\`\``
+        };
+
+        // 显示成功提示
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successAlert.classList.remove('hidden');
+            setTimeout(() => {
+                successAlert.classList.add('hidden');
+            }, 2500);
+        }
+
+        // 显示错误提示
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => {
+                errorAlert.classList.add('hidden');
+            }, 2500);
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const lines = markdownInput.value.split('\n').length;
+            const chars = markdownInput.value.length;
+            editorStats.textContent = `${chars} 字符 | ${lines} 行`;
+        }
+
+        // 渲染 Markdown 和 Mermaid
+        async function renderMarkdown() {
+            const markdown = markdownInput.value;
+            
+            // 保存到 localStorage
+            localStorage.setItem('markdown-draft', markdown);
+            
+            updateStats();
+
+            // 处理 Mermaid 代码块
+            const html = await processMermaidBlocks(markdown);
+            previewArea.innerHTML = html;
+
+            // 高亮代码块
+            previewArea.querySelectorAll('pre code').forEach((block) => {
+                if (!block.classList.contains('mermaid')) {
+                    hljs.highlightElement(block);
+                }
+            });
+        }
+
+        // 处理 Mermaid 代码块
+        async function processMermaidBlocks(markdown) {
+            // 先用 marked 转成 HTML
+            let html = marked.parse(markdown);
+            
+            // 找到所有 mermaid 代码块
+            const mermaidRegex = /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g;
+            
+            const mermaidBlocks = [];
+            let match;
+            
+            // 提取所有 mermaid 块
+            while ((match = mermaidRegex.exec(html)) !== null) {
+                mermaidBlocks.push({
+                    index: match.index,
+                    length: match[0].length,
+                    code: match[1]
+                });
+            }
+
+            // 从后往前替换，避免索引错乱
+            for (let i = mermaidBlocks.length - 1; i >= 0; i--) {
+                const block = mermaidBlocks[i];
+                try {
+                    const { svg } = await mermaid.render(`mermaid-${i}`, block.code);
+                    const svgWrapper = `<div class="mermaid-chart my-4 flex justify-center">${svg}</div>`;
+                    html = html.slice(0, block.index) + svgWrapper + html.slice(block.index + block.length);
+                } catch (error) {
+                    console.error('Mermaid rendering error:', error);
+                    const errorHtml = `<div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg my-4">
+                        <p class="font-medium">Mermaid 渲染错误</p>
+                        <p class="text-sm mt-1">${error.message}</p>
+                    </div>`;
+                    html = html.slice(0, block.index) + errorHtml + html.slice(block.index + block.length);
+                }
+            }
+
+            return html;
+        }
+
+        // 插入模板
+        function insertTemplate(type) {
+            const template = templates[type];
+            const cursorPos = markdownInput.selectionStart;
+            const textBefore = markdownInput.value.substring(0, cursorPos);
+            const textAfter = markdownInput.value.substring(cursorPos);
+            
+            // 如果光标不在行首，先换行
+            const insertText = (cursorPos > 0 && textBefore[textBefore.length - 1] !== '\n' ? '\n\n' : '\n') + template + '\n';
+            
+            markdownInput.value = textBefore + insertText + textAfter;
+            
+            // 移动光标到插入内容后面
+            markdownInput.selectionStart = markdownInput.selectionEnd = cursorPos + insertText.length;
+            markdownInput.focus();
+            
+            renderMarkdown();
+            templateModal.classList.add('hidden');
+            showSuccess('模板已插入');
+        }
+
+        // 事件监听
+        markdownInput.addEventListener('input', renderMarkdown);
+
+        // 模板按钮
+        templateBtn.addEventListener('click', () => {
+            templateModal.classList.remove('hidden');
+        });
+
+        closeModal.addEventListener('click', () => {
+            templateModal.classList.add('hidden');
+        });
+
+        // 点击模态框外部关闭
+        templateModal.addEventListener('click', (e) => {
+            if (e.target === templateModal) {
+                templateModal.classList.add('hidden');
+            }
+        });
+
+        // 模板项点击
+        templateItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const templateType = item.getAttribute('data-template');
+                insertTemplate(templateType);
+            });
+        });
+
+        // 清空按钮
+        clearBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有内容吗？')) {
+                markdownInput.value = '';
+                renderMarkdown();
+                localStorage.removeItem('markdown-draft');
+                showSuccess('已清空内容');
+            }
+        });
+
+        // 复制 Markdown
+        copyMarkdownBtn.addEventListener('click', () => {
+            const markdown = markdownInput.value;
+            if (!markdown.trim()) {
+                showError('没有可复制的内容');
+                return;
+            }
+            navigator.clipboard.writeText(markdown).then(() => {
+                showSuccess('Markdown 已复制到剪贴板');
+            }).catch(() => {
+                showError('复制失败，请手动复制');
+            });
+        });
+
+        // 复制 HTML
+        copyHtmlBtn.addEventListener('click', async () => {
+            const html = previewArea.innerHTML;
+            if (!html.trim()) {
+                showError('没有可复制的内容');
+                return;
+            }
+            navigator.clipboard.writeText(html).then(() => {
+                showSuccess('HTML 已复制到剪贴板');
+            }).catch(() => {
+                showError('复制失败，请手动复制');
+            });
+        });
+
+        // 下载文件
+        downloadBtn.addEventListener('click', () => {
+            const markdown = markdownInput.value;
+            if (!markdown.trim()) {
+                showError('没有可下载的内容');
+                return;
+            }
+            
+            // 下载 Markdown 文件
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showSuccess('Markdown 文件已下载');
+        });
+
+        // 视图切换
+        viewToggle.addEventListener('click', () => {
+            isSplitView = !isSplitView;
+            if (isSplitView) {
+                editorContainer.classList.remove('grid-cols-1');
+                editorContainer.classList.add('lg:grid-cols-2');
+                viewToggle.innerHTML = '<i class="fa fa-columns mr-1"></i>并排视图';
+                showSuccess('已切换到并排视图');
+            } else {
+                editorContainer.classList.remove('lg:grid-cols-2');
+                editorContainer.classList.add('grid-cols-1');
+                viewToggle.innerHTML = '<i class="fa fa-eye mr-1"></i>仅预览';
+                showSuccess('已切换到仅预览模式');
+            }
+        });
+
+        // 复制为图片
+        copyImageBtn.addEventListener('click', async () => {
+            try {
+                // 使用 html2canvas 或者直接复制 SVG 内容
+                showSuccess('图片复制功能开发中，暂时可以直接截图使用~');
+            } catch (error) {
+                showError('复制图片失败');
+            }
+        });
+
+        // 加载草稿
+        function loadDraft() {
+            const draft = localStorage.getItem('markdown-draft');
+            if (draft) {
+                markdownInput.value = draft;
+                renderMarkdown();
+            }
+        }
+
+        // 快捷键支持
+        markdownInput.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + S 保存
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                showSuccess('内容已自动保存');
+            }
+            // Ctrl/Cmd + B 加粗
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                const selectedText = markdownInput.value.substring(markdownInput.selectionStart, markdownInput.selectionEnd);
+                const newText = `**${selectedText}**`;
+                document.execCommand('insertText', false, newText);
+            }
+            // Ctrl/Cmd + I 斜体
+            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault();
+                const selectedText = markdownInput.value.substring(markdownInput.selectionStart, markdownInput.selectionEnd);
+                const newText = `*${selectedText}*`;
+                document.execCommand('insertText', false, newText);
+            }
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDraft();
+            renderMarkdown();
+        });
+    </script>
+</body>
+</html>

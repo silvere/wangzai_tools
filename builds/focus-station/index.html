@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 Focus Station — 番茄钟 + 白噪音</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f1a;--card:#1a1a2e;--accent:#e94560;--accent2:#0f3460;--text:#eee;--dim:#888;--green:#00d2a0;--orange:#ff9f43;--radius:16px}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.app{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+h1{text-align:center;font-size:1.4em;margin-bottom:4px;background:linear-gradient(135deg,#e94560,#0f3460);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:var(--dim);font-size:.85em;margin-bottom:24px}
+
+/* Timer Section */
+.timer-card{background:var(--card);border-radius:var(--radius);padding:32px 24px;text-align:center;position:relative;overflow:hidden}
+.timer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform-origin:left;transition:transform .3s}
+.mode-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:24px}
+.mode-tab{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--dim);padding:6px 16px;border-radius:20px;cursor:pointer;font-size:.85em;transition:all .2s}
+.mode-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.timer-display{font-size:5em;font-weight:200;letter-spacing:4px;font-variant-numeric:tabular-nums;margin:8px 0;user-select:none}
+.timer-label{color:var(--dim);font-size:.9em;margin-bottom:20px}
+.timer-controls{display:flex;gap:12px;justify-content:center;align-items:center}
+.btn{border:none;border-radius:12px;padding:12px 32px;font-size:1em;cursor:pointer;transition:all .2s;font-weight:600}
+.btn:active{transform:scale(.95)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary.running{background:var(--orange)}
+.btn-secondary{background:rgba(255,255,255,.08);color:var(--text);padding:12px 20px}
+.btn-small{padding:8px 16px;font-size:.85em;border-radius:8px}
+
+/* Progress ring */
+.progress-ring{margin:0 auto 8px;display:block}
+.progress-ring__bg{stroke:rgba(255,255,255,.05);fill:none}
+.progress-ring__fg{fill:none;stroke-linecap:round;transition:stroke-dashoffset .5s ease,stroke .3s}
+
+/* Stats */
+.stats-row{display:flex;gap:12px;margin-top:16px}
+.stat{flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px;text-align:center}
+.stat-val{font-size:1.5em;font-weight:700}
+.stat-label{font-size:.7em;color:var(--dim);margin-top:2px}
+
+/* Sound Mixer */
+.mixer-card{background:var(--card);border-radius:var(--radius);padding:20px;margin-top:16px}
+.mixer-title{font-size:1em;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.mixer-title span{font-size:1.2em}
+.sound-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sound-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 12px;cursor:pointer;transition:all .25s;user-select:none}
+.sound-item.active{border-color:var(--green);background:rgba(0,210,160,.08)}
+.sound-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sound-icon{font-size:1.4em}
+.sound-name{font-size:.85em;font-weight:500}
+.sound-toggle{width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,.15);position:relative;transition:background .2s}
+.sound-item.active .sound-toggle{background:var(--green)}
+.sound-toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s}
+.sound-item.active .sound-toggle::after{transform:translateX(16px)}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.12);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--green);cursor:pointer}
+input[type=range]:disabled{opacity:.3}
+
+/* Presets */
+.presets{margin-top:16px}
+.presets-title{font-size:.85em;color:var(--dim);margin-bottom:8px}
+.preset-btns{display:flex;gap:8px;flex-wrap:wrap}
+.preset-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8em;transition:all .2s}
+.preset-btn:hover{border-color:var(--green);background:rgba(0,210,160,.08)}
+
+/* Session Log */
+.log-card{background:var(--card);border-radius:var(--radius);padding:20px;margin-top:16px}
+.log-title{font-size:1em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.log-empty{color:var(--dim);font-size:.85em;text-align:center;padding:16px 0}
+.log-list{max-height:200px;overflow-y:auto}
+.log-entry{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85em}
+.log-entry:last-child{border-bottom:none}
+.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.log-dot.work{background:var(--accent)}
+.log-dot.break{background:var(--green)}
+.log-time{color:var(--dim);margin-left:auto;font-size:.8em;white-space:nowrap}
+
+/* Notification */
+.notif{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:14px 24px;font-size:.9em;z-index:999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.notif.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:400px){.timer-display{font-size:3.5em}.sound-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🎯 Focus Station</h1>
+  <p class="subtitle">番茄钟 + 白噪音混音台</p>
+
+  <!-- Timer -->
+  <div class="timer-card">
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="work" data-min="25">专注 25m</div>
+      <div class="mode-tab" data-mode="short" data-min="5">短休 5m</div>
+      <div class="mode-tab" data-mode="long" data-min="15">长休 15m</div>
+    </div>
+    <svg class="progress-ring" width="200" height="200" viewBox="0 0 200 200">
+      <circle class="progress-ring__bg" cx="100" cy="100" r="88" stroke-width="6"/>
+      <circle class="progress-ring__fg" cx="100" cy="100" r="88" stroke-width="6" stroke="var(--accent)"
+        stroke-dasharray="553" stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
+    </svg>
+    <div class="timer-display" id="timerDisplay">25:00</div>
+    <div class="timer-label" id="timerLabel">准备开始专注</div>
+    <div class="timer-controls">
+      <button class="btn btn-secondary btn-small" id="resetBtn" title="重置">↺</button>
+      <button class="btn btn-primary" id="startBtn">开始专注</button>
+      <button class="btn btn-secondary btn-small" id="skipBtn" title="跳过">⏭</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="todayCount">0</div><div class="stat-label">今日番茄</div></div>
+      <div class="stat"><div class="stat-val" id="todayMin">0</div><div class="stat-label">专注分钟</div></div>
+      <div class="stat"><div class="stat-val" id="streak">0</div><div class="stat-label">连续完成</div></div>
+    </div>
+  </div>
+
+  <!-- Sound Mixer -->
+  <div class="mixer-card">
+    <div class="mixer-title"><span>🎧</span> 白噪音混音台</div>
+    <div class="sound-grid" id="soundGrid"></div>
+    <div class="presets">
+      <div class="presets-title">快捷场景</div>
+      <div class="preset-btns">
+        <div class="preset-btn" data-preset="rain-cafe">☕ 雨天咖啡馆</div>
+        <div class="preset-btn" data-preset="forest">🌲 森林小溪</div>
+        <div class="preset-btn" data-preset="night">🌙 深夜编码</div>
+        <div class="preset-btn" data-preset="ocean">🏖 海边冥想</div>
+        <div class="preset-btn" data-preset="off">🔇 全部静音</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Log -->
+  <div class="log-card">
+    <div class="log-title"><span>📋</span> 今日记录</div>
+    <div id="logList" class="log-list"><div class="log-empty">还没有记录，开始第一个番茄吧 🍅</div></div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ===== Audio Engine (Web Audio API, no external files) =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio(){if(!audioCtx)audioCtx=new AudioCtx();if(audioCtx.state==='suspended')audioCtx.resume()}
+
+function createNoise(type){
+  // type: 'white','pink','brown'
+  const bufSize=2*audioCtx.sampleRate;
+  const buf=audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
+  const data=buf.getChannelData(0);
+  if(type==='white'){for(let i=0;i<bufSize;i++)data[i]=Math.random()*2-1}
+  else if(type==='pink'){let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;for(let i=0;i<bufSize;i++){const w=Math.random()*2-1;b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.969*b2+w*.153852;b3=.8665*b3+w*.3104856;b4=.55*b4+w*.5329522;b5=-.7616*b5-w*.016898;data[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11;b6=w*.115926}}
+  else if(type==='brown'){let last=0;for(let i=0;i<bufSize;i++){const w=Math.random()*2-1;data[i]=(last+.02*w)/1.02;last=data[i];data[i]*=3.5}}
+  const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;return src
+}
+
+function createBinaural(freq,beat){
+  const oL=audioCtx.createOscillator(),oR=audioCtx.createOscillator();
+  const merger=audioCtx.createChannelMerger(2);
+  const gL=audioCtx.createGain(),gR=audioCtx.createGain();
+  oL.frequency.value=freq;oR.frequency.value=freq+beat;
+  oL.connect(gL);gL.connect(merger,0,0);
+  oR.connect(gR);gR.connect(merger,0,1);
+  oL.start();oR.start();
+  return{node:merger,gains:[gL,gR],oscs:[oL,oR]}
+}
+
+const SOUNDS=[
+  {id:'rain',icon:'🌧',name:'雨声',gen:()=>{const n=createNoise('white');const f=audioCtx.createBiquadFilter();f.type='lowpass';f.frequency.value=800;f.Q.value=.7;n.connect(f);n.start();return{node:f,src:[n]}}},
+  {id:'thunder',icon:'⛈',name:'雷雨',gen:()=>{const n=createNoise('brown');const f=audioCtx.createBiquadFilter();f.type='lowpass';f.frequency.value=200;n.connect(f);n.start();return{node:f,src:[n]}}},
+  {id:'wind',icon:'💨',name:'微风',gen:()=>{const n=createNoise('brown');const f=audioCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=400;f.Q.value=.3;n.connect(f);n.start();return{node:f,src:[n]}}},
+  {id:'ocean',icon:'🌊',name:'海浪',gen:()=>{const n=createNoise('pink');const f=audioCtx.createBiquadFilter();f.type='lowpass';f.frequency.value=500;n.connect(f);n.start();return{node:f,src:[n]}}},
+  {id:'fire',icon:'🔥',name:'篝火',gen:()=>{const n=createNoise('white');const f1=audioCtx.createBiquadFilter();f1.type='bandpass';f1.frequency.value=3000;f1.Q.value=2;const f2=audioCtx.createBiquadFilter();f2.type='highpass';f2.frequency.value=1000;n.connect(f1);f1.connect(f2);n.start();return{node:f2,src:[n]}}},
+  {id:'creek',icon:'🏞',name:'溪流',gen:()=>{const n=createNoise('pink');const f=audioCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=2500;f.Q.value=1.5;n.connect(f);n.start();return{node:f,src:[n]}}},
+  {id:'cafe',icon:'☕',name:'咖啡馆',gen:()=>{const n=createNoise('pink');const f=audioCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=1200;f.Q.value=.5;n.connect(f);n.start();return{node:f,src:[n]}}},
+  {id:'binaural',icon:'🧠',name:'脑波α',gen:()=>{const b=createBinaural(200,10);return{node:b.node,src:b.oscs,gains:b.gains}}}
+];
+
+const activeSounds={};
+
+function toggleSound(id){
+  ensureAudio();
+  if(activeSounds[id]){stopSound(id);return false}
+  const def=SOUNDS.find(s=>s.id===id);
+  const gen=def.gen();
+  const gain=audioCtx.createGain();
+  gain.gain.value=0;
+  gen.node.connect(gain);gain.connect(audioCtx.destination);
+  const vol=parseFloat(document.querySelector(`[data-sound="${id}"] input`)?.value||.5);
+  gain.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+.3);
+  activeSounds[id]={...gen,masterGain:gain};
+  return true
+}
+
+function stopSound(id){
+  const s=activeSounds[id];if(!s)return;
+  s.masterGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+.3);
+  setTimeout(()=>{try{s.src?.forEach(o=>o.stop?.())}catch(e){};try{s.masterGain.disconnect()}catch(e){}},400);
+  delete activeSounds[id]
+}
+
+function setVolume(id,v){
+  const s=activeSounds[id];if(!s)return;
+  if(s.gains){s.gains.forEach(g=>g.gain.linearRampToValueAtTime(v,audioCtx.currentTime+.1))}
+  s.masterGain.gain.linearRampToValueAtTime(v,audioCtx.currentTime+.1)
+}
+
+// ===== Sound UI =====
+const grid=document.getElementById('soundGrid');
+SOUNDS.forEach(s=>{
+  const el=document.createElement('div');
+  el.className='sound-item';el.dataset.sound=s.id;
+  el.innerHTML=`<div class="sound-top"><div><span class="sound-icon">${s.icon}</span> <span class="sound-name">${s.name}</span></div><div class="sound-toggle"></div></div><input type="range" min="0" max="1" step="0.05" value="0.5" disabled>`;
+  const toggle=()=>{const on=toggleSound(s.id);el.classList.toggle('active',on);el.querySelector('input').disabled=!on};
+  el.querySelector('.sound-top').addEventListener('click',toggle);
+  el.querySelector('input').addEventListener('input',e=>{setVolume(s.id,parseFloat(e.target.value))});
+  grid.appendChild(el)
+});
+
+// Presets
+const PRESETS={
+  'rain-cafe':{rain:.6,cafe:.4},
+  'forest':{wind:.3,creek:.5},
+  'night':{rain:.3,binaural:.2},
+  'ocean':{ocean:.6,wind:.2},
+  'off':{}
+};
+document.querySelectorAll('.preset-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    // Stop all
+    Object.keys(activeSounds).forEach(id=>stopSound(id));
+    document.querySelectorAll('.sound-item').forEach(el=>{el.classList.remove('active');el.querySelector('input').disabled=true});
+    const preset=PRESETS[btn.dataset.preset]||{};
+    Object.entries(preset).forEach(([id,vol])=>{
+      const el=document.querySelector(`[data-sound="${id}"]`);
+      if(!el)return;
+      el.querySelector('input').value=vol;
+      const on=toggleSound(id);
+      el.classList.toggle('active',on);
+      el.querySelector('input').disabled=!on;
+      setVolume(id,vol)
+    })
+  })
+});
+
+// ===== Timer =====
+let timerSec=25*60,totalSec=25*60,running=false,interval=null,currentMode='work';
+let todayCount=0,todayMin=0,streak=0,sessions=[];
+const display=document.getElementById('timerDisplay');
+const label=document.getElementById('timerLabel');
+const startBtn=document.getElementById('startBtn');
+const ring=document.querySelector('.progress-ring__fg');
+const circumference=2*Math.PI*88;
+ring.style.strokeDasharray=circumference;
+
+function loadStats(){
+  const key='focus_'+new Date().toISOString().slice(0,10);
+  const d=JSON.parse(localStorage.getItem(key)||'{}');
+  todayCount=d.count||0;todayMin=d.min||0;streak=d.streak||0;sessions=d.sessions||[];
+  updateStats();renderLog()
+}
+function saveStats(){
+  const key='focus_'+new Date().toISOString().slice(0,10);
+  localStorage.setItem(key,JSON.stringify({count:todayCount,min:todayMin,streak,sessions}))
+}
+function updateStats(){
+  document.getElementById('todayCount').textContent=todayCount;
+  document.getElementById('todayMin').textContent=todayMin;
+  document.getElementById('streak').textContent=streak
+}
+
+function fmt(s){const m=Math.floor(s/60),sec=s%60;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+
+function updateRing(){
+  const pct=1-timerSec/totalSec;
+  ring.style.strokeDashoffset=circumference*(1-pct);
+  ring.style.stroke=currentMode==='work'?'var(--accent)':'var(--green)'
+}
+
+function setMode(mode,min){
+  if(running)return;
+  currentMode=mode;timerSec=min*60;totalSec=min*60;
+  display.textContent=fmt(timerSec);
+  label.textContent=mode==='work'?'准备开始专注':mode==='short'?'短暂休息一下':'好好休息一会儿';
+  startBtn.textContent=mode==='work'?'开始专注':'开始休息';
+  startBtn.classList.remove('running');
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===mode));
+  updateRing()
+}
+
+function tick(){
+  timerSec--;
+  display.textContent=fmt(timerSec);
+  updateRing();
+  document.title=`${fmt(timerSec)} — Focus Station`;
+  if(timerSec<=0){
+    clearInterval(interval);running=false;
+    if(currentMode==='work'){
+      todayCount++;todayMin+=Math.round(totalSec/60);streak++;
+      sessions.push({type:'work',min:Math.round(totalSec/60),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+      saveStats();updateStats();renderLog();
+      showNotif(`🍅 完成第 ${todayCount} 个番茄！连续 ${streak} 个`);
+      playDing();
+      // Auto switch to break
+      setTimeout(()=>setMode(todayCount%4===0?'long':'short',todayCount%4===0?15:5),1500)
+    }else{
+      sessions.push({type:'break',min:Math.round(totalSec/60),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+      saveStats();renderLog();
+      showNotif('☕ 休息结束，准备下一轮！');
+      playDing();
+      setTimeout(()=>setMode('work',25),1500)
+    }
+  }
+}
+
+startBtn.addEventListener('click',()=>{
+  ensureAudio();
+  if(running){clearInterval(interval);running=false;startBtn.textContent='继续';startBtn.classList.remove('running');label.textContent='已暂停';return}
+  running=true;interval=setInterval(tick,1000);
+  startBtn.textContent='暂停';startBtn.classList.add('running');
+  label.textContent=currentMode==='work'?'专注中...':'休息中...'
+});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  clearInterval(interval);running=false;
+  setMode(currentMode,totalSec/60)
+});
+
+document.getElementById('skipBtn').addEventListener('click',()=>{
+  clearInterval(interval);running=false;
+  if(currentMode==='work')setMode('short',5);
+  else setMode('work',25)
+});
+
+document.querySelectorAll('.mode-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>setMode(tab.dataset.mode,parseInt(tab.dataset.min)))
+});
+
+function renderLog(){
+  const el=document.getElementById('logList');
+  if(!sessions.length){el.innerHTML='<div class="log-empty">还没有记录，开始第一个番茄吧 🍅</div>';return}
+  el.innerHTML=sessions.slice().reverse().map(s=>`<div class="log-entry"><span class="log-dot ${s.type}"></span><span>${s.type==='work'?'🍅 专注':'☕ 休息'} ${s.min}分钟</span><span class="log-time">${s.time}</span></div>`).join('')
+}
+
+function showNotif(msg){
+  const n=document.getElementById('notif');n.textContent=msg;n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),3000)
+}
+
+function playDing(){
+  if(!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type='sine';o.frequency.value=830;
+  g.gain.setValueAtTime(.3,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+1.2);
+  o.connect(g);g.connect(audioCtx.destination);
+  o.start();o.stop(audioCtx.currentTime+1.2)
+}
+
+loadStats();
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&e.target===document.body){e.preventDefault();startBtn.click()}
+  if(e.code==='KeyR'&&!e.ctrlKey){document.getElementById('resetBtn').click()}
+});
+</script>
+</body>
+</html>

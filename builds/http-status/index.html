@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP 状态码速查 🌐</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .search-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .filter-btn:hover {
+            border-color: #667eea;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            border-left: 5px solid;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .status-card.cat-1xx { border-left-color: #3498db; }
+        .status-card.cat-2xx { border-left-color: #2ecc71; }
+        .status-card.cat-3xx { border-left-color: #f39c12; }
+        .status-card.cat-4xx { border-left-color: #e74c3c; }
+        .status-card.cat-5xx { border-left-color: #9b59b6; }
+        
+        .status-code {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .status-card.cat-1xx .status-code { color: #3498db; }
+        .status-card.cat-2xx .status-code { color: #2ecc71; }
+        .status-card.cat-3xx .status-code { color: #f39c12; }
+        .status-card.cat-4xx .status-code { color: #e74c3c; }
+        .status-card.cat-5xx .status-code { color: #9b59b6; }
+        
+        .status-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .status-desc {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .status-example {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+            color: #555;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .cat-1xx .category-badge { background: #e3f2fd; color: #1976d2; }
+        .cat-2xx .category-badge { background: #e8f5e9; color: #388e3c; }
+        .cat-3xx .category-badge { background: #fff3e0; color: #f57c00; }
+        .cat-4xx .category-badge { background: #ffebee; color: #d32f2f; }
+        .cat-5xx .category-badge { background: #f3e5f5; color: #7b1fa2; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 HTTP 状态码速查</h1>
+            <p>快速查找 HTTP 状态码含义、使用场景和示例</p>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索状态码或描述... (例如: 404, Not Found, 重定向)">
+            <div class="filters">
+                <button class="filter-btn active" data-category="all">全部</button>
+                <button class="filter-btn" data-category="1xx">1xx 信息响应</button>
+                <button class="filter-btn" data-category="2xx">2xx 成功</button>
+                <button class="filter-btn" data-category="3xx">3xx 重定向</button>
+                <button class="filter-btn" data-category="4xx">4xx 客户端错误</button>
+                <button class="filter-btn" data-category="5xx">5xx 服务器错误</button>
+            </div>
+        </div>
+        
+        <div class="status-grid" id="statusGrid"></div>
+    </div>
+    
+    <script>
+        const statusCodes = [
+            // 1xx Informational
+            { code: 100, name: 'Continue', desc: '服务器已收到请求头，客户端应继续发送请求体', category: '1xx', example: '用于大文件上传前的预检查' },
+            { code: 101, name: 'Switching Protocols', desc: '服务器正在切换协议（如从 HTTP 到 WebSocket）', category: '1xx', example: 'WebSocket 握手升级' },
+            { code: 102, name: 'Processing', desc: '服务器已收到并正在处理请求，但尚无响应', category: '1xx', example: 'WebDAV 长时间操作' },
+            { code: 103, name: 'Early Hints', desc: '在最终响应前返回一些响应头，用于预加载资源', category: '1xx', example: 'Link: </style.css>; rel=preload' },
+            
+            // 2xx Success
+            { code: 200, name: 'OK', desc: '请求成功，返回请求的数据', category: '2xx', example: 'GET /api/users → 返回用户列表' },
+            { code: 201, name: 'Created', desc: '请求成功并创建了新资源', category: '2xx', example: 'POST /api/users → 创建新用户' },
+            { code: 202, name: 'Accepted', desc: '请求已接受，但尚未处理完成', category: '2xx', example: '异步任务提交成功' },
+            { code: 203, name: 'Non-Authoritative Information', desc: '返回的信息来自第三方（如代理）', category: '2xx', example: '代理服务器修改了响应头' },
+            { code: 204, name: 'No Content', desc: '请求成功，但无内容返回', category: '2xx', example: 'DELETE /api/users/123 → 删除成功' },
+            { code: 205, name: 'Reset Content', desc: '请求成功，客户端应重置文档视图', category: '2xx', example: '表单提交后清空表单' },
+            { code: 206, name: 'Partial Content', desc: '返回部分内容（用于断点续传）', category: '2xx', example: 'Range: bytes=0-1023' },
+            
+            // 3xx Redirection
+            { code: 300, name: 'Multiple Choices', desc: '请求有多个可能的响应，用户需选择', category: '3xx', example: '多语言版本选择' },
+            { code: 301, name: 'Moved Permanently', desc: '资源已永久移动到新位置', category: '3xx', example: 'Location: https://new-domain.com' },
+            { code: 302, name: 'Found', desc: '资源临时移动到新位置', category: '3xx', example: '临时重定向到维护页面' },
+            { code: 303, name: 'See Other', desc: '应使用 GET 方法访问另一个 URI', category: '3xx', example: 'POST 后重定向到结果页' },
+            { code: 304, name: 'Not Modified', desc: '资源未修改，可使用缓存', category: '3xx', example: 'If-None-Match 匹配 ETag' },
+            { code: 307, name: 'Temporary Redirect', desc: '临时重定向，保持原请求方法', category: '3xx', example: 'POST 请求临时重定向' },
+            { code: 308, name: 'Permanent Redirect', desc: '永久重定向，保持原请求方法', category: '3xx', example: 'HTTP → HTTPS 永久跳转' },
+            
+            // 4xx Client Errors
+            { code: 400, name: 'Bad Request', desc: '请求语法错误，服务器无法理解', category: '4xx', example: 'JSON 格式错误' },
+            { code: 401, name: 'Unauthorized', desc: '需要身份验证', category: '4xx', example: 'Authorization header 缺失' },
+            { code: 402, name: 'Payment Required', desc: '保留状态码，用于未来支付系统', category: '4xx', example: '需要付费才能访问' },
+            { code: 403, name: 'Forbidden', desc: '服务器拒绝请求（有权限但被禁止）', category: '4xx', example: '无权访问该资源' },
+            { code: 404, name: 'Not Found', desc: '请求的资源不存在', category: '4xx', example: 'GET /api/users/999 → 用户不存在' },
+            { code: 405, name: 'Method Not Allowed', desc: '请求方法不被允许', category: '4xx', example: 'POST /read-only-resource' },
+            { code: 406, name: 'Not Acceptable', desc: '无法生成客户端可接受的内容', category: '4xx', example: 'Accept: application/xml 但只有 JSON' },
+            { code: 407, name: 'Proxy Authentication Required', desc: '需要代理身份验证', category: '4xx', example: '企业代理需要认证' },
+            { code: 408, name: 'Request Timeout', desc: '请求超时', category: '4xx', example: '客户端发送请求过慢' },
+            { code: 409, name: 'Conflict', desc: '请求与当前状态冲突', category: '4xx', example: '版本冲突、重复创建' },
+            { code: 410, name: 'Gone', desc: '资源已永久删除', category: '4xx', example: '资源已下线且不会恢复' },
+            { code: 411, name: 'Length Required', desc: '需要 Content-Length 头', category: '4xx', example: 'POST 请求缺少长度' },
+            { code: 412, name: 'Precondition Failed', desc: '前置条件失败', category: '4xx', example: 'If-Match 不匹配' },
+            { code: 413, name: 'Payload Too Large', desc: '请求体过大', category: '4xx', example: '上传文件超过限制' },
+            { code: 414, name: 'URI Too Long', desc: 'URI 过长', category: '4xx', example: 'GET 请求 URL 超过限制' },
+            { code: 415, name: 'Unsupported Media Type', desc: '不支持的媒体类型', category: '4xx', example: 'Content-Type: text/plain 但需要 JSON' },
+            { code: 416, name: 'Range Not Satisfiable', desc: '请求的范围无效', category: '4xx', example: 'Range: bytes=9999-10000 超出文件大小' },
+            { code: 417, name: 'Expectation Failed', desc: 'Expect 请求头无法满足', category: '4xx', example: 'Expect: 100-continue 失败' },
+            { code: 418, name: "I'm a teapot", desc: '彩蛋状态码（RFC 2324 愚人节玩笑）', category: '4xx', example: '尝试用茶壶煮咖啡' },
+            { code: 421, name: 'Misdirected Request', desc: '请求被发送到无法响应的服务器', category: '4xx', example: 'HTTP/2 连接复用错误' },
+            { code: 422, name: 'Unprocessable Entity', desc: '请求格式正确但语义错误', category: '4xx', example: '字段验证失败' },
+            { code: 423, name: 'Locked', desc: '资源被锁定', category: '4xx', example: 'WebDAV 资源锁定' },
+            { code: 424, name: 'Failed Dependency', desc: '依赖的请求失败', category: '4xx', example: 'WebDAV 批量操作部分失败' },
+            { code: 425, name: 'Too Early', desc: '服务器不愿处理可能被重放的请求', category: '4xx', example: 'TLS Early Data 安全问题' },
+            { code: 426, name: 'Upgrade Required', desc: '需要升级协议', category: '4xx', example: '需要升级到 TLS 1.2+' },
+            { code: 428, name: 'Precondition Required', desc: '需要前置条件', category: '4xx', example: '需要 If-Match 头' },
+            { code: 429, name: 'Too Many Requests', desc: '请求过于频繁（限流）', category: '4xx', example: 'API 速率限制' },
+            { code: 431, name: 'Request Header Fields Too Large', desc: '请求头过大', category: '4xx', example: 'Cookie 过多' },
+            { code: 451, name: 'Unavailable For Legal Reasons', desc: '因法律原因不可用', category: '4xx', example: '内容被审查' },
+            
+            // 5xx Server Errors
+            { code: 500, name: 'Internal Server Error', desc: '服务器内部错误', category: '5xx', example: '代码异常、数据库连接失败' },
+            { code: 501, name: 'Not Implemented', desc: '服务器不支持该功能', category: '5xx', example: '不支持的 HTTP 方法' },
+            { code: 502, name: 'Bad Gateway', desc: '网关或代理收到无效响应', category: '5xx', example: '上游服务器返回错误' },
+            { code: 503, name: 'Service Unavailable', desc: '服务暂时不可用', category: '5xx', example: '服务器维护、过载' },
+            { code: 504, name: 'Gateway Timeout', desc: '网关或代理超时', category: '5xx', example: '上游服务器响应超时' },
+            { code: 505, name: 'HTTP Version Not Supported', desc: '不支持的 HTTP 版本', category: '5xx', example: '使用了 HTTP/3 但服务器只支持 HTTP/1.1' },
+            { code: 506, name: 'Variant Also Negotiates', desc: '内容协商配置错误', category: '5xx', example: '服务器配置循环引用' },
+            { code: 507, name: 'Insufficient Storage', desc: '存储空间不足', category: '5xx', example: 'WebDAV 磁盘已满' },
+            { code: 508, name: 'Loop Detected', desc: '检测到无限循环', category: '5xx', example: 'WebDAV 循环引用' },
+            { code: 510, name: 'Not Extended', desc: '需要进一步扩展请求', category: '5xx', example: '需要额外的扩展' },
+            { code: 511, name: 'Network Authentication Required', desc: '需要网络认证', category: '5xx', example: '需要登录 WiFi 门户' }
+        ];
+        
+        let currentCategory = 'all';
+        let searchTerm = '';
+        
+        function renderStatusCodes() {
+            const grid = document.getElementById('statusGrid');
+            const filtered = statusCodes.filter(status => {
+                const matchCategory = currentCategory === 'all' || status.category === currentCategory;
+                const matchSearch = searchTerm === '' || 
+                    status.code.toString().includes(searchTerm) ||
+                    status.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    status.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    status.example.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchCategory && matchSearch;
+            });
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <p>没有找到匹配的状态码</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = filtered.map(status => `
+                <div class="status-card cat-${status.category}" onclick="copyCode(${status.code})">
+                    <div class="status-code">${status.code}</div>
+                    <div class="status-name">${status.name}</div>
+                    <div class="status-desc">${status.desc}</div>
+                    <div class="status-example">💡 ${status.example}</div>
+                    <span class="category-badge">${getCategoryName(status.category)}</span>
+                </div>
+            `).join('');
+        }
+        
+        function getCategoryName(cat) {
+            const names = {
+                '1xx': '信息响应',
+                '2xx': '成功',
+                '3xx': '重定向',
+                '4xx': '客户端错误',
+                '5xx': '服务器错误'
+            };
+            return names[cat] || cat;
+        }
+        
+        function copyCode(code) {
+            navigator.clipboard.writeText(code.toString()).then(() => {
+                // 简单的视觉反馈
+                const cards = document.querySelectorAll('.status-card');
+                cards.forEach(card => {
+                    if (card.textContent.includes(code.toString())) {
+                        const original = card.style.transform;
+                        card.style.transform = 'scale(0.95)';
+                        setTimeout(() => card.style.transform = original, 200);
+                    }
+                });
+            });
+        }
+        
+        // 搜索
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchTerm = e.target.value.trim();
+            renderStatusCodes();
+        });
+        
+        // 分类过滤
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.dataset.category;
+                renderStatusCodes();
+            });
+        });
+        
+        // 初始渲染
+        renderStatusCodes();
+    </script>
+</body>
+</html>

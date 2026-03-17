@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 表格排序工具 📊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F59E0B',
+                        secondary: '#EF4444',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .table-preview th:hover {
+                background-color: rgba(245, 158, 11, 0.1);
+            }
+            .sortable-header {
+                cursor: pointer;
+                user-select: none;
+            }
+            .sortable-header:hover {
+                background-color: rgba(245, 158, 11, 0.1);
+            }
+            .sorted-asc::after {
+                content: " ↑";
+                color: #F59E0B;
+                font-weight: bold;
+            }
+            .sorted-desc::after {
+                content: " ↓";
+                color: #F59E0B;
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-orange-50 to-red-50 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
+                Markdown 表格排序工具 <span class="text-3xl">📊</span>
+            </h1>
+            <p class="text-gray-600 text-lg mb-6">快速排序Markdown表格，支持多列排序、实时预览、一键导出，写文档必备神器</p>
+            
+            <!-- 快捷操作 -->
+            <div class="flex flex-wrap gap-4 justify-center mb-6">
+                <button id="loadSampleBtn" class="bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-table mr-2"></i> 加载示例表格
+                </button>
+                <button id="clearBtn" class="bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-trash-o mr-2"></i> 清空
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <div class="grid lg:grid-cols-2 gap-6 mb-8">
+            <!-- 输入区域 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-code text-orange-600"></i> Markdown 输入
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500" id="inputStats">0 行 | 0 列</span>
+                        <button id="copyInputBtn" class="text-orange-600 hover:text-orange-800 transition-all" title="复制输入">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea id="markdownInput" class="w-full h-[350px] p-4 border-2 border-gray-200 rounded-xl font-mono text-sm resize-none focus:border-orange-500 focus:outline-none" placeholder="在此粘贴Markdown表格..."></textarea>
+                
+                <div id="parseError" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <i class="fa fa-exclamation-circle mr-2"></i>
+                    <span id="errorMessage">无法解析Markdown表格</span>
+                </div>
+            </div>
+
+            <!-- 预览和控制区域 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-eye text-red-600"></i> 表格预览
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500" id="tableStats">0 行 | 0 列</span>
+                        <button id="resetSortBtn" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-all" disabled>
+                            <i class="fa fa-refresh mr-1"></i> 重置排序
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="previewContainer" class="max-h-[350px] overflow-auto border-2 border-gray-200 rounded-xl">
+                    <div id="previewPlaceholder" class="text-center py-16 text-gray-400">
+                        <i class="fa fa-table text-4xl mb-3"></i>
+                        <p>输入Markdown表格后将在这里预览</p>
+                        <p class="text-sm mt-2">点击表头即可对该列进行排序</p>
+                    </div>
+                    <table id="previewTable" class="hidden w-full table-preview divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0"></thead>
+                        <tbody class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                
+                <!-- 排序选项 -->
+                <div class="mt-4 p-4 bg-gray-50 rounded-xl">
+                    <h4 class="font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                        <i class="fa fa-sliders text-orange-500"></i> 排序选项
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">排序方式</label>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="sortMode" value="single" checked class="w-4 h-4 text-orange-600">
+                                    <span class="text-sm">单列排序</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="sortMode" value="multi" class="w-4 h-4 text-orange-600">
+                                    <span class="text-sm">多列排序</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">数据类型</label>
+                            <select id="dataType" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                                <option value="auto">自动检测</option>
+                                <option value="string">字符串</option>
+                                <option value="number">数字</option>
+                                <option value="date">日期</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输出区域 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-file-text-o text-green-600"></i> 排序结果
+                </h3>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500" id="outputStats">0 行 | 0 列</span>
+                    <div class="flex gap-2">
+                        <button id="copyOutputBtn" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow hover:shadow-md">
+                            <i class="fa fa-copy mr-1"></i> 复制Markdown
+                        </button>
+                        <button id="downloadOutputBtn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow hover:shadow-md">
+                            <i class="fa fa-download mr-1"></i> 下载.md文件
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="relative">
+                <textarea id="markdownOutput" class="w-full h-[200px] p-4 border-2 border-gray-200 rounded-xl font-mono text-sm resize-none focus:border-orange-500 focus:outline-none" readonly placeholder="排序后的Markdown表格将显示在这里..."></textarea>
+                <div class="absolute top-3 right-3 flex gap-2">
+                    <button id="formatOutputBtn" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" title="格式化对齐">
+                        <i class="fa fa-align-justify mr-1"></i> 对齐
+                    </button>
+                    <button id="removeFormatBtn" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-gray-700 transition-all" title="移除对齐">
+                        <i class="fa fa-align-left mr-1"></i> 紧凑
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能说明 -->
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                        <i class="fa fa-mouse-pointer"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">点击表头排序</h3>
+                </div>
+                <p class="text-gray-600">在预览表格中点击表头即可对该列进行排序，再次点击切换升序/降序。多列排序模式下可按Shift+点击添加多个排序列。</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                        <i class="fa fa-magic"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">智能类型识别</h3>
+                </div>
+                <p class="text-gray-600">自动识别数字、日期、字符串等数据类型，确保排序结果正确。也可以手动指定数据类型，满足特殊排序需求。</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">格式可选</h3>
+                </div>
+                <p class="text-gray-600">支持两种输出格式：对齐模式（美观易读）和紧凑模式（节省空间），一键切换，满足不同文档场景需求。</p>
+            </div>
+        </div>
+
+        <!-- 排序历史 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa fa-history text-gray-600"></i> 排序历史
+                </span>
+                <button id="clearHistoryBtn" class="text-sm text-gray-500 hover:text-red-500 transition-all">
+                    清空历史
+                </button>
+            </h3>
+            <div id="historyContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="text-center py-6 text-gray-400 col-span-full">
+                    暂无排序历史
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>💡 提示：所有处理完全在本地完成，数据绝不会上传到服务器，支持各种复杂Markdown表格格式</p>
+            <p class="mt-2">Markdown 表格排序工具 | Build #111 | 旺仔工具百宝箱 🥛</p>
+        </footer>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all transform translate-x-full opacity-0">
+        <i id="toastIcon" class="fa fa-check-circle"></i>
+        <span id="toastText"></span>
+    </div>
+
+    <script>
+        // 全局状态
+        let currentTable = { headers: [], rows: [] };
+        let sortConfig = []; // 多列排序配置：[{ column: 0, direction: 'asc' }]
+        let sortHistory = JSON.parse(localStorage.getItem('tableSortHistory') || '[]');
+        let outputFormat = 'aligned'; // 'aligned' or 'compact'
+
+        // DOM 元素
+        const markdownInput = document.getElementById('markdownInput');
+        const parseError = document.getElementById('parseError');
+        const errorMessage = document.getElementById('errorMessage');
+        const inputStats = document.getElementById('inputStats');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const previewTable = document.getElementById('previewTable');
+        const tableHeader = previewTable.querySelector('thead');
+        const tableBody = previewTable.querySelector('tbody');
+        const tableStats = document.getElementById('tableStats');
+        const resetSortBtn = document.getElementById('resetSortBtn');
+        const sortModeRadios = document.querySelectorAll('input[name="sortMode"]');
+        const dataTypeSelect = document.getElementById('dataType');
+        const markdownOutput = document.getElementById('markdownOutput');
+        const outputStats = document.getElementById('outputStats');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyInputBtn = document.getElementById('copyInputBtn');
+        const copyOutputBtn = document.getElementById('copyOutputBtn');
+        const downloadOutputBtn = document.getElementById('downloadOutputBtn');
+        const formatOutputBtn = document.getElementById('formatOutputBtn');
+        const removeFormatBtn = document.getElementById('removeFormatBtn');
+        const historyContainer = document.getElementById('historyContainer');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastText = document.getElementById('toastText');
+
+        // 示例表格
+        const sampleTable = `| 模型名称 | MMLU | HumanEval | GSM8K | 发布日期 |
+| --- | --- | --- | --- | --- |
+| GPT-4o | 89.7 | 90.2 | 92.0 | 2024-05-13 |
+| Claude 3.5 Sonnet | 89.5 | 92.0 | 90.8 | 2024-06-20 |
+| Qwen 2.5 72B | 86.8 | 84.1 | 88.5 | 2024-08-28 |
+| DeepSeek V3 | 86.3 | 87.5 | 87.3 | 2024-09-05 |
+| Gemini 1.5 Pro | 85.7 | 78.1 | 87.2 | 2024-05-14 |
+| Llama 3.1 405B | 85.1 | 78.8 | 84.7 | 2024-07-23 |
+| Mistral Large 2 | 84.6 | 79.6 | 82.0 | 2024-07-25 |
+| GLM-4 9B | 78.8 | 70.1 | 77.3 | 2024-06-05 |`;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
+            
+            // 事件监听
+            markdownInput.addEventListener('input', debounce(parseMarkdownTable, 300));
+            resetSortBtn.addEventListener('click', resetSort);
+            sortModeRadios.forEach(radio => radio.addEventListener('change', () => {
+                resetSort();
+                if (currentTable.headers.length > 0) {
+                    renderTablePreview();
+                }
+            }));
+            dataTypeSelect.addEventListener('change', () => {
+                if (sortConfig.length > 0) {
+                    applySort();
+                }
+            });
+            loadSampleBtn.addEventListener('click', loadSample);
+            clearBtn.addEventListener('click', clearAll);
+            copyInputBtn.addEventListener('click', copyInput);
+            copyOutputBtn.addEventListener('click', copyOutput);
+            downloadOutputBtn.addEventListener('click', downloadOutput);
+            formatOutputBtn.addEventListener('click', () => {
+                outputFormat = 'aligned';
+                generateOutput();
+            });
+            removeFormatBtn.addEventListener('click', () => {
+                outputFormat = 'compact';
+                generateOutput();
+            });
+            clearHistoryBtn.addEventListener('click', clearHistory);
+        });
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 解析Markdown表格
+        function parseMarkdownTable() {
+            const input = markdownInput.value.trim();
+            const lines = input.split('\n').filter(line => line.trim() !== '');
+            
+            // 更新输入统计
+            inputStats.textContent = `${lines.length} 行`;
+            
+            if (!input) {
+                parseError.classList.add('hidden');
+                currentTable = { headers: [], rows: [] };
+                renderTablePreview();
+                generateOutput();
+                return true;
+            }
+
+            try {
+                // 检查是否是合法的Markdown表格
+                if (lines.length < 2) {
+                    throw new Error('表格至少需要包含表头和分隔线两行');
+                }
+
+                // 解析表头
+                const headers = parseTableRow(lines[0]);
+                if (headers.length === 0) {
+                    throw new Error('表头行不能为空');
+                }
+
+                // 解析分隔线行
+                const separatorLine = lines[1].trim();
+                if (!separatorLine.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$/)) {
+                    throw new Error('第二行必须是分隔线（例如 | --- | --- |）');
+                }
+
+                // 解析数据行
+                const rows = [];
+                for (let i = 2; i < lines.length; i++) {
+                    const row = parseTableRow(lines[i]);
+                    if (row.length > 0) {
+                        // 补齐列数
+                        while (row.length < headers.length) {
+                            row.push('');
+                        }
+                        // 截断多余列
+                        if (row.length > headers.length) {
+                            row.splice(headers.length);
+                        }
+                        rows.push(row);
+                    }
+                }
+
+                currentTable = { headers, rows };
+                parseError.classList.add('hidden');
+                
+                // 渲染预览和输出
+                renderTablePreview();
+                generateOutput();
+                
+                updateStats();
+                return true;
+            } catch (e) {
+                parseError.classList.remove('hidden');
+                errorMessage.textContent = `解析错误: ${e.message}`;
+                currentTable = { headers: [], rows: [] };
+                renderTablePreview();
+                generateOutput();
+                return false;
+            }
+        }
+
+        // 解析表格行
+        function parseTableRow(line) {
+            line = line.trim();
+            // 移除首尾的|
+            if (line.startsWith('|')) line = line.slice(1);
+            if (line.endsWith('|')) line = line.slice(0, -1);
+            // 分割单元格
+            return line.split('|').map(cell => cell.trim());
+        }
+
+        // 渲染表格预览
+        function renderTablePreview() {
+            if (currentTable.headers.length === 0) {
+                previewPlaceholder.classList.remove('hidden');
+                previewTable.classList.add('hidden');
+                resetSortBtn.disabled = true;
+                return;
+            }
+
+            previewPlaceholder.classList.add('hidden');
+            previewTable.classList.remove('hidden');
+            resetSortBtn.disabled = false;
+
+            // 渲染表头
+            tableHeader.innerHTML = '';
+            const headerRow = document.createElement('tr');
+            currentTable.headers.forEach((header, index) => {
+                const th = document.createElement('th');
+                th.className = 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable-header';
+                th.textContent = header;
+                
+                // 添加排序状态
+                const sortEntry = sortConfig.find(s => s.column === index);
+                if (sortEntry) {
+                    th.classList.add(sortEntry.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+
+                // 点击排序
+                th.addEventListener('click', (e) => {
+                    handleHeaderClick(index, e.shiftKey);
+                });
+
+                headerRow.appendChild(th);
+            });
+            tableHeader.appendChild(headerRow);
+
+            // 渲染表体
+            tableBody.innerHTML = '';
+            currentTable.rows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-700';
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 处理表头点击
+        function handleHeaderClick(columnIndex, shiftPressed) {
+            const sortMode = document.querySelector('input[name="sortMode"]:checked').value;
+            
+            if (sortMode === 'single' || !shiftPressed) {
+                // 单列排序：替换现有配置
+                const existing = sortConfig.find(s => s.column === columnIndex);
+                if (existing) {
+                    // 切换方向
+                    existing.direction = existing.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortConfig = [{ column: columnIndex, direction: 'asc' }];
+                }
+            } else {
+                // 多列排序：添加到配置
+                const existing = sortConfig.find(s => s.column === columnIndex);
+                if (existing) {
+                    // 切换方向
+                    existing.direction = existing.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortConfig.push({ column: columnIndex, direction: 'asc' });
+                }
+            }
+
+            applySort();
+        }
+
+        // 应用排序
+        function applySort() {
+            if (currentTable.rows.length === 0 || sortConfig.length === 0) {
+                renderTablePreview();
+                generateOutput();
+                return;
+            }
+
+            // 复制原数组
+            const sortedRows = [...currentTable.rows];
+            const dataType = dataTypeSelect.value;
+
+            sortedRows.sort((a, b) => {
+                for (const sortEntry of sortConfig) {
+                    const col = sortEntry.column;
+                    const direction = sortEntry.direction === 'asc' ? 1 : -1;
+                    
+                    const valA = a[col];
+                    const valB = b[col];
+                    
+                    let cmp = 0;
+                    
+                    if (dataType === 'auto') {
+                        cmp = compareAuto(valA, valB);
+                    } else if (dataType === 'number') {
+                        cmp = compareNumber(valA, valB);
+                    } else if (dataType === 'date') {
+                        cmp = compareDate(valA, valB);
+                    } else { // string
+                        cmp = compareString(valA, valB);
+                    }
+                    
+                    if (cmp !== 0) {
+                        return cmp * direction;
+                    }
+                }
+                return 0;
+            });
+
+            // 更新表格数据
+            currentTable.rows = sortedRows;
+            
+            // 重新渲染
+            renderTablePreview();
+            generateOutput();
+            
+            // 添加到历史
+            addToHistory();
+        }
+
+        // 自动比较
+        function compareAuto(a, b) {
+            // 尝试数字比较
+            const numA = parseFloat(a);
+            const numB = parseFloat(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return numA - numB;
+            }
+            
+            // 尝试日期比较
+            const dateA = Date.parse(a);
+            const dateB = Date.parse(b);
+            if (!isNaN(dateA) && !isNaN(dateB)) {
+                return dateA - dateB;
+            }
+            
+            // 默认字符串比较
+            return compareString(a, b);
+        }
+
+        // 字符串比较
+        function compareString(a, b) {
+            return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+        }
+
+        // 数字比较
+        function compareNumber(a, b) {
+            const numA = parseFloat(a) || 0;
+            const numB = parseFloat(b) || 0;
+            return numA - numB;
+        }
+
+        // 日期比较
+        function compareDate(a, b) {
+            const dateA = Date.parse(a) || 0;
+            const dateB = Date.parse(b) || 0;
+            return dateA - dateB;
+        }
+
+        // 重置排序
+        function resetSort() {
+            sortConfig = [];
+            // 重新解析恢复原始顺序
+            parseMarkdownTable();
+            showToast('排序已重置', 'success');
+        }
+
+        // 生成输出
+        function generateOutput() {
+            if (currentTable.headers.length === 0) {
+                markdownOutput.value = '';
+                outputStats.textContent = '0 行 | 0 列';
+                return;
+            }
+
+            let output = '';
+            
+            if (outputFormat === 'aligned') {
+                // 计算每列的最大宽度
+                const colWidths = currentTable.headers.map((header, index) => {
+                    const maxContent = Math.max(
+                        header.length,
+                        ...currentTable.rows.map(row => (row[index] || '').length)
+                    );
+                    return Math.max(maxContent, 3); // 至少3个字符，适配分隔线
+                });
+
+                // 生成表头
+                output += '| ' + currentTable.headers.map((h, i) => h.padEnd(colWidths[i])).join(' | ') + ' |\n';
+                // 生成分隔线
+                output += '| ' + colWidths.map(w => '-'.repeat(w)).join(' | ') + ' |\n';
+                // 生成数据行
+                currentTable.rows.forEach(row => {
+                    output += '| ' + row.map((cell, i) => (cell || '').padEnd(colWidths[i])).join(' | ') + ' |\n';
+                });
+            } else {
+                // 紧凑模式
+                output += '| ' + currentTable.headers.join(' | ') + ' |\n';
+                output += '| ' + currentTable.headers.map(() => '---').join(' | ') + ' |\n';
+                currentTable.rows.forEach(row => {
+                    output += '| ' + row.join(' | ') + ' |\n';
+                });
+            }
+
+            markdownOutput.value = output.trim();
+            outputStats.textContent = `${currentTable.rows.length + 2} 行 | ${currentTable.headers.length} 列`;
+        }
+
+        // 加载示例
+        function loadSample() {
+            markdownInput.value = sampleTable;
+            parseMarkdownTable();
+            showToast('示例表格已加载', 'success');
+        }
+
+        // 清空所有
+        function clearAll() {
+            markdownInput.value = '';
+            markdownOutput.value = '';
+            parseError.classList.add('hidden');
+            currentTable = { headers: [], rows: [] };
+            sortConfig = [];
+            renderTablePreview();
+            updateStats();
+            showToast('已清空', 'success');
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const rows = currentTable.rows.length;
+            const cols = currentTable.headers.length;
+            inputStats.textContent = `${markdownInput.value.split('\n').length} 行`;
+            tableStats.textContent = `${rows} 行 | ${cols} 列`;
+            outputStats.textContent = `${rows + 2} 行 | ${cols} 列`;
+        }
+
+        // 复制输入
+        function copyInput() {
+            if (!markdownInput.value.trim()) {
+                showToast('没有内容可复制', 'error');
+                return;
+            }
+            copyToClipboard(markdownInput.value);
+            showToast('输入内容已复制', 'success');
+        }
+
+        // 复制输出
+        function copyOutput() {
+            if (!markdownOutput.value.trim()) {
+                showToast('没有内容可复制', 'error');
+                return;
+            }
+            copyToClipboard(markdownOutput.value);
+            showToast('排序后的表格已复制', 'success');
+        }
+
+        // 下载输出
+        function downloadOutput() {
+            if (!markdownOutput.value.trim()) {
+                showToast('没有内容可下载', 'error');
+                return;
+            }
+            
+            const blob = new Blob([markdownOutput.value], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sorted-table-${Date.now()}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('表格已下载', 'success');
+        }
+
+        // 添加到历史记录
+        function addToHistory() {
+            if (currentTable.headers.length === 0) return;
+            
+            const historyItem = {
+                id: Date.now(),
+                timestamp: Date.now(),
+                headers: currentTable.headers,
+                sortConfig: [...sortConfig],
+                sortDescription: getSortDescription()
+            };
+            
+            // 避免重复
+            const exists = sortHistory.some(item => 
+                JSON.stringify(item.sortConfig) === JSON.stringify(historyItem.sortConfig) &&
+                JSON.stringify(item.headers) === JSON.stringify(historyItem.headers)
+            );
+            
+            if (!exists) {
+                sortHistory.unshift(historyItem);
+                if (sortHistory.length > 10) {
+                    sortHistory = sortHistory.slice(0, 10);
+                }
+                localStorage.setItem('tableSortHistory', JSON.stringify(sortHistory));
+                renderHistory();
+            }
+        }
+
+        // 获取排序描述
+        function getSortDescription() {
+            return sortConfig.map(s => {
+                const header = currentTable.headers[s.column];
+                return `${header} (${s.direction === 'asc' ? '升序' : '降序'})`;
+            }).join(' → ');
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            if (sortHistory.length === 0) {
+                historyContainer.innerHTML = '<div class="text-center py-6 text-gray-400 col-span-full">暂无排序历史</div>';
+                return;
+            }
+            
+            historyContainer.innerHTML = '';
+            sortHistory.forEach(item => {
+                const date = new Date(item.timestamp);
+                const timeStr = date.toLocaleString('zh-CN');
+                
+                const historyItem = document.createElement('div');
+                historyItem.className = 'bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all';
+                historyItem.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <span class="text-xs text-gray-500">
+                            <i class="fa fa-clock-o mr-1"></i>
+                            ${timeStr}
+                        </span>
+                        <button class="delete-history-btn text-xs text-red-500 hover:text-red-700 transition-all" data-id="${item.id}">
+                            <i class="fa fa-trash-o"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm font-medium text-gray-800 mb-2">${item.headers.join(' | ')}</p>
+                    <p class="text-xs text-orange-600 mb-3">排序: ${item.sortDescription}</p>
+                    <button class="apply-history-btn w-full bg-orange-100 hover:bg-orange-200 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-all">
+                        <i class="fa fa-play mr-1"></i>应用此排序
+                    </button>
+                `;
+                
+                // 绑定事件
+                historyItem.querySelector('.apply-history-btn').addEventListener('click', () => {
+                    if (currentTable.headers.length === 0) {
+                        showToast('请先输入表格数据', 'error');
+                        return;
+                    }
+                    sortConfig = [...item.sortConfig];
+                    applySort();
+                    showToast('排序已应用', 'success');
+                });
+                
+                historyItem.querySelector('.delete-history-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sortHistory = sortHistory.filter(h => h.id !== item.id);
+                    localStorage.setItem('tableSortHistory', JSON.stringify(sortHistory));
+                    renderHistory();
+                    showToast('历史记录已删除', 'success');
+                });
+                
+                historyContainer.appendChild(historyItem);
+            });
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有排序历史吗？')) {
+                sortHistory = [];
+                localStorage.removeItem('tableSortHistory');
+                renderHistory();
+                showToast('历史记录已清空', 'success');
+            }
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).catch(err => {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            if (type === 'success') {
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-check-circle';
+            } else {
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-exclamation-circle';
+            }
+            
+            toastText.textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

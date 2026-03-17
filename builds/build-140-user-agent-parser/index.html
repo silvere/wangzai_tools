@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User-Agent 解析器 🕵️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ua-parser-js@1.0.37/dist/ua-parser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
+                <i class="fas fa-user-secret text-indigo-600"></i>
+                User-Agent 解析器
+            </h1>
+            <p class="text-gray-600 text-lg">一键解析UA字符串，自动识别浏览器、操作系统、设备信息，完全本地运行零数据上传</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+            <!-- Current UA -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-desktop text-indigo-500"></i>
+                        您当前浏览器的 UA
+                    </label>
+                    <button onclick="copyCurrentUA()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
+                        <i class="fas fa-copy"></i>
+                        复制
+                    </button>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-sm text-gray-700 break-all" id="currentUA"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-keyboard text-indigo-500"></i>
+                        输入 UA 字符串
+                    </label>
+                    <button onclick="clearInput()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+                <textarea 
+                    id="uaInput" 
+                    class="w-full h-32 border border-gray-300 rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                    placeholder="粘贴User-Agent字符串到这里，支持批量粘贴，每行一个UA..."
+                    oninput="parseUA()"
+                ></textarea>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="mb-8">
+                <div class="text-sm font-medium text-gray-700 mb-3">常用UA预设：</div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setUA('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Chrome Windows</button>
+                    <button onclick="setUA('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Chrome Mac</button>
+                    <button onclick="setUA('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Firefox Windows</button>
+                    <button onclick="setUA('Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:123.0) Gecko/20100101 Firefox/123.0')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Firefox Mac</button>
+                    <button onclick="setUA('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Safari Mac</button>
+                    <button onclick="setUA('Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Safari iPhone</button>
+                    <button onclick="setUA('Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Chrome Android</button>
+                    <button onclick="setUA('Mozilla/5.0 (Linux; Android 14; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/121.0.0.0 Mobile Safari/537.36')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Samsung Browser</button>
+                    <button onclick="setUA('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0 Safari/537.36')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Edge Windows</button>
+                    <button onclick="setUA('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Chrome Linux</button>
+                    <button onclick="setUA('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Googlebot</button>
+                    <button onclick="setUA('Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-sm transition-all">Baiduspider</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="space-y-6 hidden">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-list-alt text-indigo-600"></i>
+                    解析结果
+                </h3>
+                <div id="resultCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- Batch Results -->
+            <div id="batchResults" class="hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-table text-indigo-600"></i>
+                        批量解析结果
+                    </h3>
+                    <button onclick="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
+                        <i class="fas fa-download"></i>
+                        导出 CSV
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-indigo-50">
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">#</th>
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">浏览器</th>
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">版本</th>
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">操作系统</th>
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">设备类型</th>
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">设备厂商</th>
+                                <th class="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">引擎</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- No Results -->
+            <div id="noResults" class="text-center py-12 hidden">
+                <i class="fas fa-search text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500 text-lg">输入UA字符串即可查看解析结果</p>
+            </div>
+
+            <!-- Error -->
+            <div id="errorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4 hidden">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                    <div>
+                        <h4 class="font-semibold text-red-800">解析错误</h4>
+                        <p class="text-red-700 text-sm" id="errorText"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-bolt text-indigo-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">极速解析</h3>
+                <p class="text-gray-600">输入即解析，毫秒级响应，支持批量解析大量UA数据，效率提升10倍</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-shield-alt text-green-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">本地运行</h3>
+                <p class="text-gray-600">所有解析完全在浏览器本地完成，UA数据绝不会上传到任何服务器，安全可靠</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-database text-purple-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">信息全面</h3>
+                <p class="text-gray-600">支持识别浏览器、版本、操作系统、设备类型、厂商、渲染引擎等10+维度信息</p>
+            </div>
+        </div>
+
+        <!-- Usage Guide -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-book text-indigo-600"></i>
+                使用场景
+            </h3>
+            <ul class="space-y-3 text-gray-700">
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>网站访问日志分析，统计用户浏览器、操作系统分布</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>爬虫识别，区分正常用户访问和搜索引擎爬虫</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>前端兼容性问题排查，快速定位用户环境信息</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>移动应用统计，分析用户设备型号和系统版本分布</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <span>API请求校验，识别非法请求和恶意爬虫</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-500 text-sm">
+            <p>🚀 完全本地运行 | 零数据上传 | 支持批量解析 | 免费开源</p>
+            <p class="mt-2">Built with ❤️ by 旺仔</p>
+        </div>
+    </div>
+
+    <script>
+        const parser = new UAParser();
+        let parsedResults = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentUA = navigator.userAgent;
+            document.getElementById('currentUA').textContent = currentUA;
+            document.getElementById('noResults').classList.remove('hidden');
+        });
+
+        function setUA(ua) {
+            document.getElementById('uaInput').value = ua;
+            parseUA();
+        }
+
+        function clearInput() {
+            document.getElementById('uaInput').value = '';
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('batchResults').classList.add('hidden');
+            document.getElementById('noResults').classList.remove('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            parsedResults = [];
+        }
+
+        function copyCurrentUA() {
+            const ua = document.getElementById('currentUA').textContent;
+            navigator.clipboard.writeText(ua).then(() => {
+                showToast('当前UA已复制到剪贴板');
+            });
+        }
+
+        function parseUA() {
+            const input = document.getElementById('uaInput').value.trim();
+            document.getElementById('errorMessage').classList.add('hidden');
+            
+            if (!input) {
+                clearInput();
+                return;
+            }
+
+            try {
+                const lines = input.split('\n').filter(line => line.trim());
+                parsedResults = [];
+
+                lines.forEach((ua, index) => {
+                    parser.setUA(ua.trim());
+                    const result = parser.getResult();
+                    parsedResults.push({
+                        index: index + 1,
+                        ua: ua.trim(),
+                        browser: result.browser.name || '未知',
+                        browserVersion: result.browser.version || '未知',
+                        os: result.os.name || '未知',
+                        osVersion: result.os.version || '未知',
+                        device: result.device.type || '桌面端',
+                        vendor: result.device.vendor || '未知',
+                        model: result.device.model || '未知',
+                        engine: result.engine.name || '未知',
+                        engineVersion: result.engine.version || '未知',
+                        cpu: result.cpu.architecture || '未知'
+                    });
+                });
+
+                document.getElementById('noResults').classList.add('hidden');
+
+                if (parsedResults.length === 1) {
+                    showSingleResult(parsedResults[0]);
+                } else {
+                    showBatchResults();
+                }
+
+            } catch (error) {
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('errorText').textContent = error.message;
+            }
+        }
+
+        function showSingleResult(result) {
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('batchResults').classList.add('hidden');
+            
+            const cards = [
+                {
+                    title: '浏览器信息',
+                    icon: 'fa-globe',
+                    color: 'blue',
+                    items: [
+                        { label: '浏览器名称', value: result.browser },
+                        { label: '浏览器版本', value: result.browserVersion },
+                        { label: '渲染引擎', value: result.engine },
+                        { label: '引擎版本', value: result.engineVersion }
+                    ]
+                },
+                {
+                    title: '操作系统',
+                    icon: 'fa-desktop',
+                    color: 'green',
+                    items: [
+                        { label: '系统名称', value: result.os },
+                        { label: '系统版本', value: result.osVersion },
+                        { label: 'CPU架构', value: result.cpu }
+                    ]
+                },
+                {
+                    title: '设备信息',
+                    icon: 'fa-mobile-alt',
+                    color: 'purple',
+                    items: [
+                        { label: '设备类型', value: result.device },
+                        { label: '设备厂商', value: result.vendor },
+                        { label: '设备型号', value: result.model }
+                    ]
+                }
+            ];
+
+            const html = cards.map(card => `
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all">
+                    <div class="bg-${card.color}-50 border-b border-${card.color}-100 rounded-t-xl px-6 py-4">
+                        <h4 class="text-lg font-bold text-${card.color}-800 flex items-center gap-2">
+                            <i class="fas ${card.icon} text-${card.color}-600"></i>
+                            ${card.title}
+                        </h4>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        ${card.items.map(item => `
+                            <div>
+                                <div class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">${item.label}</div>
+                                <div class="text-lg font-semibold text-gray-800">${item.value}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('resultCards').innerHTML = html;
+        }
+
+        function showBatchResults() {
+            document.getElementById('batchResults').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            const html = parsedResults.map(result => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-gray-200 px-4 py-3 text-sm text-gray-700">${result.index}</td>
+                    <td class="border border-gray-200 px-4 py-3 text-sm font-medium text-gray-800">${result.browser}</td>
+                    <td class="border border-gray-200 px-4 py-3 text-sm text-gray-600">${result.browserVersion}</td>
+                    <td class="border border-gray-200 px-4 py-3 text-sm text-gray-600">${result.os} ${result.osVersion}</td>
+                    <td class="border border-gray-200 px-4 py-3 text-sm text-gray-600">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${getDeviceBadgeClass(result.device)}">
+                            ${result.device}
+                        </span>
+                    </td>
+                    <td class="border border-gray-200 px-4 py-3 text-sm text-gray-600">${result.vendor}</td>
+                    <td class="border border-gray-200 px-4 py-3 text-sm text-gray-600">${result.engine}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('batchTableBody').innerHTML = html;
+        }
+
+        function getDeviceBadgeClass(device) {
+            switch(device.toLowerCase()) {
+                case 'mobile': return 'bg-blue-100 text-blue-800';
+                case 'tablet': return 'bg-purple-100 text-purple-800';
+                case 'desktop': return 'bg-green-100 text-green-800';
+                case 'wearable': return 'bg-orange-100 text-orange-800';
+                case 'embedded': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function exportCSV() {
+            if (parsedResults.length === 0) return;
+            
+            const headers = ['序号', '浏览器', '浏览器版本', '操作系统', '系统版本', '设备类型', '设备厂商', '设备型号', '渲染引擎', '引擎版本', 'CPU架构', 'UA字符串'];
+            const rows = parsedResults.map(result => [
+                result.index,
+                `"${result.browser}"`,
+                `"${result.browserVersion}"`,
+                `"${result.os}"`,
+                `"${result.osVersion}"`,
+                `"${result.device}"`,
+                `"${result.vendor}"`,
+                `"${result.model}"`,
+                `"${result.engine}"`,
+                `"${result.engineVersion}"`,
+                `"${result.cpu}"`,
+                `"${result.ua.replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ua解析结果_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`已导出 ${parsedResults.length} 条记录到CSV文件`);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+            toast.innerHTML = `
+                <i class="fas fa-check-circle text-green-400"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown ↔ Excel 转换器 📊 | 旺仔工具百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fa fa-exchange text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">Markdown ↔ Excel 转换器 📊</h1>
+                        <p class="text-purple-100 mt-1">完全离线运行，一键转换 Markdown 表格和 Excel 文件，再也不用手动复制粘贴</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">100% 本地处理</span>
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">零上传风险</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Conversion Mode Selector -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex items-center justify-center space-x-4">
+                <button id="mdToExcelBtn" class="px-6 py-3 rounded-lg font-medium transition-colors bg-primary text-white">
+                    <i class="fa fa-arrow-right mr-2"></i>
+                    Markdown → Excel
+                </button>
+                <button id="excelToMdBtn" class="px-6 py-3 rounded-lg font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    Excel → Markdown
+                </button>
+            </div>
+        </div>
+
+        <!-- Markdown to Excel Section -->
+        <div id="mdToExcelSection" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-file-text-o text-primary mr-2"></i>
+                        Markdown 表格输入
+                    </h2>
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-sm text-gray-500">粘贴你的 Markdown 表格在这里</p>
+                        <button id="loadExampleBtn" class="text-sm text-primary hover:text-primary/80 font-medium">
+                            <i class="fa fa-lightbulb-o mr-1"></i>
+                            加载示例
+                        </button>
+                    </div>
+                    <textarea 
+                        id="markdownInput" 
+                        rows="18" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm"
+                        placeholder="| 模型名称 | MMLU | GSM8K | HumanEval |
+|---------|------|-------|-----------|
+| GPT-4o  | 89.2 | 92.7  | 90.2      |
+| Claude 3.5 | 88.7 | 91.3 | 89.5 |
+| Qwen 2.5 | 86.4 | 87.2 | 85.1 |"></textarea>
+                    
+                    <div class="mt-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center text-sm text-gray-700">
+                                <input type="checkbox" id="includeHeader" checked class="mr-2 text-primary focus:ring-primary">
+                                包含表头
+                            </label>
+                            <span class="text-sm text-gray-500" id="tableStats">检测到: 0 行, 0 列</span>
+                        </div>
+                        
+                        <button 
+                            id="convertToExcelBtn" 
+                            class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
+                        >
+                            <i class="fa fa-download mr-2"></i>
+                            转换并下载 Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-table text-primary mr-2"></i>
+                        表格预览
+                    </h2>
+                    <div class="overflow-x-auto bg-gray-50 rounded-lg p-4 max-h-[600px]">
+                        <div id="tablePreview" class="text-sm">
+                            <div class="text-center py-12 text-gray-500">
+                                <i class="fa fa-table text-6xl mb-4 text-gray-300"></i>
+                                <p>输入 Markdown 表格后将在这里显示预览</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-2 gap-4">
+                        <div class="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                            <div class="flex items-center mb-2">
+                                <i class="fa fa-check-circle text-primary mr-2"></i>
+                                <h3 class="font-semibold text-gray-900">支持特性</h3>
+                            </div>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• 自动识别表头</li>
+                                <li>• 支持合并单元格</li>
+                                <li>• 保留对齐格式</li>
+                                <li>• 自动检测数据类型</li>
+                            </ul>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                            <div class="flex items-center mb-2">
+                                <i class="fa fa-lightbulb-o text-success mr-2"></i>
+                                <h3 class="font-semibold text-gray-900">使用场景</h3>
+                            </div>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• 评测数据导出 Excel</li>
+                                <li>• 报告表格转 Excel 分析</li>
+                                <li>• 文档表格数据提取</li>
+                                <li>• 快速生成 Excel 报表</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel to Markdown Section -->
+        <div id="excelToMdSection" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Upload -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-file-excel-o text-success mr-2"></i>
+                        上传 Excel 文件
+                    </h2>
+                    
+                    <div 
+                        id="excelDropZone"
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-success transition-colors duration-300 mb-6"
+                    >
+                        <i class="fa fa-file-excel-o text-5xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">拖拽 Excel 文件到这里，或者</p>
+                        <label class="cursor-pointer">
+                            <span class="bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                选择文件
+                            </span>
+                            <input 
+                                type="file" 
+                                id="excelFileInput" 
+                                accept=".xlsx,.xls,.csv" 
+                                class="hidden"
+                            >
+                        </label>
+                        <p class="text-gray-500 text-sm mt-3">支持 .xlsx, .xls, .csv 格式，单文件最大 10MB</p>
+                    </div>
+
+                    <div id="excelFileInfo" class="hidden mb-6 bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fa fa-file-excel-o text-success text-xl mr-3"></i>
+                                <div>
+                                    <p class="font-medium text-gray-900" id="excelFileName"></p>
+                                    <p class="text-sm text-gray-500" id="excelFileSize"></p>
+                                </div>
+                            </div>
+                            <button id="removeExcelBtn" class="text-gray-400 hover:text-danger">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">选择工作表</label>
+                            <select id="sheetSelector" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success focus:border-success" disabled>
+                                <option value="">请先上传文件</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">起始行</label>
+                                <input 
+                                    type="number" 
+                                    id="startRow" 
+                                    value="1" 
+                                    min="1"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success focus:border-success"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">最大行数</label>
+                                <input 
+                                    type="number" 
+                                    id="maxRows" 
+                                    value="100" 
+                                    min="1"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success focus:border-success"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" id="excelIncludeHeader" checked class="mr-2 text-success focus:ring-success">
+                            <label class="text-sm text-gray-700">第一行作为表头</label>
+                        </div>
+
+                        <button 
+                            id="convertToMarkdownBtn" 
+                            disabled
+                            class="w-full bg-success hover:bg-success/90 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        >
+                            <i class="fa fa-exchange mr-2"></i>
+                            转换为 Markdown
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Output -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-file-code-o text-success mr-2"></i>
+                        Markdown 输出
+                    </h2>
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-sm text-gray-500">转换后的 Markdown 表格</p>
+                        <button id="copyMarkdownBtn" class="text-sm text-success hover:text-success/80 font-medium" disabled>
+                            <i class="fa fa-copy mr-1"></i>
+                            复制到剪贴板
+                        </button>
+                    </div>
+                    <textarea 
+                        id="markdownOutput" 
+                        rows="18" 
+                        readonly
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success focus:border-success font-mono text-sm bg-gray-50"
+                        placeholder="转换后的 Markdown 表格将显示在这里..."></textarea>
+                    
+                    <div class="mt-4">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">转换统计</h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                                <p class="text-xs text-gray-500">行数</p>
+                                <p class="text-xl font-bold text-gray-900" id="outputRows">0</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                                <p class="text-xs text-gray-500">列数</p>
+                                <p class="text-xl font-bold text-gray-900" id="outputCols">0</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                                <p class="text-xs text-gray-500">字符数</p>
+                                <p class="text-xl font-bold text-gray-900" id="outputChars">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                <div class="flex items-center mb-2">
+                    <i class="fa fa-shield text-primary text-xl mr-2"></i>
+                    <h3 class="font-semibold text-gray-900">完全本地处理</h3>
+                </div>
+                <p class="text-sm text-gray-600">所有转换都在浏览器中完成，文件绝不会上传到任何服务器，数据安全可靠</p>
+            </div>
+            <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                <div class="flex items-center mb-2">
+                    <i class="fa fa-bolt text-success text-xl mr-2"></i>
+                    <h3 class="font-semibold text-gray-900">一键转换</h3>
+                </div>
+                <p class="text-sm text-gray-600">拖拽上传即可完成转换，支持批量转换多个工作表，节省大量时间</p>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <div class="flex items-center mb-2">
+                    <i class="fa fa-magic text-blue-600 text-xl mr-2"></i>
+                    <h3 class="font-semibold text-gray-900">智能识别</h3>
+                </div>
+                <p class="text-sm text-gray-600">自动识别表格结构、表头、数据类型，完美保留原表格的格式和内容</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>🚀 旺仔工具百宝箱 | Markdown ↔ Excel 转换器 📊</p>
+            <p class="text-sm mt-2">100% 本地运行 · 零数据上传 · 安全可靠</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const mdToExcelBtn = document.getElementById('mdToExcelBtn');
+        const excelToMdBtn = document.getElementById('excelToMdBtn');
+        const mdToExcelSection = document.getElementById('mdToExcelSection');
+        const excelToMdSection = document.getElementById('excelToMdSection');
+        const markdownInput = document.getElementById('markdownInput');
+        const tablePreview = document.getElementById('tablePreview');
+        const tableStats = document.getElementById('tableStats');
+        const convertToExcelBtn = document.getElementById('convertToExcelBtn');
+        const includeHeader = document.getElementById('includeHeader');
+        const loadExampleBtn = document.getElementById('loadExampleBtn');
+        
+        const excelDropZone = document.getElementById('excelDropZone');
+        const excelFileInput = document.getElementById('excelFileInput');
+        const excelFileInfo = document.getElementById('excelFileInfo');
+        const excelFileName = document.getElementById('excelFileName');
+        const excelFileSize = document.getElementById('excelFileSize');
+        const removeExcelBtn = document.getElementById('removeExcelBtn');
+        const sheetSelector = document.getElementById('sheetSelector');
+        const startRow = document.getElementById('startRow');
+        const maxRows = document.getElementById('maxRows');
+        const excelIncludeHeader = document.getElementById('excelIncludeHeader');
+        const convertToMarkdownBtn = document.getElementById('convertToMarkdownBtn');
+        const markdownOutput = document.getElementById('markdownOutput');
+        const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+        const outputRows = document.getElementById('outputRows');
+        const outputCols = document.getElementById('outputCols');
+        const outputChars = document.getElementById('outputChars');
+
+        // Global state
+        let currentWorkbook = null;
+
+        // Mode switching
+        mdToExcelBtn.addEventListener('click', () => {
+            mdToExcelSection.classList.remove('hidden');
+            excelToMdSection.classList.add('hidden');
+            mdToExcelBtn.classList.add('bg-primary', 'text-white');
+            mdToExcelBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            excelToMdBtn.classList.add('bg-gray-200', 'text-gray-700');
+            excelToMdBtn.classList.remove('bg-success', 'text-white');
+        });
+
+        excelToMdBtn.addEventListener('click', () => {
+            mdToExcelSection.classList.add('hidden');
+            excelToMdSection.classList.remove('hidden');
+            excelToMdBtn.classList.add('bg-success', 'text-white');
+            excelToMdBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            mdToExcelBtn.classList.add('bg-gray-200', 'text-gray-700');
+            mdToExcelBtn.classList.remove('bg-primary', 'text-white');
+        });
+
+        // Markdown to Excel functionality
+        function parseMarkdownTable(markdown) {
+            const lines = markdown.trim().split('\n').filter(line => line.trim() !== '');
+            if (lines.length < 2) return null;
+
+            // Extract rows
+            const rows = lines.map(line => {
+                return line.split('|')
+                    .map(cell => cell.trim())
+                    .filter((cell, index, array) => index !== 0 && index !== array.length - 1);
+            });
+
+            // Check if second line is separator
+            const isSeparator = rows[1].every(cell => /^[-:]+$/.test(cell));
+            if (!isSeparator) return null;
+
+            // Remove separator line
+            const dataRows = [rows[0], ...rows.slice(2)];
+            
+            return {
+                headers: includeHeader.checked ? dataRows[0] : null,
+                data: includeHeader.checked ? dataRows.slice(1) : dataRows
+            };
+        }
+
+        function renderTablePreview(tableData) {
+            if (!tableData) {
+                tablePreview.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fa fa-table text-6xl mb-4 text-gray-300"></i>
+                        <p>无法解析 Markdown 表格，请检查格式</p>
+                    </div>
+                `;
+                tableStats.textContent = '检测到: 0 行, 0 列';
+                return;
+            }
+
+            const { headers, data } = tableData;
+            const allRows = headers ? [headers, ...data] : data;
+            const cols = allRows[0]?.length || 0;
+
+            let html = '<table class="min-w-full divide-y divide-gray-200">';
+            
+            if (headers) {
+                html += '<thead class="bg-gray-50">';
+                html += '<tr>';
+                headers.forEach(header => {
+                    html += `<th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${escapeHtml(header)}</th>`;
+                });
+                html += '</tr></thead>';
+            }
+
+            html += '<tbody class="bg-white divide-y divide-gray-200">';
+            data.forEach((row, index) => {
+                html += `<tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">`;
+                row.forEach(cell => {
+                    html += `<td class="px-3 py-2 text-sm text-gray-900">${escapeHtml(cell)}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+
+            tablePreview.innerHTML = html;
+            tableStats.textContent = `检测到: ${allRows.length} 行, ${cols} 列`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function convertToExcel() {
+            const markdown = markdownInput.value.trim();
+            if (!markdown) {
+                alert('请输入 Markdown 表格内容');
+                return;
+            }
+
+            const tableData = parseMarkdownTable(markdown);
+            if (!tableData) {
+                alert('无法解析 Markdown 表格，请检查格式');
+                return;
+            }
+
+            const { headers, data } = tableData;
+            const ws_data = headers ? [headers, ...data] : data;
+            
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            
+            XLSX.writeFile(wb, "table.xlsx");
+        }
+
+        // Event listeners for Markdown to Excel
+        markdownInput.addEventListener('input', () => {
+            const tableData = parseMarkdownTable(markdownInput.value);
+            renderTablePreview(tableData);
+        });
+
+        convertToExcelBtn.addEventListener('click', convertToExcel);
+
+        loadExampleBtn.addEventListener('click', () => {
+            const example = `| 模型名称 | MMLU | GSM8K | HumanEval |
+|---------|------|-------|-----------|
+| GPT-4o  | 89.2 | 92.7  | 90.2      |
+| Claude 3.5 | 88.7 | 91.3 | 89.5 |
+| Qwen 2.5 | 86.4 | 87.2 | 85.1 |
+| DeepSeek V3 | 84.3 | 85.6 | 86.8 |
+| Llama 3 | 82.1 | 79.3 | 77.5 |`;
+            markdownInput.value = example;
+            const tableData = parseMarkdownTable(example);
+            renderTablePreview(tableData);
+        });
+
+        includeHeader.addEventListener('change', () => {
+            const tableData = parseMarkdownTable(markdownInput.value);
+            renderTablePreview(tableData);
+        });
+
+        // Excel to Markdown functionality
+        function handleExcelFile(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    currentWorkbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Update file info
+                    excelFileName.textContent = file.name;
+                    excelFileSize.textContent = formatFileSize(file.size);
+                    excelFileInfo.classList.remove('hidden');
+                    
+                    // Populate sheet selector
+                    sheetSelector.innerHTML = '';
+                    currentWorkbook.SheetNames.forEach((name, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = name;
+                        sheetSelector.appendChild(option);
+                    });
+                    
+                    sheetSelector.disabled = false;
+                    convertToMarkdownBtn.disabled = false;
+                    
+                } catch (error) {
+                    alert('无法解析 Excel 文件: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function convertToMarkdown() {
+            if (!currentWorkbook) return;
+
+            const sheetIndex = parseInt(sheetSelector.value);
+            const sheetName = currentWorkbook.SheetNames[sheetIndex];
+            const worksheet = currentWorkbook.Sheets[sheetName];
+            
+            const start = parseInt(startRow.value) - 1;
+            const limit = parseInt(maxRows.value);
+            
+            // Convert to array of arrays
+            const json = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1,
+                range: start,
+                raw: false
+            });
+
+            const data = limit ? json.slice(0, limit) : json;
+            if (data.length === 0) {
+                alert('没有找到数据，请检查起始行设置');
+                return;
+            }
+
+            // Generate Markdown
+            let markdown = '';
+            const headers = excelIncludeHeader.checked ? data[0] : data[0].map((_, i) => `列 ${i + 1}`);
+            const dataRows = excelIncludeHeader.checked ? data.slice(1) : data;
+
+            // Header row
+            markdown += '| ' + headers.join(' | ') + ' |\n';
+            
+            // Separator row
+            markdown += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+            
+            // Data rows
+            dataRows.forEach(row => {
+                const paddedRow = [...row, ...Array(headers.length - row.length).fill('')];
+                markdown += '| ' + paddedRow.map(cell => cell || '').join(' | ') + ' |\n';
+            });
+
+            markdownOutput.value = markdown;
+            copyMarkdownBtn.disabled = false;
+            
+            // Update stats
+            outputRows.textContent = data.length;
+            outputCols.textContent = headers.length;
+            outputChars.textContent = markdown.length;
+        }
+
+        // Event listeners for Excel to Markdown
+        excelFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleExcelFile(file);
+        });
+
+        excelDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            excelDropZone.classList.add('border-success', 'bg-green-50');
+        });
+
+        excelDropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            excelDropZone.classList.remove('border-success', 'bg-green-50');
+        });
+
+        excelDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            excelDropZone.classList.remove('border-success', 'bg-green-50');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
+                handleExcelFile(file);
+            } else {
+                alert('请上传 Excel 文件 (.xlsx, .xls, .csv)');
+            }
+        });
+
+        excelDropZone.addEventListener('click', () => excelFileInput.click());
+
+        removeExcelBtn.addEventListener('click', () => {
+            currentWorkbook = null;
+            excelFileInfo.classList.add('hidden');
+            sheetSelector.innerHTML = '<option value="">请先上传文件</option>';
+            sheetSelector.disabled = true;
+            convertToMarkdownBtn.disabled = true;
+            excelFileInput.value = '';
+            markdownOutput.value = '';
+            copyMarkdownBtn.disabled = true;
+            outputRows.textContent = '0';
+            outputCols.textContent = '0';
+            outputChars.textContent = '0';
+        });
+
+        convertToMarkdownBtn.addEventListener('click', convertToMarkdown);
+
+        copyMarkdownBtn.addEventListener('click', () => {
+            markdownOutput.select();
+            document.execCommand('copy');
+            
+            const originalText = copyMarkdownBtn.innerHTML;
+            copyMarkdownBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 已复制';
+            copyMarkdownBtn.classList.add('text-green-600');
+            
+            setTimeout(() => {
+                copyMarkdownBtn.innerHTML = originalText;
+                copyMarkdownBtn.classList.remove('text-green-600');
+            }, 2000);
+        });
+
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Initialize
+        loadExampleBtn.click();
+    </script>
+</body>
+</html>

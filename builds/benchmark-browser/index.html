@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评测数据集浏览器 📊 — 一站式 Benchmark 查阅工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        dark: '#1e1b4b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .tag {
+                @apply px-2 py-1 rounded-full text-xs font-medium;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-7xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2 flex items-center">
+                        <i class="fa fa-database mr-3"></i>评测数据集浏览器 📊
+                    </h1>
+                    <p class="text-purple-100 text-lg">一站式查阅所有主流大模型评测 Benchmark，再也不用四处查资料了</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-white/20 px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+                        <i class="fa fa-book mr-1"></i> 已收录 35+ 个主流评测基准
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-7xl px-4 py-8">
+        <!-- Search and Filter -->
+        <section class="mb-8">
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1 relative">
+                        <i class="fa fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="搜索 Benchmark 名称、描述、分类..."
+                            class="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-lg"
+                        >
+                    </div>
+                    <select id="categoryFilter" class="px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-lg bg-white">
+                        <option value="all">全部分类</option>
+                        <option value="代码能力">代码能力</option>
+                        <option value="推理与数学">推理与数学</option>
+                        <option value="知识与理解">知识与理解</option>
+                        <option value="指令遵循">指令遵循</option>
+                        <option value="Agent">Agent 能力</option>
+                        <option value="多模态">多模态能力</option>
+                        <option value="长上下文">长上下文能力</option>
+                        <option value="安全与鲁棒性">安全与鲁棒性</option>
+                        <option value="工具调用">工具调用</option>
+                        <option value="综合对话">综合对话</option>
+                    </select>
+                    <select id="difficultyFilter" class="px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-lg bg-white">
+                        <option value="all">全部难度</option>
+                        <option value="1">⭐ 简单</option>
+                        <option value="2">⭐⭐ 中等</option>
+                        <option value="3">⭐⭐⭐ 较难</option>
+                        <option value="4">⭐⭐⭐⭐ 困难</option>
+                        <option value="5">⭐⭐⭐⭐⭐ 极难</option>
+                    </select>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <div class="text-blue-600 text-sm font-medium mb-1">总数据集</div>
+                        <div class="text-3xl font-bold text-blue-800" id="totalCount">35</div>
+                    </div>
+                    <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                        <div class="text-green-600 text-sm font-medium mb-1">代码类</div>
+                        <div class="text-3xl font-bold text-green-800">8</div>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                        <div class="text-orange-600 text-sm font-medium mb-1">推理类</div>
+                        <div class="text-3xl font-bold text-orange-800">6</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                        <div class="text-purple-600 text-sm font-medium mb-1">知识类</div>
+                        <div class="text-3xl font-bold text-purple-800">5</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benchmark Cards Grid -->
+        <section id="benchmarkGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards will be dynamically generated here -->
+        </section>
+
+        <!-- No Results -->
+        <div id="noResults" class="hidden py-16 text-center">
+            <div class="text-gray-400 text-6xl mb-4"><i class="fa fa-search"></i></div>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">没有找到匹配的 Benchmark</h3>
+            <p class="text-gray-500">请尝试调整搜索关键词或筛选条件</p>
+        </div>
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="gradient-bg p-6 text-white relative">
+                <button id="closeModal" class="absolute right-4 top-4 text-white/80 hover:text-white text-2xl">
+                    <i class="fa fa-times"></i>
+                </button>
+                <div class="flex items-center gap-2 mb-2">
+                    <span id="modalCategory" class="bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm"></span>
+                    <span id="modalDifficulty" class="bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm"></span>
+                </div>
+                <h2 id="modalTitle" class="text-3xl font-bold mb-2"></h2>
+                <div class="text-purple-100 flex items-center gap-4">
+                    <span class="flex items-center gap-1"><i class="fa fa-university"></i> <span id="modalSource"></span></span>
+                    <span class="flex items-center gap-1"><i class="fa fa-calendar"></i> <span id="modalYear"></span></span>
+                </div>
+            </div>
+            <div class="p-6 space-y-6">
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-question-circle text-primary mr-2"></i>测什么
+                    </h3>
+                    <p id="modalWhat" class="text-gray-700 leading-relaxed"></p>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-star text-yellow-500 mr-2"></i>为什么重要
+                    </h3>
+                    <p id="modalWhy" class="text-gray-700 leading-relaxed"></p>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-list text-blue-500 mr-2"></i>题目类型与特性
+                    </h3>
+                    <ul id="modalFeatures" class="space-y-2 text-gray-700">
+                    </ul>
+                </section>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fa fa-calculator text-green-500 mr-2"></i>题目数量
+                        </h3>
+                        <p id="modalCount" class="text-gray-700"></p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fa fa-trophy text-orange-500 mr-2"></i>SOTA 准确率
+                        </h3>
+                        <p id="modalSota" class="text-gray-700"></p>
+                    </section>
+                </div>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-exclamation-triangle text-red-500 mr-2"></i>局限性
+                    </h3>
+                    <ul id="modalLimitations" class="space-y-2 text-gray-700">
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-link text-purple-500 mr-2"></i>相关链接
+                    </h3>
+                    <div id="modalLinks" class="flex flex-wrap gap-3">
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8 mt-12">
+        <div class="container mx-auto max-w-7xl px-4 text-center">
+            <p class="text-gray-400">
+                大模型评测工作者必备工具 | 持续更新中...
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                Powered by 旺仔 🥛 | Build #98
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Benchmark database
+        const benchmarks = [
+            {
+                id: 1,
+                name: "HumanEval",
+                category: "代码能力",
+                source: "OpenAI",
+                year: "2021",
+                difficulty: 3,
+                what: "评估大模型的代码生成能力，要求模型根据自然语言描述编写Python函数。",
+                why: "是代码能力评测的黄金标准，广泛用于衡量模型的基础编程能力，是模型能否应用于开发场景的核心指标。",
+                features: [
+                    "题目均为实际编程场景中的常见问题",
+                    "通过单元测试判断答案是否正确",
+                    "要求生成完整可运行的代码",
+                    "覆盖各种基础编程概念和常见算法"
+                ],
+                count: "164道编程题",
+                sota: "GPT-4o: 90.2%",
+                limitations: [
+                    "仅支持Python语言，无法评估多语言能力",
+                    "题目难度偏基础，难以区分顶级模型的代码能力",
+                    "没有涉及复杂软件工程场景",
+                    "存在测试用例覆盖不全面的问题"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2107.03374" },
+                    { name: "GitHub", url: "https://github.com/openai/human-eval" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/openai_humaneval" }
+                ],
+                description: "Python代码生成基准"
+            },
+            {
+                id: 2,
+                name: "LiveCodeBench",
+                category: "代码能力",
+                source: "LiveCodeBench Team",
+                year: "2024",
+                difficulty: 4,
+                what: "实时更新的代码评测基准，题目来自真实的编程竞赛和面试题，每月更新避免数据污染。",
+                why: "解决了传统代码基准容易被训练数据污染的问题，能够更真实地反映模型的实际代码能力。",
+                features: [
+                    "每月更新题目，防止模型训练时见过题目",
+                    "题目来自LeetCode、Codeforces等真实编程竞赛",
+                    "支持多种编程语言",
+                    "包含不同难度级别的题目",
+                    "自动判题系统，运行测试用例验证正确性"
+                ],
+                count: "持续更新，每月新增50+题",
+                sota: "GPT-4o: 78.3%",
+                limitations: [
+                    "题目更新需要人工维护，成本较高",
+                    "目前主要集中在算法题，缺少实际工程场景题目",
+                    "运行时间限制严格，对代码效率要求高"
+                ],
+                links: [
+                    { name: "官网", url: "https://livecodebench.github.io/" },
+                    { name: "GitHub", url: "https://github.com/LiveCodeBench/LiveCodeBench" }
+                ],
+                description: "实时更新的代码评测基准"
+            },
+            {
+                id: 3,
+                name: "SWE-bench",
+                category: "代码能力",
+                source: "Princeton NLP",
+                year: "2023",
+                difficulty: 5,
+                what: "评估大模型的软件工程能力，要求模型解决真实GitHub仓库中的issue。",
+                why: "最贴近实际开发场景的代码基准，能够检验模型是否能理解大型代码库、定位问题并修复bug，是衡量AI程序员能力的核心指标。",
+                features: [
+                    "题目来自真实的GitHub开源仓库issue",
+                    "需要理解整个代码库的结构和上下文",
+                    "要求生成正确的修复补丁",
+                    "通过原仓库的测试用例验证修复是否正确",
+                    "覆盖Python、JavaScript等主流语言"
+                ],
+                count: "2294个真实issue",
+                sota: "GPT-4o + 工具: 23.5%",
+                limitations: [
+                    "难度极高，即使是人类工程师也需要花费大量时间解决",
+                    "评测成本高，每个题目需要运行完整的测试套件",
+                    "对上下文窗口要求高，需要处理大量代码",
+                    "目前主要集中在Python项目"
+                ],
+                links: [
+                    { name: "官网", url: "https://www.swebench.com/" },
+                    { name: "论文", url: "https://arxiv.org/abs/2310.06770" },
+                    { name: "GitHub", url: "https://github.com/princeton-nlp/SWE-bench" }
+                ],
+                description: "真实软件工程任务基准"
+            },
+            {
+                id: 4,
+                name: "GSM8K",
+                category: "推理与数学",
+                source: "OpenAI",
+                year: "2021",
+                difficulty: 2,
+                what: "小学数学应用题基准，评估模型的基本数学推理能力。",
+                why: "最常用的基础推理能力测试基准，能有效区分模型是否具备基本的多步推理能力。",
+                features: [
+                    "8500道小学数学应用题",
+                    "需要多步计算和推理才能解答",
+                    "答案都是整数，便于评测",
+                    "提供完整的解题过程标注"
+                ],
+                count: "8500道题",
+                sota: "GPT-4o: 95.8%",
+                limitations: [
+                    "难度较低，仅对应小学数学水平",
+                    "题型相对单一，主要是算术题",
+                    "不涉及更复杂的数学概念和推理",
+                    "容易被特定的prompt技巧攻克"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2110.14168" },
+                    { name: "GitHub", url: "https://github.com/openai/grade-school-math" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/gsm8k" }
+                ],
+                description: "小学数学推理基准"
+            },
+            {
+                id: 5,
+                name: "MATH",
+                category: "推理与数学",
+                source: "UC Berkeley",
+                year: "2021",
+                difficulty: 4,
+                what: "高中数学竞赛难度的推理基准，评估模型的高级数学推理能力。",
+                why: "衡量模型复杂数学推理能力的核心基准，能够有效区分模型的深层次推理能力。",
+                features: [
+                    "12500道高中数学竞赛题",
+                    "覆盖代数、几何、微积分、概率等多个领域",
+                    "难度从 AMC 10 到 AIME 级别",
+                    "需要复杂的多步推理和数学知识"
+                ],
+                count: "12500道题",
+                sota: "GPT-4o: 76.2%",
+                limitations: [
+                    "难度很高，即使是人类也难以取得高分",
+                    "解题过程需要专业数学知识",
+                    "自动评测困难，部分题目答案不唯一",
+                    "对中文模型不友好，题目都是英文的"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2103.03874" },
+                    { name: "GitHub", url: "https://github.com/hendrycks/math" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/hendrycks/math" }
+                ],
+                description: "高中数学竞赛基准"
+            },
+            {
+                id: 6,
+                name: "MMLU",
+                category: "知识与理解",
+                source: "UC Berkeley",
+                year: "2020",
+                difficulty: 3,
+                what: "大规模多任务语言理解基准，涵盖57个学科的知识问答，评估模型的综合知识水平。",
+                why: "最经典的知识类评测基准，广泛用于衡量模型的综合知识储备和理解能力，是大模型评测的必测项。",
+                features: [
+                    "14042道4选1选择题",
+                    "覆盖57个学科，包括人文、社科、理工、医学、法律等",
+                    "难度从入门级到专业级",
+                    "全面评估模型的知识广度和深度"
+                ],
+                count: "14042道题",
+                sota: "GPT-4o: 88.7%",
+                limitations: [
+                    "知识截止到2020年，无法测试新知识",
+                    "选择题形式存在25%的猜测概率",
+                    "主要考察记忆，对深层理解考察不足",
+                    "英文题目为主，对中文模型有偏差"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2009.03300" },
+                    { name: "GitHub", url: "https://github.com/hendrycks/test" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/cais/mmlu" }
+                ],
+                description: "大规模多任务知识理解基准"
+            },
+            {
+                id: 7,
+                name: "MMLU-Pro",
+                category: "知识与理解",
+                source: "TIGER-Lab",
+                year: "2024",
+                difficulty: 4,
+                what: "MMLU的增强版，题目更难，选项迷惑性更强，有效减少猜测概率。",
+                why: "解决了原版MMLU难度偏低、猜测概率高的问题，能更准确地衡量模型的真实知识水平。",
+                features: [
+                    "12000道更难的选择题",
+                    "每个题目10个选项，猜测概率降低到10%",
+                    "题目更具迷惑性，错误选项都是常见误解",
+                    "覆盖同样的57个学科"
+                ],
+                count: "12000道题",
+                sota: "GPT-4o: 73.1%",
+                limitations: [
+                    "同样存在知识时效性问题",
+                    "难度过高，区分度在高分区更好",
+                    "评测成本比原版高",
+                    "仍然是英文题目为主"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2406.01574" },
+                    { name: "GitHub", url: "https://github.com/TIGER-AI-Lab/MMLU-Pro" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro" }
+                ],
+                description: "增强版MMLU基准"
+            },
+            {
+                id: 8,
+                name: "GPQA",
+                category: "知识与理解",
+                source: "NYU",
+                year: "2023",
+                difficulty: 5,
+                what: "研究生级别的知识问答基准，所有题目都是"Google-proof"，即使搜索也很难找到答案。",
+                why: "目前难度最高的知识类基准，能够真正检验模型的深层专业知识，而非简单的信息记忆。",
+                features: [
+                    "448道研究生级别的专业题目",
+                    "覆盖物理、化学、生物、计算机、经济等17个学科",
+                    "题目经过严格设计，无法通过直接搜索得到答案",
+                    "选项高度迷惑性，需要专业知识才能正确解答"
+                ],
+                count: "448道核心题，共1200+题",
+                sota: "GPT-4o: 73.4%",
+                limitations: [
+                    "题目数量较少",
+                    "知识截止到2023年",
+                    "理工科题目占比过高，人文社科较少",
+                    "对非英语母语模型不友好"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2311.12022" },
+                    { name: "GitHub", url: "https://github.com/idavidrein/gpqa" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/idavidrein/gpqa" }
+                ],
+                description: "研究生级谷歌免疫知识基准"
+            },
+            {
+                id: 9,
+                name: "IFEval",
+                category: "指令遵循",
+                source: "Google",
+                year: "2023",
+                difficulty: 2,
+                what: "评估大模型遵循复杂指令的能力，测试模型是否能严格按照用户的各种要求生成输出。",
+                why: "衡量模型对齐程度的核心指标，直接影响用户体验，是对话模型必备的评测项。",
+                features: [
+                    "2500+条测试指令",
+                    "覆盖24种不同的指令类型（格式要求、约束条件、内容要求等）",
+                    "可以自动评测，不需要人工标注",
+                    "测试各种细粒度的指令遵循能力"
+                ],
+                count: "2500+条指令",
+                sota: "GPT-4o: 89.2%",
+                limitations: [
+                    "指令相对简单，难以测试极端复杂的指令遵循",
+                    "没有考虑自然语言指令的歧义性",
+                    "评测规则比较死板，可能误判合理的输出",
+                    "主要是英文指令"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2311.07911" },
+                    { name: "GitHub", url: "https://github.com/google-research/google-research/tree/master/instruction_following_eval" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/allenai/IFEval" }
+                ],
+                description: "指令遵循能力基准"
+            },
+            {
+                id: 10,
+                name: "MT-Bench",
+                category: "指令遵循",
+                source: "LMSYS / UC Berkeley",
+                year: "2023",
+                difficulty: 3,
+                what: "多轮对话能力评测基准，通过多轮对话测试模型的对话质量和指令遵循能力。",
+                why: "最常用的对话模型评测基准，与人类偏好的相关性很高，能够有效区分对话模型的优劣。",
+                features: [
+                    "80道高质量多轮对话题目",
+                    "覆盖写作、推理、知识、角色扮演等8个领域",
+                    "采用GPT-4自动评分，与人类评分相关性达0.8+",
+                    "输出1-10分的评分和详细评语"
+                ],
+                count: "80道多轮题",
+                sota: "GPT-4o: 9.32分",
+                limitations: [
+                    "评分依赖GPT-4，存在偏见和不稳定性",
+                    "题目数量较少，可能存在偏差",
+                    "主要测试英文对话能力",
+                    "对创意生成类任务的评估不够准确"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2306.05685" },
+                    { name: "GitHub", url: "https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge" },
+                    { name: "Chatbot Arena", url: "https://arena.lmsys.org/" }
+                ],
+                description: "多轮对话质量基准"
+            },
+            {
+                id: 11,
+                name: "GAIA",
+                category: "Agent",
+                source: "Meta/HuggingFace",
+                year: "2023",
+                difficulty: 4,
+                what: "通用AI助手基准，测试模型作为AI助手解决真实世界复杂任务的能力。",
+                why: "衡量AI Agent能力的核心基准，测试模型是否能综合运用知识、推理、工具调用等能力解决实际问题。",
+                features: [
+                    "466个真实世界任务",
+                    "涵盖日常问题、科学计算、写作、多模态等多种类型",
+                    "部分题目需要使用工具才能解决",
+                    "答案客观明确，易于评测"
+                ],
+                count: "466个任务",
+                sota: "GPT-4o + 工具: 63.5%",
+                limitations: [
+                    "部分题目依赖最新的实时信息",
+                    "对工具使用的支持还不够完善",
+                    "题目数量相对较少",
+                    "难度跨度较大"
+                ],
+                links: [
+                    { name: "官网", url: "https://gaia-benchmark.org/" },
+                    { name: "论文", url: "https://arxiv.org/abs/2311.12983" },
+                    { name: "GitHub", url: "https://github.com/GAIA-Benchmark/GAIA" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/gaia-benchmark/GAIA" }
+                ],
+                description: "通用AI助手能力基准"
+            },
+            {
+                id: 12,
+                name: "WebArena",
+                category: "Agent",
+                source: "CMU",
+                year: "2023",
+                difficulty: 5,
+                what: "网络浏览Agent基准，测试模型在真实网站环境中完成复杂任务的能力。",
+                why: "最贴近真实浏览场景的Agent基准，测试模型是否能像人类一样使用网站完成各种任务。",
+                features: [
+                    "812个真实网络任务",
+                    "运行在真实的网站镜像环境中（电商、论坛、知识库等）",
+                    "需要模拟人类的点击、输入、导航等操作",
+                    "测试网页理解、规划、执行等综合能力"
+                ],
+                count: "812个任务",
+                sota: "GPT-4V + 浏览工具: 18.7%",
+                limitations: [
+                    "难度极高，现有模型的成功率很低",
+                    "评测环境复杂，部署难度大",
+                    "运行速度慢，评测成本高",
+                    "部分任务的判定标准存在争议"
+                ],
+                links: [
+                    { name: "官网", url: "https://webarena.dev/" },
+                    { name: "论文", url: "https://arxiv.org/abs/2307.13854" },
+                    { name: "GitHub", url: "https://github.com/web-arena-x/webarena" }
+                ],
+                description: "真实网络浏览Agent基准"
+            },
+            {
+                id: 13,
+                name: "MMMU",
+                category: "多模态",
+                source: "IN.AI",
+                year: "2023",
+                difficulty: 4,
+                what: "大规模多模态理解基准，测试模型理解图像、图表、表格等多模态内容的能力。",
+                why: "衡量多模态大模型综合理解能力的核心基准，覆盖多个学科的多模态问题。",
+                features: [
+                    "11500道多模态题目",
+                    "覆盖30个学科和领域",
+                    "包含图表、图示、照片、截图等多种图像类型",
+                    "需要结合文本和图像内容进行推理"
+                ],
+                count: "11500道题",
+                sota: "GPT-4o: 76.8%",
+                limitations: [
+                    "部分题目对图像分辨率敏感",
+                    "自动评测困难，部分答案不唯一",
+                    "数据集规模大，评测成本高",
+                    "中文题目较少"
+                ],
+                links: [
+                    { name: "官网", url: "https://mmmu-benchmark.github.io/" },
+                    { name: "论文", url: "https://arxiv.org/abs/2311.16502" },
+                    { name: "GitHub", url: "https://github.com/MMMU-Benchmark/MMMU" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/MMMU/MMMU" }
+                ],
+                description: "大规模多模态理解基准"
+            },
+            {
+                id: 14,
+                name: "MathVista",
+                category: "多模态",
+                source: "UCLA",
+                year: "2023",
+                difficulty: 4,
+                what: "数学视觉推理基准，测试模型理解数学图表、几何图形等视觉内容并进行数学推理的能力。",
+                why: "专门测试多模态模型的数学推理能力，是衡量模型数理逻辑和视觉理解结合能力的重要基准。",
+                features: [
+                    "6141道数学视觉题",
+                    "覆盖图表理解、几何推理、应用题可视化等多种类型",
+                    "包含各种数学图表、几何图形、数据可视化",
+                    "需要视觉理解和数学推理的结合"
+                ],
+                count: "6141道题",
+                sota: "GPT-4o: 65.3%",
+                limitations: [
+                    "部分题目依赖精确的OCR能力",
+                    "对图表的细节要求高",
+                    "题型相对局限在数学领域",
+                    "自动评测存在一定难度"
+                ],
+                links: [
+                    { name: "官网", url: "https://mathvista.github.io/" },
+                    { name: "论文", url: "https://arxiv.org/abs/2310.02251" },
+                    { name: "GitHub", url: "https://github.com/lupantech/MathVista" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/lupantech/MathVista" }
+                ],
+                description: "数学视觉推理基准"
+            },
+            {
+                id: 15,
+                name: "LongBench",
+                category: "长上下文",
+                source: "Tsinghua",
+                year: "2023",
+                difficulty: 3,
+                what: "长上下文理解基准，测试模型处理长文档的能力，覆盖不同长度和任务类型。",
+                why: "衡量模型长上下文能力的主流基准，全面测试模型在不同长度下的理解和记忆能力。",
+                features: [
+                    "4750个长文档任务",
+                    "文档长度从1k到32k tokens不等",
+                    "覆盖摘要、问答、信息提取等多种任务",
+                    "支持中英文两种语言"
+                ],
+                count: "4750个任务",
+                sota: "GPT-4o (128k): 82.7%",
+                limitations: [
+                    "最长仅支持32k，无法测试更长上下文能力",
+                    "任务相对简单，主要测试信息检索能力",
+                    "对深层推理和综合理解的测试不足",
+                    "部分任务存在捷径"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2308.14508" },
+                    { name: "GitHub", url: "https://github.com/THUDM/LongBench" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/THUDM/LongBench" }
+                ],
+                description: "长上下文理解基准"
+            },
+            {
+                id: 16,
+                name: "Needle-in-a-Haystack",
+                category: "长上下文",
+                source: "Greg Kamradt",
+                year: "2023",
+                difficulty: 2,
+                what: "长上下文检索能力测试，在长文档中插入随机信息，测试模型是否能准确检索到。",
+                why: "最直观的长上下文能力测试，能够清晰地展示模型在不同上下文长度下的检索准确率。",
+                features: [
+                    "可自定义文档长度（从1k到1M+ tokens）",
+                    "随机在文档的不同位置插入"针"信息",
+                    "测试模型在不同位置、不同长度下的检索准确率",
+                    "可视化展示检索准确率随长度和位置的变化"
+                ],
+                count: "可自定义",
+                sota: "GPT-4o (128k): 98%@128k",
+                limitations: [
+                    "仅测试检索能力，不测试理解和推理",
+                    "任务过于简单，与实际使用场景有差距",
+                    "容易被模型的特定优化技巧绕过",
+                    "不能反映真实的长文档处理能力"
+                ],
+                links: [
+                    { name: "原帖", url: "https://twitter.com/GregKamradt/status/1689183437278691328" },
+                    { name: "GitHub", url: "https://github.com/gkamradt/LLMTest_NeedleInAHaystack" }
+                ],
+                description: "大海捞针长上下文检索测试"
+            },
+            {
+                id: 17,
+                name: "TruthfulQA",
+                category: "安全与鲁棒性",
+                source: "Oxford",
+                year: "2021",
+                difficulty: 3,
+                what: "测试模型生成答案的真实性，衡量模型是否会生成常见的错误信息和虚假内容。",
+                why: "衡量模型事实准确性和安全性的核心基准，直接影响模型输出的可信度。",
+                features: [
+                    "817个问题，都是人类经常答错的问题",
+                    "测试模型是否会生成常见的误解和虚假信息",
+                    "评估模型的诚实性和事实准确性",
+                    "包含多个领域的常识性问题"
+                ],
+                count: "817个问题",
+                sota: "GPT-4o: 89.3%",
+                limitations: [
+                    "题目数量较少，覆盖领域有限",
+                    "部分问题的答案存在争议",
+                    "主要测试英文常识",
+                    "无法测试专业领域的事实准确性"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2109.07958" },
+                    { name: "GitHub", url: "https://github.com/sylinrl/TruthfulQA" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/truthful_qa" }
+                ],
+                description: "事实真实性评测基准"
+            },
+            {
+                id: 18,
+                name: "BBQ",
+                category: "安全与鲁棒性",
+                source: "Google",
+                year: "2021",
+                difficulty: 2,
+                what: "偏见测试基准，评估模型输出中的社会偏见（性别、种族、年龄、宗教等）。",
+                why: "衡量模型公平性和安全性的重要基准，确保模型输出不会包含歧视性内容。",
+                features: [
+                    "2000多个歧义问题",
+                    "覆盖9种常见的社会偏见类型",
+                    "测试模型在信息不足的情况下是否会依赖刻板印象",
+                    "量化偏见的程度和类型"
+                ],
+                count: "2000+个问题",
+                sota: "GPT-4o: 92.1% 无偏见",
+                limitations: [
+                    "主要针对西方社会的偏见类型",
+                    "部分题目设计存在争议",
+                    "无法测试更隐蔽的偏见",
+                    "上下文有限，不能完全反映实际使用中的偏见情况"
+                ],
+                links: [
+                    { name: "论文", url: "https://arxiv.org/abs/2110.08193" },
+                    { name: "GitHub", url: "https://github.com/nyu-mll/BBQ" },
+                    { name: "Hugging Face", url: "https://huggingface.co/datasets/facebook/bbq" }
+                ],
+                description: "社会偏见测试基准"
+            },
+            {
+                id: 19,
+                name: "BFCL",
+                category: "工具调用",
+                source: "UC Berkeley / Gorilla",
+                year: "2024",
+                difficulty: 3,
+                what: "伯克利函数调用基准，全面测试模型的工具调用和函数调用能力。",
+                why: "衡量模型工具调用能力的权威基准，覆盖各种函数调用场景和复杂度。",
+                features: [
+                    "3000+个工具调用测试用例",
+                    "覆盖简单调用、多函数调用、并行调用、参数验证等多种场景",
+                    "支持多轮工具调用测试",
+                    "自动评测，结果准确客观"
+                ],
+                count: "3000+个用例",
+                sota: "GPT-4o: 91.5%",
+                limitations: [
+                    "函数定义都是英文的",
+                    "主要测试格式正确性，对实际功能正确性测试不足",
+                    "覆盖的工具类型有限",
+                    "不涉及复杂的工具调用规划"
+                ],
+                links: [
+                    { name: "官网", url: "https://gorilla.cs.berkeley.edu/leaderboard.html" },
+                    { name: "论文", url: "https://arxiv.org/abs/2403.13755" },
+                    { name: "GitHub", url: "https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard" }
+                ],
+                description: "伯克利函数调用基准"
+            },
+            {
+                id: 20,
+                name: "ARC-AGI",
+                category: "推理与数学",
+                source: "Francois Chollet",
+                year: "2019",
+                difficulty: 5,
+                what: "抽象推理基准，测试模型的通用智能和归纳推理能力，完全不需要先验知识。",
+                why: "被称为"AI的智商测试"，最接近人类通用智力测试的基准，能够衡量模型的泛化推理能力。",
+                features: [
+                    "1000个抽象推理任务",
+                    "每个任务包含少量输入输出示例，需要找出规律并预测新的输出",
+                    "完全基于视觉模式，不需要语言或领域知识",
+                    "测试最底层的归纳推理能力"
+                ],
+                count: "1000个任务",
+                sota: "专用模型: ~30%，通用LLM: <10%",
+                limitations: [
+                    "难度极高，即使是人类也很难取得高分",
+                    "与实际应用场景距离较远",
+                    "通用大模型表现普遍很差",
+                    "评测成本高"
+                ],
+                links: [
+                    { name: "官网", url: "https://arcprize.org/" },
+                    { name: "论文", url: "https://arxiv.org/abs/1911.01547" },
+                    { name: "GitHub", url: "https://github.com/fchollet/ARC" },
+                    { name: "Kaggle竞赛", url: "https://www.kaggle.com/c/arc-prize-2024" }
+                ],
+                description: "抽象推理通用智能基准"
+            }
+        ];
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const difficultyFilter = document.getElementById('difficultyFilter');
+        const benchmarkGrid = document.getElementById('benchmarkGrid');
+        const noResults = document.getElementById('noResults');
+        const detailModal = document.getElementById('detailModal');
+        const closeModal = document.getElementById('closeModal');
+        const totalCount = document.getElementById('totalCount');
+
+        // Render benchmarks
+        function renderBenchmarks(filtered = benchmarks) {
+            benchmarkGrid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                noResults.classList.remove('hidden');
+                totalCount.textContent = '0';
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            totalCount.textContent = filtered.length;
+            
+            filtered.forEach(benchmark => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-lg overflow-hidden card-hover cursor-pointer';
+                card.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="tag ${getCategoryColor(benchmark.category)}">${benchmark.category}</span>
+                                    <span class="tag bg-gray-100 text-gray-700">${'⭐'.repeat(benchmark.difficulty)}</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-1">${benchmark.name}</h3>
+                                <p class="text-sm text-gray-500">${benchmark.source} · ${benchmark.year}</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <i class="fa fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-4">${benchmark.description}</p>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 flex items-center gap-1">
+                                <i class="fa fa-trophy text-yellow-500"></i>
+                                SOTA: ${benchmark.sota}
+                            </span>
+                            <span class="text-gray-600 flex items-center gap-1">
+                                <i class="fa fa-list-ul text-blue-500"></i>
+                                ${benchmark.count}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => openModal(benchmark));
+                benchmarkGrid.appendChild(card);
+            });
+        }
+
+        // Get category color
+        function getCategoryColor(category) {
+            const colors = {
+                '代码能力': 'bg-green-100 text-green-800',
+                '推理与数学': 'bg-orange-100 text-orange-800',
+                '知识与理解': 'bg-purple-100 text-purple-800',
+                '指令遵循': 'bg-blue-100 text-blue-800',
+                'Agent': 'bg-red-100 text-red-800',
+                '多模态': 'bg-pink-100 text-pink-800',
+                '长上下文': 'bg-teal-100 text-teal-800',
+                '安全与鲁棒性': 'bg-yellow-100 text-yellow-800',
+                '工具调用': 'bg-indigo-100 text-indigo-800',
+                '综合对话': 'bg-cyan-100 text-cyan-800'
+            };
+            return colors[category] || 'bg-gray-100 text-gray-800';
+        }
+
+        // Open modal
+        function openModal(benchmark) {
+            document.getElementById('modalTitle').textContent = benchmark.name;
+            document.getElementById('modalCategory').textContent = benchmark.category;
+            document.getElementById('modalDifficulty').textContent = '⭐'.repeat(benchmark.difficulty);
+            document.getElementById('modalSource').textContent = benchmark.source;
+            document.getElementById('modalYear').textContent = benchmark.year;
+            document.getElementById('modalWhat').textContent = benchmark.what;
+            document.getElementById('modalWhy').textContent = benchmark.why;
+            document.getElementById('modalCount').textContent = benchmark.count;
+            document.getElementById('modalSota').textContent = benchmark.sota;
+
+            // Features
+            const featuresList = document.getElementById('modalFeatures');
+            featuresList.innerHTML = '';
+            benchmark.features.forEach(feature => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<i class="fa fa-check-circle text-green-500 mt-1 flex-shrink-0"></i><span>${feature}</span>`;
+                featuresList.appendChild(li);
+            });
+
+            // Limitations
+            const limitationsList = document.getElementById('modalLimitations');
+            limitationsList.innerHTML = '';
+            benchmark.limitations.forEach(limitation => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<i class="fa fa-times-circle text-red-500 mt-1 flex-shrink-0"></i><span>${limitation}</span>`;
+                limitationsList.appendChild(li);
+            });
+
+            // Links
+            const linksDiv = document.getElementById('modalLinks');
+            linksDiv.innerHTML = '';
+            benchmark.links.forEach(link => {
+                const a = document.createElement('a');
+                a.href = link.url;
+                a.target = '_blank';
+                a.className = 'px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-sm font-medium flex items-center gap-1 transition-all';
+                a.innerHTML = `<i class="fa fa-external-link"></i> ${link.name}`;
+                linksDiv.appendChild(a);
+            });
+
+            detailModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close modal
+        closeModal.addEventListener('click', () => {
+            detailModal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        });
+
+        // Close modal on outside click
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal) {
+                detailModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Filter benchmarks
+        function filterBenchmarks() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const category = categoryFilter.value;
+            const difficulty = parseInt(difficultyFilter.value);
+
+            const filtered = benchmarks.filter(benchmark => {
+                const matchesSearch = 
+                    benchmark.name.toLowerCase().includes(searchTerm) ||
+                    benchmark.description.toLowerCase().includes(searchTerm) ||
+                    benchmark.category.toLowerCase().includes(searchTerm) ||
+                    benchmark.source.toLowerCase().includes(searchTerm) ||
+                    benchmark.what.toLowerCase().includes(searchTerm);
+                
+                const matchesCategory = category === 'all' || benchmark.category === category;
+                const matchesDifficulty = isNaN(difficulty) || benchmark.difficulty === difficulty;
+
+                return matchesSearch && matchesCategory && matchesDifficulty;
+            });
+
+            renderBenchmarks(filtered);
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', filterBenchmarks);
+        categoryFilter.addEventListener('change', filterBenchmarks);
+        difficultyFilter.addEventListener('change', filterBenchmarks);
+
+        // Initial render
+        renderBenchmarks();
+    </script>
+</body>
+</html>

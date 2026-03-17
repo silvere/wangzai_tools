@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Backdrop-Filter 毛玻璃可视化生成器 | 旺仔工具库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        .preview-container {
+            background-image: url('https://picsum.photos/1200/800?random=1');
+            background-size: cover;
+            background-position: center;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+        .code-block {
+            font-family: 'Fira Code', 'Courier New', monospace;
+        }
+        .glass-panel {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🌫️ CSS Backdrop-Filter 毛玻璃可视化生成器</h1>
+            <p class="text-gray-600">可视化拖拽调节毛玻璃模糊效果，实时预览，一键复制CSS代码</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Control Panel -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Filter Settings -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">滤镜参数</h2>
+
+                    <!-- Blur -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">模糊度 Blur</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0px</span>
+                                <span id="blur-value">8px</span>
+                                <span>40px</span>
+                            </div>
+                            <input type="range" id="blur" min="0" max="40" value="8" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Brightness -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">亮度 Brightness</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0%</span>
+                                <span id="brightness-value">100%</span>
+                                <span>200%</span>
+                            </div>
+                            <input type="range" id="brightness" min="0" max="200" value="100" step="5" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Contrast -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">对比度 Contrast</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0%</span>
+                                <span id="contrast-value">100%</span>
+                                <span>200%</span>
+                            </div>
+                            <input type="range" id="contrast" min="0" max="200" value="100" step="5" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Grayscale -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">灰度 Grayscale</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0%</span>
+                                <span id="grayscale-value">0%</span>
+                                <span>100%</span>
+                            </div>
+                            <input type="range" id="grayscale" min="0" max="100" value="0" step="5" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Sepia -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">褐色怀旧 Sepia</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0%</span>
+                                <span id="sepia-value">0%</span>
+                                <span>100%</span>
+                            </div>
+                            <input type="range" id="sepia" min="0" max="100" value="0" step="5" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Saturate -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">饱和度 Saturate</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0%</span>
+                                <span id="saturate-value">100%</span>
+                                <span>300%</span>
+                            </div>
+                            <input type="range" id="saturate" min="0" max="300" value="100" step="10" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Hue Rotate -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">色相旋转 Hue Rotate</label>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0deg</span>
+                                <span id="hue-rotate-value">0deg</span>
+                                <span>360deg</span>
+                            </div>
+                            <input type="range" id="hue-rotate" min="0" max="360" value="0" step="5" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Glass Panel Style -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">毛玻璃面板样式</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">背景颜色</label>
+                            <input type="color" id="bgColor" value="#ffffff" class="w-full h-10 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">背景透明度</label>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0%</span>
+                                <span id="opacity-value">30%</span>
+                                <span>100%</span>
+                            </div>
+                            <input type="range" id="opacity" min="0" max="100" value="30" step="5" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">边框宽度 (px)</label>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0</span>
+                                <span id="borderWidth-value">1</span>
+                                <span>5</span>
+                            </div>
+                            <input type="range" id="borderWidth" min="0" max="5" value="1" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">边框颜色</label>
+                            <input type="color" id="borderColor" value="#ffffff" class="w-full h-10 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">圆角 (px)</label>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0</span>
+                                <span id="borderRadius-value">16</span>
+                                <span>40</span>
+                            </div>
+                            <input type="range" id="borderRadius" min="0" max="40" value="16" step="1" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">内边距 (px)</label>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>0</span>
+                                <span id="padding-value">32</span>
+                                <span>60</span>
+                            </div>
+                            <input type="range" id="padding" min="0" max="60" value="32" step="4" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">常用预设</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm font-medium transition" data-preset="classic">经典毛玻璃</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="light">轻度模糊</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="heavy">重度模糊</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="dark">暗黑玻璃</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="sepia">复古棕褐色</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="vibrant">高饱和鲜艳</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="grayscale">黑白灰调</button>
+                        <button class="preset-btn px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm transition" data-preset="rainbow">彩虹色相</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview and Code -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Preview -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+                    <div class="preview-container rounded-lg p-12 min-h-[500px] flex items-center justify-center">
+                        <div id="glass-panel" class="glass-panel w-full max-w-md text-gray-800" style="backdrop-filter: blur(8px) brightness(100%) contrast(100%) grayscale(0%) sepia(0%) saturate(100%) hue-rotate(0deg); -webkit-backdrop-filter: blur(8px) brightness(100%) contrast(100%) grayscale(0%) sepia(0%) saturate(100%) hue-rotate(0deg); background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; padding: 32px;">
+                            <h3 class="text-2xl font-bold mb-4">毛玻璃效果</h3>
+                            <p class="mb-3">Backdrop-filter 可以让你为一个元素后面区域添加模糊效果，通常用于打造现代UI设计中的半透明毛玻璃卡片。</p>
+                            <p>模糊会穿透到背景，只影响背景，不影响内容文字，非常适合做导航栏、模态框、卡片背景。</p>
+                            <div class="mt-4 flex gap-2">
+                                <button class="px-4 py-2 bg-white/40 backdrop-blur-sm rounded-lg font-medium hover:bg-white/50 transition">主要按钮</button>
+                                <button class="px-4 py-2 bg-black/20 backdrop-blur-sm text-white rounded-lg font-medium hover:bg-black/30 transition">次要按钮</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
+                        <strong>💡 提示：</strong> 背景使用了随机图片，可以刷新页面换一张背景。毛玻璃效果显示在背景上方，完美还原了真实使用场景。
+                    </div>
+                </div>
+
+                <!-- Generated Code -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">生成的 CSS 代码</h2>
+                        <button id="copy-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium">
+                            📋 复制代码
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <pre class="code-block bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code id="css-code"></code></pre>
+                    </div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">backdrop-filter 语法速查表</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border px-3 py-2 text-left">函数</th>
+                                    <th class="border px-3 py-2 text-left">说明</th>
+                                    <th class="border px-3 py-2 text-left">常用值</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">blur()</td>
+                                    <td class="border px-3 py-2">对背景应用高斯模糊</td>
+                                    <td class="border px-3 py-2">4px ~ 20px 常用</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">brightness()</td>
+                                    <td class="border px-3 py-2">调整背景亮度</td>
+                                    <td class="border px-3 py-2">80% ~ 120%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">contrast()</td>
+                                    <td class="border px-3 py-2">调整背景对比度</td>
+                                    <td class="border px-3 py-2">80% ~ 120%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">grayscale()</td>
+                                    <td class="border px-3 py-2">将背景转为灰度</td>
+                                    <td class="border px-3 py-2">0% ~ 100%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">hue-rotate()</td>
+                                    <td class="border px-3 py-2">对背景应用色相旋转</td>
+                                    <td class="border px-3 py-2">0deg ~ 360deg</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">invert()</td>
+                                    <td class="border px-3 py-2">反转背景颜色</td>
+                                    <td class="border px-3 py-2">0% ~ 100%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">opacity()</td>
+                                    <td class="border px-3 py-2">调整背景透明度</td>
+                                    <td class="border px-3 py-2">0% ~ 100%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">saturate()</td>
+                                    <td class="border px-3 py-2">调整背景饱和度</td>
+                                    <td class="border px-3 py-2">80% ~ 150%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">sepia()</td>
+                                    <td class="border px-3 py-2">将背景转为棕褐色</td>
+                                    <td class="border px-3 py-2">0% ~ 100%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-mono">none</td>
+                                    <td class="border px-3 py-2">移除所有滤镜</td>
+                                    <td class="border px-3 py-2">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg text-sm text-yellow-800">
+                        <strong class="block mb-1">📱 浏览器兼容性：</strong>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Chrome、Firefox、Edge、Safari 都已支持</li>
+                            <li>移动端 Safari 需要 <code>-webkit-backdrop-filter</code> 前缀（代码已经自动加上）</li>
+                            <li>IE 不支持，会优雅降级显示纯色背景</li>
+                        </ul>
+                    </div>
+                    <div class="mt-4 p-4 bg-green-50 rounded-lg text-sm text-green-800">
+                        <strong class="block mb-1">✨ 常见使用场景：</strong>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>导航栏 / 侧边栏 浮动半透明效果</li>
+                            <li>模态框 / 弹窗 背景模糊</li>
+                            <li>卡片浮在图片上方</li>
+                            <li>滚动时顶栏渐变透明效果</li>
+                            <li>移动端现代UI设计</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>Built with ❤️ by 旺仔 | 纯前端实现，所有计算在浏览器本地完成</p>
+        </footer>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const blur = document.getElementById('blur');
+        const brightness = document.getElementById('brightness');
+        const contrast = document.getElementById('contrast');
+        const grayscale = document.getElementById('grayscale');
+        const sepia = document.getElementById('sepia');
+        const saturate = document.getElementById('saturate');
+        const hueRotate = document.getElementById('hueRotate');
+
+        const blurValue = document.getElementById('blur-value');
+        const brightnessValue = document.getElementById('brightness-value');
+        const contrastValue = document.getElementById('contrast-value');
+        const grayscaleValue = document.getElementById('grayscale-value');
+        const sepiaValue = document.getElementById('sepia-value');
+        const saturateValue = document.getElementById('saturate-value');
+        const hueRotateValue = document.getElementById('hue-rotate-value');
+
+        const bgColor = document.getElementById('bgColor');
+        const opacity = document.getElementById('opacity');
+        const borderWidth = document.getElementById('borderWidth');
+        const borderColor = document.getElementById('borderColor');
+        const borderRadius = document.getElementById('borderRadius');
+        const padding = document.getElementById('padding');
+
+        const opacityValue = document.getElementById('opacity-value');
+        const borderWidthValue = document.getElementById('borderWidth-value');
+        const borderRadiusValue = document.getElementById('borderRadius-value');
+        const paddingValue = document.getElementById('padding-value');
+
+        const glassPanel = document.getElementById('glass-panel');
+        const cssCode = document.getElementById('css-code');
+        const copyBtn = document.getElementById('copy-btn');
+
+        // Update display values and preview
+        function updateAll() {
+            // Update displayed values
+            blurValue.textContent = blur.value + 'px';
+            brightnessValue.textContent = brightness.value + '%';
+            contrastValue.textContent = contrast.value + '%';
+            grayscaleValue.textContent = grayscale.value + '%';
+            sepiaValue.textContent = sepia.value + '%';
+            saturateValue.textContent = saturate.value + '%';
+            hueRotateValue.textContent = hueRotate.value + 'deg';
+            opacityValue.textContent = opacity.value + '%';
+            borderWidthValue.textContent = borderWidth.value;
+            borderRadiusValue.textContent = borderRadius.value;
+            paddingValue.textContent = padding.value;
+
+            // Build backdrop-filter string
+            let filter = '';
+            if (blur.value != 0) filter += `blur(${blur.value}px) `;
+            if (brightness.value != 100) filter += `brightness(${brightness.value}%) `;
+            if (contrast.value != 100) filter += `contrast(${contrast.value}%) `;
+            if (grayscale.value != 0) filter += `grayscale(${grayscale.value}%) `;
+            if (sepia.value != 0) filter += `sepia(${sepia.value}%) `;
+            if (saturate.value != 100) filter += `saturate(${saturate.value}%) `;
+            if (hueRotate.value != 0) filter += `hue-rotate(${hueRotate.value}deg) `;
+
+            if (!filter) {
+                filter = 'none';
+            }
+
+            // Calculate background color with opacity
+            const hexToRgb = (hex) => {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            };
+
+            const rgb = hexToRgb(bgColor.value);
+            const alpha = opacity.value / 100;
+            const bgRgba = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+            const borderRgba = `rgba(${parseInt(rgb.r * 0.8)}, ${parseInt(rgb.g * 0.8)}, ${parseInt(rgb.b * 0.8)}, ${alpha + 0.2})`;
+
+            // Apply styles
+            glassPanel.style.backdropFilter = filter.trim();
+            glassPanel.style.webkitBackdropFilter = filter.trim();
+            glassPanel.style.background = bgRgba;
+            glassPanel.style.borderWidth = borderWidth.value + 'px';
+            glassPanel.style.borderStyle = borderWidth.value > 0 ? 'solid' : 'none';
+            glassPanel.style.borderColor = borderWidth.value > 0 ? borderColor.value : 'transparent';
+            glassPanel.style.borderRadius = borderRadius.value + 'px';
+            glassPanel.style.padding = padding.value + 'px';
+
+            // Update CSS code display
+            let css = `.glass-panel {\n`;
+            css += `  backdrop-filter: ${filter.trim()};\n`;
+            css += `  -webkit-backdrop-filter: ${filter.trim()};\n`;
+            css += `  background: ${bgRgba};\n`;
+            if (borderWidth.value > 0) {
+                css += `  border: ${borderWidth.value}px solid ${borderColor.value};\n`;
+            }
+            css += `  border-radius: ${borderRadius.value}px;\n`;
+            css += `  padding: ${padding.value}px;\n`;
+            css += `}`;
+            cssCode.textContent = css;
+        }
+
+        // Event listeners
+        [blur, brightness, contrast, grayscale, sepia, saturate, hueRotate, bgColor, opacity, borderWidth, borderColor, borderRadius, padding].forEach(el => {
+            el.addEventListener('input', updateAll);
+        });
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn').forEach(b => {
+                    b.classList.remove('bg-blue-100', 'text-blue-700');
+                    b.classList.add('bg-gray-100', 'text-gray-700');
+                });
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                btn.classList.add('bg-blue-100', 'text-blue-700');
+                const preset = btn.dataset.preset;
+                applyPreset(preset);
+            });
+        });
+
+        // Apply presets
+        function applyPreset(preset) {
+            switch (preset) {
+                case 'classic':
+                    blur.value = 8;
+                    brightness.value = 100;
+                    contrast.value = 100;
+                    grayscale.value = 0;
+                    sepia.value = 0;
+                    saturate.value = 100;
+                    hueRotate.value = 0;
+                    bgColor.value = '#ffffff';
+                    opacity.value = 30;
+                    borderWidth.value = 1;
+                    borderColor.value = '#ffffff';
+                    borderRadius.value = 16;
+                    padding.value = 32;
+                    break;
+                case 'light':
+                    blur.value = 4;
+                    brightness.value = 110;
+                    contrast.value = 105;
+                    grayscale.value = 0;
+                    sepia.value = 0;
+                    saturate.value = 110;
+                    hueRotate.value = 0;
+                    bgColor.value = '#ffffff';
+                    opacity.value = 20;
+                    borderWidth.value = 1;
+                    borderColor.value = '#ffffff';
+                    borderRadius.value = 12;
+                    padding.value = 24;
+                    break;
+                case 'heavy':
+                    blur.value = 20;
+                    brightness.value = 100;
+                    contrast.value = 100;
+                    grayscale.value = 0;
+                    sepia.value = 0;
+                    saturate.value = 100;
+                    hueRotate.value = 0;
+                    bgColor.value = '#ffffff';
+                    opacity.value = 25;
+                    borderWidth.value = 1;
+                    borderColor.value = '#ffffff';
+                    borderRadius.value = 24;
+                    padding.value = 40;
+                    break;
+                case 'dark':
+                    blur.value = 12;
+                    brightness.value = 80;
+                    contrast.value = 120;
+                    grayscale.value = 0;
+                    sepia.value = 0;
+                    saturate.value = 90;
+                    hueRotate.value = 0;
+                    bgColor.value = '#000000';
+                    opacity.value = 40;
+                    borderWidth.value = 1;
+                    borderColor.value = '#444444';
+                    borderRadius.value = 16;
+                    padding.value = 32;
+                    break;
+                case 'sepia':
+                    blur.value = 10;
+                    brightness.value = 110;
+                    contrast.value = 105;
+                    grayscale.value = 0;
+                    sepia.value = 40;
+                    saturate.value = 120;
+                    hueRotate.value = 0;
+                    bgColor.value = '#fff8e8';
+                    opacity.value = 25;
+                    borderWidth.value = 1;
+                    borderColor.value = '#fff8e8';
+                    borderRadius.value = 16;
+                    padding.value = 32;
+                    break;
+                case 'vibrant':
+                    blur.value = 8;
+                    brightness.value = 105;
+                    contrast.value = 110;
+                    grayscale.value = 0;
+                    sepia.value = 0;
+                    saturate.value = 150;
+                    hueRotate.value = 0;
+                    bgColor.value = '#ffffff';
+                    opacity.value = 25;
+                    borderWidth.value = 1;
+                    borderColor.value = '#ffffff';
+                    borderRadius.value = 16;
+                    padding.value = 32;
+                    break;
+                case 'grayscale':
+                    blur.value = 10;
+                    brightness.value = 110;
+                    contrast.value = 120;
+                    grayscale.value = 100;
+                    sepia.value = 0;
+                    saturate.value = 80;
+                    hueRotate.value = 0;
+                    bgColor.value = '#f0f0f0';
+                    opacity.value = 20;
+                    borderWidth.value = 1;
+                    borderColor.value = '#cccccc';
+                    borderRadius.value = 16;
+                    padding.value = 32;
+                    break;
+                case 'rainbow':
+                    blur.value = 8;
+                    brightness.value = 100;
+                    contrast.value = 100;
+                    grayscale.value = 0;
+                    sepia.value = 0;
+                    saturate.value = 120;
+                    hueRotate.value = 180;
+                    bgColor.value = '#ffffff';
+                    opacity.value = 25;
+                    borderWidth.value = 1;
+                    borderColor.value = '#ffffff';
+                    borderRadius.value = 16;
+                    padding.value = 32;
+                    break;
+            }
+            // Update all displays
+            updateAll();
+        }
+
+        // Copy button
+        copyBtn.addEventListener('click', () => {
+            const text = cssCode.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ 已复制！';
+                copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }, 2000);
+            });
+        });
+
+        // Initialize
+        document.querySelector('.preset-btn[data-preset="classic"]').click();
+        updateAll();
+    </script>
+</body>
+</html>

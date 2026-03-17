@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""Generate Bit Playground - Number Base Converter & Bitwise Visualizer."""
+
+html = r'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>位运算游乐场 | Bit Playground</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242836;--border:#2e3348;--text:#e4e6f0;--text2:#8b8fa8;--accent:#6c7cff;--accent2:#4a57d4;--bit1:#4ade80;--bit0:#3a3e52;--orange:#ffcc80;--red:#f87171;--cyan:#80deea}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header h1{font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px}
+.main{max-width:960px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+.card h2{font-size:13px;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.bases{display:grid;grid-template-columns:80px 1fr 80px;gap:8px;align-items:center}
+.base-label{font-size:12px;color:var(--accent);font-weight:600;font-family:monospace}
+.base-input{width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'SF Mono',Monaco,'Fira Code',monospace;outline:none}
+.base-input:focus{border-color:var(--accent)}
+.base-info{font-size:11px;color:var(--text2);text-align:right}
+.bit-grid{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.bit-group{display:flex;flex-direction:column;align-items:center;margin:0 4px}
+.bit-group-label{font-size:9px;color:var(--text2);margin-bottom:2px}
+.bit-row{display:flex;gap:2px}
+.bit{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;font-family:monospace;cursor:pointer;transition:all .12s;user-select:none}
+.bit.off{background:var(--bit0);color:var(--text2)}
+.bit.on{background:var(--bit1);color:#0f1117}
+.bit:hover{transform:scale(1.1);opacity:.9}
+.bit-index{font-size:8px;color:var(--text2);text-align:center;margin-top:1px}
+.bit-indices{display:flex;gap:2px}
+.quick-vals{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;justify-content:center}
+.qv{padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-family:monospace;transition:all .15s}
+.qv:hover{border-color:var(--accent);color:var(--accent)}
+.op-section{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.op-col{flex:1;min-width:250px}
+.op-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.op-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;font-family:monospace;transition:all .15s;min-width:50px;text-align:center}
+.op-btn:hover{border-color:var(--accent);color:var(--accent)}
+.op-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.op-input{width:120px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-family:monospace;outline:none}
+.op-input:focus{border-color:var(--accent)}
+.result-box{background:var(--surface2);border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;line-height:1.8}
+.result-box .label{color:var(--text2);font-size:11px}
+.result-box .val{color:var(--bit1)}
+.result-box .val.hex{color:var(--orange)}
+.result-box .val.bin{color:var(--cyan)}
+.info-row{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-top:8px;justify-content:center}
+.info-row span{display:flex;align-items:center;gap:4px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+.copy-btn{padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:10px;margin-left:6px}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:600px){.bases{grid-template-columns:60px 1fr 60px}.bit{width:22px;height:22px;font-size:10px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span>🔢</span> 位运算游乐场</h1>
+</div>
+<div class="main">
+  <div class="card">
+    <h2>🔄 进制转换</h2>
+    <div class="bases">
+      <span class="base-label">DEC 十进制</span>
+      <input class="base-input" id="decInput" value="42" oninput="fromBase('dec')" placeholder="0">
+      <span class="base-info" id="decInfo"></span>
+
+      <span class="base-label">HEX 十六进制</span>
+      <input class="base-input" id="hexInput" oninput="fromBase('hex')" placeholder="0x" style="color:var(--orange)">
+      <span class="base-info" id="hexInfo"></span>
+
+      <span class="base-label">BIN 二进制</span>
+      <input class="base-input" id="binInput" oninput="fromBase('bin')" placeholder="0b" style="color:var(--cyan)">
+      <span class="base-info" id="binInfo"></span>
+
+      <span class="base-label">OCT 八进制</span>
+      <input class="base-input" id="octInput" oninput="fromBase('oct')" placeholder="0o">
+      <span class="base-info" id="octInfo"></span>
+    </div>
+    <div class="info-row" id="numInfo"></div>
+  </div>
+
+  <div class="card">
+    <h2>💡 位可视化 <span style="font-weight:400;font-size:11px;color:var(--text2)">（点击翻转位）</span></h2>
+    <div class="bit-grid" id="bitGrid"></div>
+    <div class="quick-vals">
+      <button class="qv" onclick="setVal(0)">0</button>
+      <button class="qv" onclick="setVal(1)">1</button>
+      <button class="qv" onclick="setVal(42)">42</button>
+      <button class="qv" onclick="setVal(127)">127</button>
+      <button class="qv" onclick="setVal(255)">255 (0xFF)</button>
+      <button class="qv" onclick="setVal(256)">256</button>
+      <button class="qv" onclick="setVal(1024)">1024</button>
+      <button class="qv" onclick="setVal(65535)">65535 (0xFFFF)</button>
+      <button class="qv" onclick="setVal(2147483647)">INT32_MAX</button>
+      <button class="qv" onclick="setVal(4294967295)">UINT32_MAX</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⚡ 位运算</h2>
+    <div class="op-section">
+      <div class="op-col">
+        <div class="op-row">
+          <span style="font-size:12px;color:var(--text2);min-width:30px">A =</span>
+          <input class="op-input" id="opA" value="42" oninput="calcOp()" style="flex:1">
+        </div>
+        <div class="op-row">
+          <span style="font-size:12px;color:var(--text2);min-width:30px">B =</span>
+          <input class="op-input" id="opB" value="15" oninput="calcOp()" style="flex:1">
+        </div>
+        <div class="op-row" style="flex-wrap:wrap;gap:4px">
+          <button class="op-btn active" onclick="setOp('and',this)">AND &</button>
+          <button class="op-btn" onclick="setOp('or',this)">OR |</button>
+          <button class="op-btn" onclick="setOp('xor',this)">XOR ^</button>
+          <button class="op-btn" onclick="setOp('not',this)">NOT ~</button>
+          <button class="op-btn" onclick="setOp('shl',this)">SHL <<</button>
+          <button class="op-btn" onclick="setOp('shr',this)">SHR >></button>
+        </div>
+      </div>
+      <div class="op-col">
+        <div class="result-box" id="opResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📖 常用值速查</h2>
+    <div class="result-box" style="font-size:12px;line-height:2">
+      <span class="label">2⁸</span> = <span class="val">256</span> · <span class="label">2¹⁰</span> = <span class="val">1,024</span> (1K) · <span class="label">2¹⁶</span> = <span class="val">65,536</span> (64K) · <span class="label">2²⁰</span> = <span class="val">1,048,576</span> (1M)<br>
+      <span class="label">2³²</span> = <span class="val">4,294,967,296</span> (4G) · <span class="label">INT8</span> = <span class="val">-128~127</span> · <span class="label">UINT8</span> = <span class="val">0~255</span><br>
+      <span class="label">INT16</span> = <span class="val">-32768~32767</span> · <span class="label">INT32</span> = <span class="val">-2³¹~2³¹-1</span> · <span class="label">UINT32</span> = <span class="val">0~2³²-1</span><br>
+      <span class="label">ASCII</span>: <span class="val hex">0x30</span>=0 · <span class="val hex">0x41</span>=A · <span class="val hex">0x61</span>=a · <span class="val hex">0x20</span>=空格 · <span class="val hex">0x0A</span>=\n
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let currentVal=42,currentOp='and',bitCount=8;
+
+function updateBitCount(v){
+  if(v>0xFFFF)bitCount=32;
+  else if(v>0xFF)bitCount=16;
+  else bitCount=8;
+}
+
+function setVal(v){
+  currentVal=v>>>0;
+  updateBitCount(currentVal);
+  updateAll();
+}
+
+function fromBase(base){
+  let v=0;
+  try{
+    if(base==='dec')v=parseInt(document.getElementById('decInput').value)||0;
+    else if(base==='hex')v=parseInt(document.getElementById('hexInput').value.replace(/^0x/i,''),16)||0;
+    else if(base==='bin')v=parseInt(document.getElementById('binInput').value.replace(/^0b/i,''),2)||0;
+    else if(base==='oct')v=parseInt(document.getElementById('octInput').value.replace(/^0o/i,''),8)||0;
+  }catch(e){v=0}
+  currentVal=v>>>0;
+  updateBitCount(currentVal);
+  updateAll(base);
+}
+
+function updateAll(skip){
+  const v=currentVal;
+  if(skip!=='dec')document.getElementById('decInput').value=v;
+  if(skip!=='hex')document.getElementById('hexInput').value='0x'+v.toString(16).toUpperCase();
+  if(skip!=='bin')document.getElementById('binInput').value='0b'+v.toString(2);
+  if(skip!=='oct')document.getElementById('octInput').value='0o'+v.toString(8);
+
+  document.getElementById('decInfo').textContent=v.toLocaleString();
+  document.getElementById('hexInfo').textContent=v.toString(16).length+' 位';
+  document.getElementById('binInfo').textContent=v.toString(2).length+' 位';
+  document.getElementById('octInfo').textContent=v.toString(8).length+' 位';
+
+  // Info
+  const bits=v.toString(2).length;
+  const ones=(v.toString(2).match(/1/g)||[]).length;
+  const zeros=bitCount-ones;
+  const isPow2=v>0&&(v&(v-1))===0;
+  let info=`<span>位数: ${bits}</span><span>1 的个数: ${ones}</span><span>0 的个数: ${zeros}</span>`;
+  if(isPow2)info+=`<span style="color:var(--bit1)">✓ 2 的幂 (2^${Math.log2(v)})</span>`;
+  if(v>=32&&v<=126)info+=`<span>ASCII: '${String.fromCharCode(v)}'</span>`;
+  document.getElementById('numInfo').innerHTML=info;
+
+  renderBits();
+  calcOp();
+}
+
+function renderBits(){
+  const grid=document.getElementById('bitGrid');
+  let html='';
+  for(let g=Math.ceil(bitCount/4)-1;g>=0;g--){
+    html+='<div class="bit-group">';
+    html+='<div class="bit-group-label">'+(g*4+3)+'-'+g*4+'</div>';
+    html+='<div class="bit-row">';
+    for(let b=3;b>=0;b--){
+      const idx=g*4+b;
+      const on=(currentVal>>>idx)&1;
+      html+=`<div class="bit ${on?'on':'off'}" onclick="toggleBit(${idx})">${on}</div>`;
+    }
+    html+='</div>';
+    html+='<div class="bit-indices" style="display:flex;gap:2px">';
+    for(let b=3;b>=0;b--){
+      const idx=g*4+b;
+      html+=`<div style="width:28px;text-align:center;font-size:8px;color:var(--text2)">${idx}</div>`;
+    }
+    html+='</div></div>';
+  }
+  grid.innerHTML=html;
+}
+
+function toggleBit(idx){
+  currentVal=(currentVal^(1<<idx))>>>0;
+  updateBitCount(currentVal);
+  updateAll();
+}
+
+function setOp(op,el){
+  currentOp=op;
+  document.querySelectorAll('.op-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  calcOp();
+}
+
+function calcOp(){
+  const a=parseInt(document.getElementById('opA').value)||0;
+  const b=parseInt(document.getElementById('opB').value)||0;
+  let result,expr;
+  switch(currentOp){
+    case'and':result=(a&b)>>>0;expr=`${a} & ${b}`;break;
+    case'or':result=(a|b)>>>0;expr=`${a} | ${b}`;break;
+    case'xor':result=(a^b)>>>0;expr=`${a} ^ ${b}`;break;
+    case'not':result=(~a)>>>0;expr=`~${a}`;break;
+    case'shl':result=(a<<b)>>>0;expr=`${a} << ${b}`;break;
+    case'shr':result=(a>>>b)>>>0;expr=`${a} >>> ${b}`;break;
+    default:result=0;expr='';
+  }
+  const pad=n=>n.toString(2).padStart(8,'0');
+  let html=`<div class="label">表达式</div><div>${expr} = <span class="val">${result}</span></div>`;
+  html+=`<div style="margin-top:6px"><span class="label">A bin:</span> <span class="val bin">${pad(a>>>0)}</span></div>`;
+  if(currentOp!=='not')html+=`<div><span class="label">B bin:</span> <span class="val bin">${pad(b>>>0)}</span></div>`;
+  html+=`<div><span class="label">结果 bin:</span> <span class="val bin">${pad(result)}</span></div>`;
+  html+=`<div style="margin-top:4px"><span class="label">DEC:</span> <span class="val">${result}</span> · <span class="label">HEX:</span> <span class="val hex">0x${result.toString(16).toUpperCase()}</span></div>`;
+  document.getElementById('opResult').innerHTML=html;
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+
+updateAll();
+</script>
+</body>
+</html>'''
+
+with open('/root/clawd/builds/bit-playground/index.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+print(f"Generated index.html ({len(html)} bytes)")

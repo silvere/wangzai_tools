@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配色方案生成器 🎨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .color-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+            .color-card-hover {
+                transition: all 0.3s ease;
+            }
+            .color-card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .copy-animation {
+                animation: copyPulse 0.6s ease;
+            }
+            @keyframes copyPulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 头部 -->
+        <header class="text-center mb-10">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+                配色方案生成器 <span class="text-4xl">🎨</span>
+            </h1>
+            <p class="text-gray-600 text-lg mb-6">一键生成专业级配色方案，支持多种模式，实时预览，一键复制</p>
+            
+            <!-- 操作栏 -->
+            <div class="flex flex-wrap gap-4 justify-center items-center mb-6">
+                <button id="generateBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+                    <i class="fa fa-refresh"></i> 随机生成
+                </button>
+                
+                <div class="flex items-center gap-2">
+                    <label class="text-gray-700 font-medium">配色模式：</label>
+                    <select id="paletteMode" class="border-2 border-gray-200 rounded-lg px-4 py-3 bg-white focus:border-purple-500 focus:outline-none">
+                        <option value="analogous">类似色</option>
+                        <option value="monochromatic">单色</option>
+                        <option value="complementary">互补色</option>
+                        <option value="split-complementary">分裂互补</option>
+                        <option value="triadic">三角色</option>
+                        <option value="tetradic">四角色</option>
+                        <option value="random">随机和谐</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <label class="text-gray-700 font-medium">颜色数量：</label>
+                    <select id="colorCount" class="border-2 border-gray-200 rounded-lg px-4 py-3 bg-white focus:border-purple-500 focus:outline-none">
+                        <option value="3">3 色</option>
+                        <option value="4" selected>4 色</option>
+                        <option value="5">5 色</option>
+                        <option value="6">6 色</option>
+                        <option value="7">7 色</option>
+                        <option value="8">8 色</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 自定义颜色输入 -->
+            <div class="flex flex-wrap gap-3 justify-center items-center mb-6">
+                <label class="text-gray-700 font-medium">基础颜色：</label>
+                <input type="color" id="baseColor" value="#8B5CF6" class="w-16 h-12 rounded-lg border-2 border-gray-200 cursor-pointer">
+                <button id="useBaseColorBtn" class="bg-white border-2 border-purple-500 text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg font-medium transition-all">
+                    使用基础色生成
+                </button>
+                <button id="lockBaseColorBtn" class="bg-white border-2 border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-1">
+                    <i class="fa fa-unlock-alt"></i> 锁定基础色
+                </button>
+            </div>
+        </header>
+
+        <!-- 主配色展示 -->
+        <div id="paletteContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-10">
+            <!-- 颜色卡片将通过JS动态生成 -->
+        </div>
+
+        <!-- 配色信息 -->
+        <div class="grid md:grid-cols-2 gap-6 mb-10">
+            <!-- 预览卡片 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-eye text-purple-600"></i> 实时预览
+                </h3>
+                <div id="previewContainer" class="rounded-xl overflow-hidden">
+                    <div id="previewHeader" class="h-16 flex items-center px-6">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-white/30"></div>
+                            <div class="w-3 h-3 rounded-full bg-white/30"></div>
+                            <div class="w-3 h-3 rounded-full bg-white/30"></div>
+                        </div>
+                    </div>
+                    <div class="p-6 bg-gray-50">
+                        <div id="previewTitle" class="text-2xl font-bold mb-3">页面标题示例</div>
+                        <div id="previewText" class="text-gray-700 mb-4">这是一段示例文本，用来展示配色方案在实际页面中的效果。合理的配色可以让页面更加美观和易读。</div>
+                        <div class="flex gap-3">
+                            <button id="previewPrimaryBtn" class="px-6 py-2 rounded-lg text-white font-medium">主要按钮</button>
+                            <button id="previewSecondaryBtn" class="px-6 py-2 rounded-lg font-medium border-2">次要按钮</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导出面板 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-download text-purple-600"></i> 导出选项
+                </h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="copyCssBtn" class="bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fa fa-code"></i> 复制 CSS 变量
+                        </button>
+                        <button id="copyHexBtn" class="bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fa fa-copy"></i> 复制 HEX 列表
+                        </button>
+                        <button id="copyRgbBtn" class="bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fa fa-paint-brush"></i> 复制 RGB 列表
+                        </button>
+                        <button id="copyTailwindBtn" class="bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fa fa-wind"></i> 复制 Tailwind 配置
+                        </button>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-100">
+                        <h4 class="font-semibold mb-3 text-gray-700">配色对比度检测</h4>
+                        <div id="contrastResult" class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <i class="fa fa-check-circle text-green-600"></i>
+                                <span class="font-medium text-green-800">所有文本对比度符合 WCAG AA 标准 ✅</span>
+                            </div>
+                            <p class="text-sm text-green-700 mt-1">主色与白色对比度：7.2:1，辅助色与白色对比度：6.8:1</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 色阶展示 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-10">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <i class="fa fa-sliders text-purple-600"></i> 完整色阶 (50-900)
+            </h3>
+            <div id="shadesContainer" class="space-y-4">
+                <!-- 色阶将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 历史记录 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa fa-history text-purple-600"></i> 历史配色方案
+                </span>
+                <button id="clearHistoryBtn" class="text-sm text-gray-500 hover:text-red-500 transition-all">
+                    清空历史
+                </button>
+            </h3>
+            <div id="historyContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <!-- 历史配色将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>💡 提示：点击颜色卡片即可复制色值，所有计算完全在本地完成，数据不会上传</p>
+            <p class="mt-2">配色方案生成器 | Build #108 | 旺仔工具百宝箱 🥛</p>
+        </footer>
+    </div>
+
+    <script>
+        // 全局状态
+        let currentPalette = [];
+        let historyPalettes = JSON.parse(localStorage.getItem('paletteHistory') || '[]');
+        let isBaseColorLocked = false;
+
+        // DOM 元素
+        const generateBtn = document.getElementById('generateBtn');
+        const paletteMode = document.getElementById('paletteMode');
+        const colorCount = document.getElementById('colorCount');
+        const baseColorInput = document.getElementById('baseColor');
+        const useBaseColorBtn = document.getElementById('useBaseColorBtn');
+        const lockBaseColorBtn = document.getElementById('lockBaseColorBtn');
+        const paletteContainer = document.getElementById('paletteContainer');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewHeader = document.getElementById('previewHeader');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewText = document.getElementById('previewText');
+        const previewPrimaryBtn = document.getElementById('previewPrimaryBtn');
+        const previewSecondaryBtn = document.getElementById('previewSecondaryBtn');
+        const copyCssBtn = document.getElementById('copyCssBtn');
+        const copyHexBtn = document.getElementById('copyHexBtn');
+        const copyRgbBtn = document.getElementById('copyRgbBtn');
+        const copyTailwindBtn = document.getElementById('copyTailwindBtn');
+        const contrastResult = document.getElementById('contrastResult');
+        const shadesContainer = document.getElementById('shadesContainer');
+        const historyContainer = document.getElementById('historyContainer');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            generatePalette();
+            renderHistory();
+            
+            // 事件监听
+            generateBtn.addEventListener('click', generatePalette);
+            useBaseColorBtn.addEventListener('click', () => generatePalette(baseColorInput.value));
+            lockBaseColorBtn.addEventListener('click', toggleBaseColorLock);
+            copyCssBtn.addEventListener('click', copyCssVariables);
+            copyHexBtn.addEventListener('click', copyHexList);
+            copyRgbBtn.addEventListener('click', copyRgbList);
+            copyTailwindBtn.addEventListener('click', copyTailwindConfig);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+            paletteMode.addEventListener('change', generatePalette);
+            colorCount.addEventListener('change', generatePalette);
+        });
+
+        // 切换基础色锁定
+        function toggleBaseColorLock() {
+            isBaseColorLocked = !isBaseColorLocked;
+            if (isBaseColorLocked) {
+                lockBaseColorBtn.innerHTML = '<i class="fa fa-lock"></i> 已锁定基础色';
+                lockBaseColorBtn.classList.remove('border-gray-200', 'text-gray-600', 'hover:bg-gray-50');
+                lockBaseColorBtn.classList.add('border-purple-500', 'text-purple-600', 'hover:bg-purple-50');
+                baseColorInput.disabled = true;
+            } else {
+                lockBaseColorBtn.innerHTML = '<i class="fa fa-unlock-alt"></i> 锁定基础色';
+                lockBaseColorBtn.classList.remove('border-purple-500', 'text-purple-600', 'hover:bg-purple-50');
+                lockBaseColorBtn.classList.add('border-gray-200', 'text-gray-600', 'hover:bg-gray-50');
+                baseColorInput.disabled = false;
+            }
+        }
+
+        // 生成配色方案
+        function generatePalette(baseHex = null) {
+            const count = parseInt(colorCount.value);
+            const mode = paletteMode.value;
+            
+            // 如果没有指定基础色且没锁定，生成随机基础色
+            if (!baseHex && !isBaseColorLocked) {
+                baseHex = chroma.random().hex();
+                baseColorInput.value = baseHex;
+            } else if (isBaseColorLocked) {
+                baseHex = baseColorInput.value;
+            }
+            
+            let colors = [];
+            
+            switch (mode) {
+                case 'analogous':
+                    // 类似色：色相偏移 ±30°
+                    const baseHue = chroma(baseHex).hsl()[0];
+                    colors = [baseHex];
+                    for (let i = 1; i < count; i++) {
+                        const offset = (Math.ceil(i / 2) * 30) * (i % 2 === 0 ? 1 : -1);
+                        colors.push(chroma.hsl((baseHue + offset + 360) % 360, 0.7, 0.5).hex());
+                    }
+                    break;
+                    
+                case 'monochromatic':
+                    // 单色：不同亮度
+                    colors = chroma.scale([baseHex, '#fff']).mode('lab').colors(count + 2).slice(1, -1);
+                    break;
+                    
+                case 'complementary':
+                    // 互补色
+                    const comp = chroma(baseHex).set('hsl.h', '+180').hex();
+                    colors = [baseHex, comp];
+                    // 生成中间过渡色
+                    if (count > 2) {
+                        const scale = chroma.scale([baseHex, comp]).mode('lab').colors(count);
+                        colors = scale;
+                    }
+                    break;
+                    
+                case 'split-complementary':
+                    // 分裂互补
+                    const h = chroma(baseHex).hsl()[0];
+                    colors = [
+                        baseHex,
+                        chroma.hsl((h + 150) % 360, 0.7, 0.5).hex(),
+                        chroma.hsl((h + 210) % 360, 0.7, 0.5).hex()
+                    ];
+                    // 补充更多颜色
+                    while (colors.length < count) {
+                        colors.push(chroma(colors[Math.floor(Math.random() * colors.length)]).brighten(0.5 + Math.random()).hex());
+                    }
+                    break;
+                    
+                case 'triadic':
+                    // 三角色
+                    const triadHue = chroma(baseHex).hsl()[0];
+                    colors = [
+                        baseHex,
+                        chroma.hsl((triadHue + 120) % 360, 0.7, 0.5).hex(),
+                        chroma.hsl((triadHue + 240) % 360, 0.7, 0.5).hex()
+                    ];
+                    while (colors.length < count) {
+                        colors.push(chroma(colors[Math.floor(Math.random() * colors.length)]).darken(0.3 + Math.random() * 0.4).hex());
+                    }
+                    break;
+                    
+                case 'tetradic':
+                    // 四角色
+                    const tetradHue = chroma(baseHex).hsl()[0];
+                    colors = [
+                        baseHex,
+                        chroma.hsl((tetradHue + 90) % 360, 0.7, 0.5).hex(),
+                        chroma.hsl((tetradHue + 180) % 360, 0.7, 0.5).hex(),
+                        chroma.hsl((tetradHue + 270) % 360, 0.7, 0.5).hex()
+                    ];
+                    while (colors.length < count) {
+                        colors.push(chroma(colors[Math.floor(Math.random() * colors.length)]).brighten(0.3 + Math.random() * 0.4).hex());
+                    }
+                    break;
+                    
+                case 'random':
+                default:
+                    // 随机和谐配色
+                    colors = chroma.scale([chroma.random(), chroma.random()])
+                        .mode('lch')
+                        .colors(count);
+                    break;
+            }
+            
+            // 确保颜色数量正确
+            colors = colors.slice(0, count);
+            currentPalette = colors;
+            
+            // 渲染
+            renderPalette();
+            renderPreview();
+            renderShades();
+            addToHistory(colors);
+            checkContrast();
+        }
+
+        // 渲染配色卡片
+        function renderPalette() {
+            paletteContainer.innerHTML = '';
+            
+            currentPalette.forEach((color, index) => {
+                const isDark = chroma(color).luminance() < 0.5;
+                const textColor = isDark ? '#ffffff' : '#000000';
+                
+                const card = document.createElement('div');
+                card.className = 'color-card-hover rounded-xl overflow-hidden cursor-pointer color-shadow';
+                card.innerHTML = `
+                    <div class="h-32" style="background-color: ${color}"></div>
+                    <div class="p-4 bg-white">
+                        <div class="font-mono font-semibold mb-1" style="color: ${color}">${color.toUpperCase()}</div>
+                        <div class="text-xs text-gray-500">
+                            RGB: ${chroma(color).rgb().map(Math.round).join(', ')}
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    navigator.clipboard.writeText(color.toUpperCase());
+                    card.classList.add('copy-animation');
+                    setTimeout(() => card.classList.remove('copy-animation'), 600);
+                    
+                    // 显示复制提示
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2';
+                    toast.innerHTML = `<i class="fa fa-check"></i> 已复制: ${color.toUpperCase()}`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                });
+                
+                paletteContainer.appendChild(card);
+            });
+        }
+
+        // 渲染预览
+        function renderPreview() {
+            if (currentPalette.length < 2) return;
+            
+            const primary = currentPalette[0];
+            const secondary = currentPalette[1];
+            const accent = currentPalette.length > 2 ? currentPalette[2] : primary;
+            
+            previewHeader.style.backgroundColor = primary;
+            previewTitle.style.color = primary;
+            previewPrimaryBtn.style.backgroundColor = primary;
+            previewSecondaryBtn.style.borderColor = primary;
+            previewSecondaryBtn.style.color = primary;
+        }
+
+        // 渲染色阶
+        function renderShades() {
+            shadesContainer.innerHTML = '';
+            
+            currentPalette.forEach((color, index) => {
+                const shadeRow = document.createElement('div');
+                shadeRow.className = 'flex items-center gap-2';
+                
+                // 色阶标签
+                const label = document.createElement('div');
+                label.className = 'w-16 font-mono text-sm font-semibold';
+                label.textContent = `色${index + 1}`;
+                label.style.color = color;
+                shadeRow.appendChild(label);
+                
+                // 生成 50-900 色阶
+                const scales = [
+                    chroma(color).brighten(2.5).hex(), // 50
+                    chroma(color).brighten(2).hex(),   // 100
+                    chroma(color).brighten(1.5).hex(), // 200
+                    chroma(color).brighten(1).hex(),   // 300
+                    chroma(color).brighten(0.5).hex(), // 400
+                    color,                              // 500
+                    chroma(color).darken(0.5).hex(),   // 600
+                    chroma(color).darken(1).hex(),     // 700
+                    chroma(color).darken(1.5).hex(),   // 800
+                    chroma(color).darken(2).hex()      // 900
+                ];
+                
+                scales.forEach((shade, shadeIndex) => {
+                    const shadeBlock = document.createElement('div');
+                    shadeBlock.className = 'flex-1 h-12 rounded cursor-pointer transition-transform hover:scale-105 relative group';
+                    shadeBlock.style.backgroundColor = shade;
+                    shadeBlock.title = `${['50', '100', '200', '300', '400', '500', '600', '700', '800', '900'][shadeIndex]}: ${shade.toUpperCase()}`;
+                    
+                    shadeBlock.addEventListener('click', () => {
+                        navigator.clipboard.writeText(shade.toUpperCase());
+                        const toast = document.createElement('div');
+                        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2';
+                        toast.innerHTML = `<i class="fa fa-check"></i> 已复制色阶: ${shade.toUpperCase()}`;
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 2000);
+                    });
+                    
+                    shadeRow.appendChild(shadeBlock);
+                });
+                
+                shadesContainer.appendChild(shadeRow);
+            });
+        }
+
+        // 对比度检测
+        function checkContrast() {
+            if (currentPalette.length < 1) return;
+            
+            const contrast = chroma.contrast(currentPalette[0], '#ffffff');
+            const contrastSecondary = currentPalette.length > 1 ? chroma.contrast(currentPalette[1], '#ffffff') : contrast;
+            
+            let html = '';
+            if (contrast >= 4.5 && contrastSecondary >= 4.5) {
+                html = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa fa-check-circle text-green-600"></i>
+                        <span class="font-medium text-green-800">所有文本对比度符合 WCAG AA 标准 ✅</span>
+                    </div>
+                    <p class="text-sm text-green-700 mt-1">主色与白色对比度：${contrast.toFixed(1)}:1，辅助色与白色对比度：${contrastSecondary.toFixed(1)}:1</p>
+                `;
+                contrastResult.className = 'p-4 bg-green-50 border border-green-200 rounded-lg';
+            } else if (contrast >= 3 && contrastSecondary >= 3) {
+                html = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa fa-exclamation-circle text-yellow-600"></i>
+                        <span class="font-medium text-yellow-800">大文本对比度符合标准，小文本建议调整 ⚠️</span>
+                    </div>
+                    <p class="text-sm text-yellow-700 mt-1">主色与白色对比度：${contrast.toFixed(1)}:1，建议提高颜色饱和度</p>
+                `;
+                contrastResult.className = 'p-4 bg-yellow-50 border border-yellow-200 rounded-lg';
+            } else {
+                html = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa fa-times-circle text-red-600"></i>
+                        <span class="font-medium text-red-800">对比度不足，建议重新生成 ❌</span>
+                    </div>
+                    <p class="text-sm text-red-700 mt-1">主色与白色对比度：${contrast.toFixed(1)}:1，最低要求 4.5:1</p>
+                `;
+                contrastResult.className = 'p-4 bg-red-50 border border-red-200 rounded-lg';
+            }
+            
+            contrastResult.innerHTML = html;
+        }
+
+        // 复制 CSS 变量
+        function copyCssVariables() {
+            let css = ':root {\n';
+            currentPalette.forEach((color, index) => {
+                css += `  --color-${index + 1}: ${color};\n`;
+            });
+            css += '}';
+            
+            navigator.clipboard.writeText(css);
+            showCopyToast('CSS 变量已复制到剪贴板');
+        }
+
+        // 复制 HEX 列表
+        function copyHexList() {
+            const hexList = currentPalette.map(c => c.toUpperCase()).join(', ');
+            navigator.clipboard.writeText(hexList);
+            showCopyToast('HEX 颜色列表已复制');
+        }
+
+        // 复制 RGB 列表
+        function copyRgbList() {
+            const rgbList = currentPalette.map(c => `rgb(${chroma(c).rgb().map(Math.round).join(', ')})`).join(', ');
+            navigator.clipboard.writeText(rgbList);
+            showCopyToast('RGB 颜色列表已复制');
+        }
+
+        // 复制 Tailwind 配置
+        function copyTailwindConfig() {
+            let config = "theme: {\n  extend: {\n    colors: {\n      palette: {\n";
+            currentPalette.forEach((color, index) => {
+                config += `        ${index + 1}: '${color}',\n`;
+            });
+            config += "      }\n    }\n  }\n}";
+            
+            navigator.clipboard.writeText(config);
+            showCopyToast('Tailwind 配置已复制');
+        }
+
+        // 显示复制提示
+        function showCopyToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2';
+            toast.innerHTML = `<i class="fa fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // 添加到历史记录
+        function addToHistory(palette) {
+            // 避免重复
+            const exists = historyPalettes.some(p => JSON.stringify(p) === JSON.stringify(palette));
+            if (exists) return;
+            
+            historyPalettes.unshift(palette);
+            if (historyPalettes.length > 24) {
+                historyPalettes = historyPalettes.slice(0, 24);
+            }
+            
+            localStorage.setItem('paletteHistory', JSON.stringify(historyPalettes));
+            renderHistory();
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            historyContainer.innerHTML = '';
+            
+            historyPalettes.forEach((palette, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'bg-white rounded-lg p-2 shadow cursor-pointer hover:shadow-md transition-all';
+                historyItem.innerHTML = `
+                    <div class="flex h-12 rounded overflow-hidden mb-2">
+                        ${palette.map(color => `<div class="flex-1" style="background-color: ${color}"></div>`).join('')}
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-500">#${historyPalettes.length - index}</span>
+                        <button class="text-xs text-purple-600 hover:text-purple-800">使用</button>
+                    </div>
+                `;
+                
+                historyItem.addEventListener('click', () => {
+                    currentPalette = palette;
+                    renderPalette();
+                    renderPreview();
+                    renderShades();
+                    checkContrast();
+                });
+                
+                historyContainer.appendChild(historyItem);
+            });
+            
+            if (historyPalettes.length === 0) {
+                historyContainer.innerHTML = '<p class="col-span-full text-center text-gray-400 py-6">暂无历史记录，生成几个配色方案吧！</p>';
+            }
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有历史配色方案吗？')) {
+                historyPalettes = [];
+                localStorage.removeItem('paletteHistory');
+                renderHistory();
+            }
+        }
+    </script>
+</body>
+</html>

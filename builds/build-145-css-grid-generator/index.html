@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS Grid 可视化生成器 - 旺仔工具百宝箱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .preview-container {
+      min-height: 300px;
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(45deg, #eee 25%, transparent 25%), 
+        linear-gradient(-45deg, #eee 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #eee 75%), 
+        linear-gradient(-45deg, transparent 75%, #eee 75%);
+    }
+    .grid-item {
+      transition: all 0.3s ease;
+    }
+    .grid-item:hover {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">CSS Grid 可视化生成器 📏</h1>
+      <p class="text-gray-600">拖拽可视化配置 CSS Grid 布局，一键生成 CSS 代码</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- 左侧控制面板 -->
+      <div class="lg:col-span-4 bg-white rounded-lg shadow-md p-6">
+        <!-- Container 属性 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">容器属性 (Container)</h2>
+          
+          <!-- 行列设置 -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">列数: <span id="columnsValue">3</span></label>
+            <input type="range" id="columnsSlider" min="1" max="12" value="3" class="w-full">
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">行数: <span id="rowsValue">3</span></label>
+            <input type="range" id="rowsSlider" min="1" max="12" value="3" class="w-full">
+          </div>
+
+          <!-- grid-template-columns -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">列宽模式</label>
+            <div class="flex flex-wrap gap-2">
+              <button data-prop="gridTemplateColumns" data-value="repeat(%columns%, 1fr)" class="prop-btn px-3 py-1 rounded bg-blue-500 text-white">平均分配</button>
+              <button data-prop="gridTemplateColumns" data-value="repeat(%columns%, auto)" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">自动适应</button>
+              <button data-prop="gridTemplateColumns" data-value="200px repeat(%columns%, 1fr)" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">固定第一列</button>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">行高模式</label>
+            <div class="flex flex-wrap gap-2">
+              <button data-prop="gridTemplateRows" data-value="repeat(%rows%, 1fr)" class="prop-btn px-3 py-1 rounded bg-blue-500 text-white">平均分配</button>
+              <button data-prop="gridTemplateRows" data-value="auto repeat(%rows%, 1fr)" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">第一行自动</button>
+              <button data-prop="gridTemplateRows" data-value="60px repeat(%rows%, 1fr) 60px" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">头尾固定（框架）</button>
+            </div>
+          </div>
+
+          <!-- gap -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">间距 gap: <span id="gapValue">8px</span></label>
+            <input type="range" id="gapSlider" min="0" max="40" value="8" class="w-full">
+          </div>
+
+          <!-- justify-content -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">justify-content (水平对齐)</label>
+            <div class="flex flex-wrap gap-2">
+              <button data-prop="justifyContent" data-value="start" class="prop-btn px-3 py-1 rounded bg-blue-500 text-white">start</button>
+              <button data-prop="justifyContent" data-value="center" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">center</button>
+              <button data-prop="justifyContent" data-value="end" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">end</button>
+              <button data-prop="justifyContent" data-value="space-between" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">between</button>
+              <button data-prop="justifyContent" data-value="space-around" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">around</button>
+              <button data-prop="justifyContent" data-value="space-evenly" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">evenly</button>
+            </div>
+          </div>
+
+          <!-- align-content -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">align-content (垂直对齐)</label>
+            <div class="flex flex-wrap gap-2">
+              <button data-prop="alignContent" data-value="start" class="prop-btn px-3 py-1 rounded bg-blue-500 text-white">start</button>
+              <button data-prop="alignContent" data-value="center" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">center</button>
+              <button data-prop="alignContent" data-value="end" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">end</button>
+              <button data-prop="alignContent" data-value="stretch" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">stretch</button>
+              <button data-prop="alignContent" data-value="space-between" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">between</button>
+              <button data-prop="alignContent" data-value="space-around" class="prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">around</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 预设 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">常用预设</h2>
+          <div class="grid grid-cols-2 gap-2" id="presets">
+            <!-- 预设由 JS 生成 -->
+          </div>
+        </section>
+
+        <!-- 输出代码 -->
+        <section>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">生成的 CSS</h2>
+            <button id="copyBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600">复制代码</button>
+          </div>
+          <textarea id="cssOutput" readonly class="w-full h-48 px-4 py-3 font-mono text-sm bg-gray-900 text-green-400 rounded-md"></textarea>
+          <div id="copyToast" class="hidden mt-2 p-2 bg-green-100 text-green-700 rounded-md text-center">
+            复制成功！
+          </div>
+        </section>
+      </div>
+
+      <!-- 右侧预览 -->
+      <div class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+          <div class="preview-container rounded-lg overflow-hidden p-4">
+            <div id="gridContainer" class="w-full h-[450px] border-2 border-gray-300 rounded-lg bg-white">
+              <!-- grid items generated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid 速查表 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">CSS Grid 快速参考</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-2">容器属性</h3>
+              <ul class="space-y-1 text-gray-600">
+                <li>• <code class="bg-gray-100 px-1 rounded">display: grid</code> — 启用 Grid</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">grid-template-columns</code> — 定义列</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">grid-template-rows</code> — 定义行</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">gap</code> — 项目间距</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">justify-content</code> — 水平对齐</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">align-content</code> — 垂直对齐</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">grid-template-areas</code> — 命名区域布局</li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-2">项目属性</h3>
+              <ul class="space-y-1 text-gray-600">
+                <li>• <code class="bg-gray-100 px-1 rounded">grid-column</code> — 列跨度 (start / end)</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">grid-row</code> — 行跨度 (start / end)</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">grid-area</code> — 指定区域</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">justify-self</code> — 单个项目水平对齐</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">align-self</code> — 单个项目垂直对齐</li>
+                <li>• 快捷写法: <code class="bg-gray-100 px-1 rounded">grid-column: 1 / -1</code> 跨所有列</li>
+                <li>• <code class="bg-gray-100 px-1 rounded">repeat(n, 1fr)</code> — n列平均分配</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center mt-8 text-gray-500 text-sm">
+      <p>完全本地运行，零数据上传 | 旺仔工具百宝箱 🥛</p>
+    </footer>
+  </div>
+
+  <script>
+    // 状态
+    const state = {
+      container: {
+        columns: 3,
+        rows: 3,
+        gridTemplateColumns: 'repeat(%columns%, 1fr)',
+        gridTemplateRows: 'repeat(%rows%, 1fr)',
+        gap: 8,
+        justifyContent: 'start',
+        alignContent: 'start'
+      }
+    };
+
+    // 颜色列表用于区分不同的grid项目
+    const colors = [
+      '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', 
+      '#3b82f6', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+      '#78716c', '#65a30d', '#0ea5e9', '#6366f1', '#8b5cf6',
+      '#ec4899', '#14b8a6', '#f59e0b', '#ef4444', '#3b82f6'
+    ];
+
+    // 预设
+    const presets = [
+      {
+        name: '三列布局',
+        config: {
+          columns: 3,
+          rows: 3,
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateRows: 'auto repeat(2, 1fr)',
+          gap: 16,
+          justifyContent: 'start',
+          alignContent: 'start'
+        }
+      },
+      {
+        name: '经典圣杯',
+        config: {
+          columns: 3,
+          rows: 3,
+          gridTemplateColumns: '200px 1fr 200px',
+          gridTemplateRows: '60px 1fr 60px',
+          gap: 8,
+          justifyContent: 'start',
+          alignContent: 'start'
+        }
+      },
+      {
+        name: '响应式卡片',
+        config: {
+          columns: 4,
+          rows: 2,
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateRows: 'repeat(2, 1fr)',
+          gap: 16,
+          justifyContent: 'start',
+          alignContent: 'start'
+        }
+      },
+      {
+        name: '九宫格',
+        config: {
+          columns: 3,
+          rows: 3,
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateRows: 'repeat(3, 1fr)',
+          gap: 8,
+          justifyContent: 'center',
+          alignContent: 'center'
+        }
+      },
+      {
+        name: '栅格居中',
+        config: {
+          columns: 3,
+          rows: 2,
+          gridTemplateColumns: 'repeat(3, 200px)',
+          gridTemplateRows: 'repeat(2, 150px)',
+          gap: 16,
+          justifyContent: 'center',
+          alignContent: 'center'
+        }
+      },
+      {
+        name: '顶栏 + 侧边 + 内容',
+        config: {
+          columns: 4,
+          rows: 3,
+          gridTemplateColumns: '180px repeat(3, 1fr)',
+          gridTemplateRows: '50px 1fr',
+          gap: 8,
+          justifyContent: 'start',
+          alignContent: 'start'
+        }
+      },
+      {
+        name: '照片墙（6张）',
+        config: {
+          columns: 3,
+          rows: 2,
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateRows: 'repeat(2, 200px)',
+          gap: 12,
+          justifyContent: 'start',
+          alignContent: 'start'
+        }
+      },
+      {
+        name: '全屏居中',
+        config: {
+          columns: 1,
+          rows: 1,
+          gridTemplateColumns: '1fr',
+          gridTemplateRows: '1fr',
+          gap: 0,
+          justifyContent: 'center',
+          alignContent: 'center'
+        }
+      }
+    ];
+
+    // DOM 元素
+    const elements = {
+      gridContainer: document.getElementById('gridContainer'),
+      columnsSlider: document.getElementById('columnsSlider'),
+      columnsValue: document.getElementById('columnsValue'),
+      rowsSlider: document.getElementById('rowsSlider'),
+      rowsValue: document.getElementById('rowsValue'),
+      gapSlider: document.getElementById('gapSlider'),
+      gapValue: document.getElementById('gapValue'),
+      cssOutput: document.getElementById('cssOutput'),
+      copyBtn: document.getElementById('copyBtn'),
+      copyToast: document.getElementById('copyToast'),
+      presetsContainer: document.getElementById('presets')
+    };
+
+    // 替换模板变量
+    function replaceTemplate(str) {
+      return str.replace('%columns%', state.container.columns).replace('%rows%', state.container.rows);
+    }
+
+    // 更新 CSS 代码
+    function updateCSS() {
+      const cols = replaceTemplate(state.container.gridTemplateColumns);
+      const rows = replaceTemplate(state.container.gridTemplateRows);
+      const css = `.grid-container {
+  display: grid;
+  grid-template-columns: ${cols};
+  grid-template-rows: ${rows};
+  gap: ${state.container.gap}px;
+  justify-content: ${state.container.justifyContent};
+  align-content: ${state.container.alignContent};
+}
+
+/* 如果需要给特定项目跨列，示例：
+.grid-item-1 {
+  grid-column: 1 / -1;
+}
+*/
+`;
+      elements.cssOutput.value = css;
+    }
+
+    // 更新预览
+    function updatePreview() {
+      // 应用样式到容器
+      const container = elements.gridContainer;
+      const cols = replaceTemplate(state.container.gridTemplateColumns);
+      const rows = replaceTemplate(state.container.gridTemplateRows);
+      
+      container.style.display = 'grid';
+      container.style.gridTemplateColumns = cols;
+      container.style.gridTemplateRows = rows;
+      container.style.gap = state.container.gap + 'px';
+      container.style.justifyContent = state.container.justifyContent;
+      container.style.alignContent = state.container.alignContent;
+
+      // 重新生成子项
+      container.innerHTML = '';
+      const totalItems = state.container.columns * state.container.rows;
+      for (let i = 0; i < totalItems; i++) {
+        const item = document.createElement('div');
+        item.className = 'grid-item rounded-md flex items-center justify-center text-white font-bold text-xl shadow-sm';
+        item.style.backgroundColor = colors[i % colors.length];
+        item.textContent = (i + 1).toString();
+        container.appendChild(item);
+      }
+
+      // 更新标签显示
+      elements.columnsValue.textContent = state.container.columns;
+      elements.rowsValue.textContent = state.container.rows;
+      elements.gapValue.textContent = state.container.gap + 'px';
+
+      // 更新 CSS
+      updateCSS();
+    }
+
+    // 渲染预设
+    function renderPresets() {
+      elements.presetsContainer.innerHTML = '';
+      presets.forEach((preset, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-left';
+        btn.textContent = preset.name;
+        btn.addEventListener('click', () => {
+          // 应用配置
+          Object.assign(state.container, preset.config);
+          // 更新 UI
+          updateUIState();
+          updatePreview();
+        });
+        elements.presetsContainer.appendChild(btn);
+      });
+    }
+
+    // 更新 UI 控件状态
+    function updateUIState() {
+      // 更新滑块
+      elements.columnsSlider.value = state.container.columns;
+      elements.rowsSlider.value = state.container.rows;
+      elements.gapSlider.value = state.container.gap;
+
+      // 更新按钮状态
+      document.querySelectorAll('.prop-btn').forEach(btn => {
+        const prop = btn.dataset.prop;
+        const value = btn.dataset.value;
+        const processedValue = replaceTemplate(value);
+        const currentValue = replaceTemplate(state.container[prop]);
+        if (processedValue === currentValue || 
+            (prop === 'gridTemplateColumns' && replaceTemplate(state.container[prop]) === processedValue)) {
+          btn.className = 'prop-btn px-3 py-1 rounded bg-blue-500 text-white';
+        } else {
+          btn.className = 'prop-btn px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300';
+        }
+      });
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 属性按钮点击
+      document.querySelectorAll('.prop-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const prop = btn.dataset.prop;
+          const value = btn.dataset.value;
+          state.container[prop] = value;
+          updateUIState();
+          updatePreview();
+        });
+      });
+
+      // 列数滑块
+      elements.columnsSlider.addEventListener('input', e => {
+        state.container.columns = parseInt(e.target.value);
+        updateUIState();
+        updatePreview();
+      });
+
+      // 行数滑块
+      elements.rowsSlider.addEventListener('input', e => {
+        state.container.rows = parseInt(e.target.value);
+        updateUIState();
+        updatePreview();
+      });
+
+      // Gap 滑块
+      elements.gapSlider.addEventListener('input', e => {
+        state.container.gap = parseInt(e.target.value);
+        elements.gapValue.textContent = state.container.gap + 'px';
+        updatePreview();
+      });
+
+      // 复制按钮
+      elements.copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(elements.cssOutput.value);
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        } catch (err) {
+          elements.cssOutput.select();
+          document.execCommand('copy');
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        }
+      });
+    }
+
+    // 初始化
+    function init() {
+      bindEvents();
+      renderPresets();
+      updateUIState();
+      updatePreview();
+    }
+
+    init();
+  </script>
+</body>
+</html>

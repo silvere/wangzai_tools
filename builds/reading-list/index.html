@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>书单管理器 | Reading List</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--card:#16213e;--card2:#0f3460;--border:#1a3a6a;--text:#e8e8e8;--text2:#8899aa;--accent:#e94560;--accent2:#ff6b6b;--gold:#ffd700;--green:#4ade80;--blue:#60a5fa}
+body{font-family:'Georgia','PingFang SC','Microsoft YaHei',serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
+.container{max-width:720px;margin:0 auto}
+h1{font-size:26px;text-align:center;margin-bottom:4px;letter-spacing:2px}
+h1 .icon{font-size:30px}
+.subtitle{text-align:center;color:var(--text2);font-size:13px;margin-bottom:24px;font-style:italic}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-n{font-size:24px;font-weight:700}.stat-n.r{color:var(--accent)}.stat-n.g{color:var(--green)}.stat-n.b{color:var(--blue)}.stat-n.y{color:var(--gold)}
+.stat-l{font-size:11px;color:var(--text2);margin-top:2px}
+.add-bar{display:flex;gap:8px;margin-bottom:20px}
+.add-bar input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;font-family:inherit;outline:none}
+.add-bar input:focus{border-color:var(--accent)}
+.add-bar input::placeholder{color:#556}
+.add-bar button{padding:10px 20px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .2s}
+.add-bar button:hover{background:var(--accent2)}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px}
+.tab{padding:6px 18px;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:14px;font-family:inherit;transition:all .2s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--card2);color:#fff}
+.tab .cnt{font-size:11px;margin-left:4px;opacity:.7}
+.search-bar{margin-bottom:14px}
+.search-bar input{width:100%;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit;outline:none}
+.search-bar input:focus{border-color:var(--accent)}
+.book-list{display:flex;flex-direction:column;gap:10px;min-height:100px}
+.book{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start;transition:all .2s;position:relative}
+.book:hover{border-color:var(--accent);transform:translateY(-1px)}
+.book-cover{width:48px;height:64px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;background:linear-gradient(135deg,var(--card2),#1a1a40);border:1px solid var(--border)}
+.book-info{flex:1;min-width:0}
+.book-title{font-size:16px;font-weight:600;margin-bottom:3px;word-break:break-word}
+.book-author{font-size:13px;color:var(--text2);margin-bottom:6px}
+.book-note{font-size:12px;color:var(--text2);font-style:italic;margin-bottom:6px;word-break:break-word}
+.book-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.book-actions button{padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.book-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.book-actions .del:hover{border-color:#f44;color:#f44}
+.progress-wrap{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.progress-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;cursor:pointer;position:relative}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:3px;transition:width .3s}
+.progress-pct{font-size:12px;color:var(--blue);min-width:36px;text-align:right}
+.stars{display:inline-flex;gap:2px;margin-bottom:6px}
+.star{font-size:18px;cursor:pointer;transition:transform .15s;color:#333}
+.star:hover{transform:scale(1.2)}
+.star.on{color:var(--gold)}
+.empty-msg{text-align:center;color:var(--text2);padding:40px 0;font-style:italic;font-size:14px}
+.note-input{width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none;margin-bottom:6px;resize:none;display:none}
+.note-input:focus{border-color:var(--accent)}
+.note-input.show{display:block}
+.quote{text-align:center;color:var(--text2);font-size:12px;font-style:italic;margin-top:24px;padding:16px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="container">
+<h1><span class="icon">📚</span> 书单管理器</h1>
+<p class="subtitle">"一个人的阅读史，就是他的精神成长史"</p>
+
+<div class="stats-row">
+<div class="stat"><div class="stat-n b" id="sWant">0</div><div class="stat-l">📋 想读</div></div>
+<div class="stat"><div class="stat-n g" id="sReading">0</div><div class="stat-l">📖 在读</div></div>
+<div class="stat"><div class="stat-n y" id="sDone">0</div><div class="stat-l">✅ 已读</div></div>
+<div class="stat"><div class="stat-n r" id="sTotal">0</div><div class="stat-l">📚 总计</div></div>
+</div>
+
+<div class="add-bar">
+<input id="titleIn" placeholder="书名" />
+<input id="authorIn" placeholder="作者（可选）" style="max-width:160px" />
+<button onclick="addBook()">+ 加入书单</button>
+</div>
+
+<div class="tabs" id="tabsEl"></div>
+<div class="search-bar"><input id="searchIn" placeholder="🔍 搜索书名或作者..." oninput="render()" /></div>
+<div class="book-list" id="bookList"></div>
+
+<div class="quote" id="quoteEl"></div>
+</div>
+
+<script>
+const EMOJIS=['📕','📗','📘','📙','📓','📔','📒','📖','🔖','📑'];
+const QUOTES=[
+'读书不觉已春深，一寸光阴一寸金。—— 王贞白',
+'书犹药也，善读之可以医愚。—— 刘向',
+'读万卷书，行万里路。—— 董其昌',
+'书到用时方恨少，事非经过不知难。—— 陆游',
+'黑发不知勤学早，白首方悔读书迟。—— 颜真卿',
+'立身以立学为先，立学以读书为本。—— 欧阳修',
+'旧书不厌百回读，熟读深思子自知。—— 苏轼',
+'读书破万卷，下笔如有神。—— 杜甫',
+];
+const PRESETS=[
+{title:'Designing Data-Intensive Applications',author:'Martin Kleppmann',status:'want',emoji:'📘'},
+{title:'深度学习',author:'Ian Goodfellow',status:'want',emoji:'📗'},
+{title:'Attention Is All You Need',author:'Vaswani et al.',status:'done',emoji:'📙',rating:5},
+{title:'思考，快与慢',author:'Daniel Kahneman',status:'want',emoji:'📕'},
+{title:'黑客与画家',author:'Paul Graham',status:'done',emoji:'📓',rating:4},
+{title:'人月神话',author:'Frederick Brooks',status:'reading',emoji:'📔',progress:45},
+];
+
+let books=JSON.parse(localStorage.getItem('rl_books')||'null');
+if(!books){books=PRESETS.map((p,i)=>({id:Date.now()+i,...p,note:'',rating:p.rating||0,progress:p.progress||0}));save();}
+let activeTab='all';
+
+function save(){localStorage.setItem('rl_books',JSON.stringify(books))}
+function rndEmoji(){return EMOJIS[Math.floor(Math.random()*EMOJIS.length)]}
+
+function addBook(){
+const title=document.getElementById('titleIn').value.trim();
+if(!title)return;
+const author=document.getElementById('authorIn').value.trim();
+books.unshift({id:Date.now(),title,author,status:'want',emoji:rndEmoji(),note:'',rating:0,progress:0});
+save();render();
+document.getElementById('titleIn').value='';
+document.getElementById('authorIn').value='';
+document.getElementById('titleIn').focus();
+}
+
+function moveBook(id,status){
+const b=books.find(x=>x.id===id);if(!b)return;
+b.status=status;
+if(status==='done'&&!b.rating)b.rating=0;
+if(status==='reading'&&!b.progress)b.progress=0;
+save();render();
+}
+
+function removeBook(id){
+if(!confirm('确定移除这本书？'))return;
+books=books.filter(x=>x.id!==id);save();render();
+}
+
+function setRating(id,r){
+const b=books.find(x=>x.id===id);if(!b)return;
+b.rating=b.rating===r?r-1:r;save();render();
+}
+
+function setProgress(id,e){
+const b=books.find(x=>x.id===id);if(!b)return;
+const rect=e.currentTarget.getBoundingClientRect();
+const pct=Math.round(Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100)));
+b.progress=pct;
+if(pct>=100)moveBook(id,'done');
+else{save();render();}
+}
+
+function toggleNote(id){
+const el=document.getElementById('note-'+id);
+if(el)el.classList.toggle('show');
+}
+
+function saveNote(id,val){
+const b=books.find(x=>x.id===id);if(!b)return;
+b.note=val;save();
+}
+
+function renderTabs(){
+const counts={all:books.length,want:0,reading:0,done:0};
+books.forEach(b=>counts[b.status]=(counts[b.status]||0)+1);
+const tabs=[
+{key:'all',label:'全部',cnt:counts.all},
+{key:'want',label:'📋 想读',cnt:counts.want},
+{key:'reading',label:'📖 在读',cnt:counts.reading},
+{key:'done',label:'✅ 已读',cnt:counts.done},
+];
+document.getElementById('tabsEl').innerHTML=tabs.map(t=>
+`<button class="tab${t.key===activeTab?' active':''}" onclick="activeTab='${t.key}';render()">${t.label}<span class="cnt">${t.cnt}</span></button>`
+).join('');
+document.getElementById('sWant').textContent=counts.want;
+document.getElementById('sReading').textContent=counts.reading;
+document.getElementById('sDone').textContent=counts.done;
+document.getElementById('sTotal').textContent=counts.all;
+}
+
+function render(){
+renderTabs();
+const q=document.getElementById('searchIn').value.trim().toLowerCase();
+let list=books.filter(b=>{
+if(activeTab!=='all'&&b.status!==activeTab)return false;
+if(q&&!b.title.toLowerCase().includes(q)&&!b.author.toLowerCase().includes(q))return false;
+return true;
+});
+const el=document.getElementById('bookList');
+if(!list.length){el.innerHTML=`<div class="empty-msg">${q?'没有找到匹配的书':'这里还是空的，加几本书吧 📖'}</div>`;return;}
+el.innerHTML=list.map(b=>{
+let extra='';
+if(b.status==='reading'){
+extra=`<div class="progress-wrap"><div class="progress-bar" onclick="setProgress(${b.id},event)"><div class="progress-fill" style="width:${b.progress}%"></div></div><span class="progress-pct">${b.progress}%</span></div>`;
+}
+if(b.status==='done'){
+extra=`<div class="stars">${[1,2,3,4,5].map(s=>`<span class="star${s<=b.rating?' on':''}" onclick="setRating(${b.id},${s})">★</span>`).join('')}</div>`;
+}
+const statusBtns=[];
+if(b.status!=='want')statusBtns.push(`<button onclick="moveBook(${b.id},'want')">📋 想读</button>`);
+if(b.status!=='reading')statusBtns.push(`<button onclick="moveBook(${b.id},'reading')">📖 在读</button>`);
+if(b.status!=='done')statusBtns.push(`<button onclick="moveBook(${b.id},'done')">✅ 已读</button>`);
+statusBtns.push(`<button onclick="toggleNote(${b.id})">📝 备注</button>`);
+statusBtns.push(`<button class="del" onclick="removeBook(${b.id})">✕</button>`);
+return `<div class="book">
+<div class="book-cover">${b.emoji}</div>
+<div class="book-info">
+<div class="book-title">${esc(b.title)}</div>
+${b.author?`<div class="book-author">${esc(b.author)}</div>`:''}
+${extra}
+${b.note?`<div class="book-note">"${esc(b.note)}"</div>`:''}
+<textarea class="note-input${b.note?' show':''}" id="note-${b.id}" placeholder="写点读书笔记..." onblur="saveNote(${b.id},this.value)">${esc(b.note)}</textarea>
+<div class="book-actions">${statusBtns.join('')}</div>
+</div>
+</div>`;
+}).join('');
+
+document.getElementById('quoteEl').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+document.getElementById('titleIn').addEventListener('keydown',e=>{if(e.key==='Enter')addBook()});
+document.getElementById('authorIn').addEventListener('keydown',e=>{if(e.key==='Enter')addBook()});
+render();
+</script>
+</body>
+</html>

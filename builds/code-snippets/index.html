@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Snippets - 代码片段管理器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Monaco", monospace;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .add-box {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+
+        .code-input {
+            font-family: "Monaco", "Courier New", monospace;
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .language-select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1e3c72;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .search-filter {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #f0f0f0;
+            border-radius: 20px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: #1e3c72;
+            color: white;
+            border-color: #1e3c72;
+        }
+
+        .snippets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 20px;
+        }
+
+        .snippet-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .snippet-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .snippet-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .snippet-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+
+        .snippet-lang {
+            padding: 4px 12px;
+            background: #1e3c72;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .snippet-code {
+            padding: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        .snippet-code pre {
+            margin: 0;
+            padding: 20px;
+        }
+
+        .snippet-code code {
+            font-family: "Monaco", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .snippet-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .snippet-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .snippet-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #218838;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .snippets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💻 Code Snippets</h1>
+            <p>管理你的代码片段库，随时调用</p>
+        </div>
+
+        <div class="add-box">
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="titleInput" class="form-input" placeholder="例如：快速排序算法">
+            </div>
+            
+            <div class="form-group">
+                <label>编程语言</label>
+                <select id="langSelect" class="language-select">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="sql">SQL</option>
+                    <option value="bash">Bash</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="json">JSON</option>
+                    <option value="yaml">YAML</option>
+                    <option value="markdown">Markdown</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>代码</label>
+                <textarea id="codeInput" class="form-input code-input" placeholder="粘贴你的代码..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>标签</label>
+                <input type="text" id="tagsInput" class="form-input" placeholder="用空格分隔，例如：#算法 #排序 #常用">
+                <div class="hint">💡 使用 #标签 来分类，方便后续筛选</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="saveSnippet()">💾 保存代码片段</button>
+                <button class="btn btn-secondary" onclick="clearForm()">🗑️ 清空</button>
+                <button class="btn btn-secondary" onclick="exportSnippets()">📤 导出JSON</button>
+                <button class="btn btn-secondary" onclick="importSnippets()">📥 导入JSON</button>
+            </div>
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div class="search-filter">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索代码片段..." oninput="filterSnippets()">
+            <div class="filters" id="filters"></div>
+        </div>
+
+        <div class="snippets-grid" id="snippetsGrid"></div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+
+    <script>
+        let snippets = JSON.parse(localStorage.getItem('codeSnippets') || '[]');
+        let currentFilter = 'all';
+
+        function saveSnippet() {
+            const title = document.getElementById('titleInput').value.trim();
+            const lang = document.getElementById('langSelect').value;
+            const code = document.getElementById('codeInput').value.trim();
+            const tagsInput = document.getElementById('tagsInput').value.trim();
+
+            if (!title || !code) {
+                alert('请填写标题和代码！');
+                return;
+            }
+
+            const tags = tagsInput.split(/\s+/).filter(t => t.startsWith('#'));
+
+            const snippet = {
+                id: Date.now(),
+                title: title,
+                language: lang,
+                code: code,
+                tags: tags,
+                createdAt: new Date().toISOString()
+            };
+
+            snippets.unshift(snippet);
+            localStorage.setItem('codeSnippets', JSON.stringify(snippets));
+
+            clearForm();
+            renderAll();
+        }
+
+        function clearForm() {
+            document.getElementById('titleInput').value = '';
+            document.getElementById('codeInput').value = '';
+            document.getElementById('tagsInput').value = '';
+            document.getElementById('langSelect').value = 'python';
+        }
+
+        function deleteSnippet(id) {
+            if (confirm('确定要删除这个代码片段吗？')) {
+                snippets = snippets.filter(s => s.id !== id);
+                localStorage.setItem('codeSnippets', JSON.stringify(snippets));
+                renderAll();
+            }
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert('代码已复制到剪贴板！');
+            }).catch(() => {
+                alert('复制失败，请手动复制');
+            });
+        }
+
+        function getAllTags() {
+            const allTags = new Set();
+            snippets.forEach(s => {
+                s.tags.forEach(tag => allTags.add(tag));
+            });
+            return Array.from(allTags).sort();
+        }
+
+        function getAllLanguages() {
+            const allLangs = new Set();
+            snippets.forEach(s => allLangs.add(s.language));
+            return Array.from(allLangs).sort();
+        }
+
+        function renderStats() {
+            const allTags = getAllTags();
+            const allLangs = getAllLanguages();
+
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-value">${snippets.length}</div>
+                    <div class="stat-label">代码片段</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${allLangs.length}</div>
+                    <div class="stat-label">编程语言</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${allTags.length}</div>
+                    <div class="stat-label">标签数</div>
+                </div>
+            `;
+            document.getElementById('stats').innerHTML = statsHtml;
+        }
+
+        function renderFilters() {
+            const allTags = getAllTags();
+            const allLangs = getAllLanguages();
+
+            let filtersHtml = `
+                <button class="filter-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
+                    📋 全部 (${snippets.length})
+                </button>
+            `;
+
+            allLangs.forEach(lang => {
+                const count = snippets.filter(s => s.language === lang).length;
+                filtersHtml += `
+                    <button class="filter-btn ${currentFilter === 'lang:' + lang ? 'active' : ''}" onclick="setFilter('lang:${lang}')">
+                        ${lang} (${count})
+                    </button>
+                `;
+            });
+
+            allTags.forEach(tag => {
+                const count = snippets.filter(s => s.tags.includes(tag)).length;
+                filtersHtml += `
+                    <button class="filter-btn ${currentFilter === tag ? 'active' : ''}" onclick="setFilter('${tag}')">
+                        ${tag} (${count})
+                    </button>
+                `;
+            });
+
+            document.getElementById('filters').innerHTML = filtersHtml;
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            renderAll();
+        }
+
+        function filterSnippets() {
+            renderSnippets();
+        }
+
+        function getFilteredSnippets() {
+            let filtered = snippets;
+
+            // 语言/标签筛选
+            if (currentFilter !== 'all') {
+                if (currentFilter.startsWith('lang:')) {
+                    const lang = currentFilter.replace('lang:', '');
+                    filtered = filtered.filter(s => s.language === lang);
+                } else {
+                    filtered = filtered.filter(s => s.tags.includes(currentFilter));
+                }
+            }
+
+            // 搜索筛选
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(s =>
+                    s.title.toLowerCase().includes(searchTerm) ||
+                    s.code.toLowerCase().includes(searchTerm) ||
+                    s.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            return filtered;
+        }
+
+        function renderSnippets() {
+            const filtered = getFilteredSnippets();
+            const container = document.getElementById('snippetsGrid');
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>还没有代码片段</h3>
+                        <p>开始保存你的第一个代码片段吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const snippetsHtml = filtered.map(snippet => {
+                const date = new Date(snippet.createdAt).toLocaleDateString('zh-CN');
+                
+                return `
+                    <div class="snippet-card">
+                        <div class="snippet-header">
+                            <div class="snippet-title">${escapeHtml(snippet.title)}</div>
+                            <div class="snippet-lang">${snippet.language}</div>
+                        </div>
+                        <div class="snippet-code">
+                            <pre><code class="language-${snippet.language}">${escapeHtml(snippet.code)}</code></pre>
+                        </div>
+                        <div class="snippet-footer">
+                            <div class="snippet-tags">
+                                ${snippet.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                            <div class="snippet-actions">
+                                <button class="action-btn btn-copy" onclick='copyCode(\`${snippet.code.replace(/`/g, '\\`')}\`)'>复制</button>
+                                <button class="action-btn btn-delete" onclick="deleteSnippet(${snippet.id})">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = snippetsHtml;
+
+            // 应用语法高亮
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function exportSnippets() {
+            if (snippets.length === 0) {
+                alert('没有可导出的代码片段！');
+                return;
+            }
+
+            const dataStr = JSON.stringify(snippets, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `code-snippets-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importSnippets() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        if (confirm(`确定要导入 ${imported.length} 个代码片段吗？这将覆盖现有数据。`)) {
+                            snippets = imported;
+                            localStorage.setItem('codeSnippets', JSON.stringify(snippets));
+                            renderAll();
+                            alert('导入成功！');
+                        }
+                    } else {
+                        alert('文件格式错误！');
+                    }
+                } catch (err) {
+                    alert('文件解析失败！');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderAll() {
+            renderStats();
+            renderFilters();
+            renderSnippets();
+        }
+
+        // 初始化
+        renderAll();
+    </script>
+</body>
+</html>

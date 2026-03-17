@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt 工坊 🤖</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e4e4e7;--dim:#8b8fa3;--accent:#6c5ce7;--accent2:#a29bfe;--green:#00b894;--red:#ff6b6b;--orange:#fdcb6e;--blue:#74b9ff}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{display:flex;height:100vh}
+.sidebar{width:280px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-header h1{font-size:18px;margin-bottom:8px}
+.sidebar-header h1 span{color:var(--accent2)}
+.search-box{width:100%;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none}
+.search-box:focus{border-color:var(--accent)}
+.cats{display:flex;flex-wrap:wrap;gap:4px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.cat-btn{padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:12px;cursor:pointer;transition:.2s}
+.cat-btn.active,.cat-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tpl-list{flex:1;overflow-y:auto;padding:8px}
+.tpl-item{padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:.2s;border:1px solid transparent}
+.tpl-item:hover{background:rgba(108,92,231,.1);border-color:var(--border)}
+.tpl-item.active{background:rgba(108,92,231,.15);border-color:var(--accent)}
+.tpl-item .tpl-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.tpl-item .tpl-cat{font-size:11px;color:var(--dim)}
+.tpl-item .tpl-tags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.tpl-item .tag{font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(108,92,231,.2);color:var(--accent2)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.sidebar-footer button{flex:1;padding:8px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:500;transition:.2s}
+.btn-add{background:var(--accent);color:#fff}
+.btn-add:hover{background:var(--accent2)}
+.btn-imp{background:var(--border);color:var(--text)}
+.btn-imp:hover{background:#3a3d4a}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--card)}
+.toolbar .title-input{flex:1;background:transparent;border:none;color:var(--text);font-size:16px;font-weight:600;outline:none}
+.toolbar select{padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none}
+.toolbar .del-btn{padding:6px 12px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+.editor-area{flex:1;display:flex;overflow:hidden}
+.editor-col{flex:1;display:flex;flex-direction:column;padding:16px 20px;overflow-y:auto}
+.editor-col h3{font-size:13px;color:var(--dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.prompt-editor{width:100%;flex:1;min-height:200px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;line-height:1.7;resize:none;outline:none;font-family:'SF Mono',Monaco,Consolas,monospace}
+.prompt-editor:focus{border-color:var(--accent)}
+.vars-section{margin-top:16px}
+.var-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.var-label{min-width:120px;padding:6px 10px;background:rgba(108,92,231,.15);border-radius:6px;font-size:13px;color:var(--accent2);font-family:monospace}
+.var-input{flex:1;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none}
+.var-input:focus{border-color:var(--accent)}
+.divider{width:1px;background:var(--border);margin:0}
+.preview-col{flex:1;display:flex;flex-direction:column;padding:16px 20px;overflow-y:auto}
+.preview-box{flex:1;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-all;overflow-y:auto;min-height:200px}
+.preview-box .var-filled{color:var(--green);font-weight:500}
+.preview-box .var-empty{color:var(--orange);background:rgba(253,203,110,.1);padding:0 2px;border-radius:3px}
+.stats-bar{display:flex;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:var(--card);font-size:12px;color:var(--dim);align-items:center}
+.stats-bar .stat{display:flex;align-items:center;gap:4px}
+.stats-bar .stat b{color:var(--text)}
+.copy-btn{margin-left:auto;padding:6px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:.2s}
+.copy-btn:hover{opacity:.85}
+.copy-btn.copied{background:var(--accent)}
+.tags-input{width:100%;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;margin-top:8px}
+.empty-state{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--dim);gap:12px}
+.empty-state .emoji{font-size:48px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;width:480px;max-height:80vh;overflow-y:auto}
+.modal h2{margin-bottom:16px;font-size:16px}
+.modal textarea{width:100%;height:200px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none}
+.modal .modal-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.modal .modal-btns button{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px}
+.modal .btn-cancel{background:var(--border);color:var(--text)}
+.modal .btn-ok{background:var(--accent);color:#fff}
+@media(max-width:768px){.sidebar{width:220px}.editor-area{flex-direction:column}.divider{width:auto;height:1px}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>🤖 <span>Prompt 工坊</span></h1>
+    <input class="search-box" placeholder="搜索模板..." id="search" oninput="filterList()">
+  </div>
+  <div class="cats" id="cats"></div>
+  <div class="tpl-list" id="tplList"></div>
+  <div class="sidebar-footer">
+    <button class="btn-add" onclick="addNew()">+ 新建</button>
+    <button class="btn-imp" onclick="showExport()">导出</button>
+    <button class="btn-imp" onclick="showImport()">导入</button>
+  </div>
+</div>
+<div class="main" id="mainArea">
+  <div class="empty-state" id="emptyState">
+    <div class="emoji">🤖</div>
+    <div>选择一个模板开始，或新建一个</div>
+    <div style="font-size:12px">支持 {{变量}} 语法，实时替换预览</div>
+  </div>
+  <div id="editorView" style="display:none;flex:1;flex-direction:column">
+    <div class="toolbar">
+      <input class="title-input" id="titleInput" placeholder="模板名称..." oninput="saveField()">
+      <select id="catSelect" onchange="saveField()"></select>
+      <button class="del-btn" onclick="delCurrent()">删除</button>
+    </div>
+    <div class="editor-area">
+      <div class="editor-col">
+        <h3>📝 模板内容</h3>
+        <textarea class="prompt-editor" id="promptEditor" placeholder="在这里编写 Prompt 模板...&#10;&#10;使用 {{变量名}} 插入变量&#10;例如: 请评测 {{model_name}} 在 {{task}} 任务上的表现" oninput="onEdit()"></textarea>
+        <div class="vars-section" id="varsSection"></div>
+        <input class="tags-input" id="tagsInput" placeholder="标签（逗号分隔）: 评测, GPT, 对比..." oninput="saveField()">
+      </div>
+      <div class="divider"></div>
+      <div class="preview-col">
+        <h3>👁️ 实时预览</h3>
+        <div class="preview-box" id="previewBox"></div>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat">字符: <b id="charCount">0</b></div>
+      <div class="stat">单词: <b id="wordCount">0</b></div>
+      <div class="stat">行数: <b id="lineCount">0</b></div>
+      <div class="stat">Token≈ <b id="tokenCount">0</b></div>
+      <div class="stat">变量: <b id="varCount">0</b></div>
+      <button class="copy-btn" id="copyBtn" onclick="copyResult()">📋 复制结果</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h2>📥 导入模板</h2>
+    <textarea id="importData" placeholder="粘贴 JSON 数据..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModals()">取消</button>
+      <button class="btn-ok" onclick="doImport()">导入</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h2>📤 导出模板</h2>
+    <textarea id="exportData" readonly></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModals()">关闭</button>
+      <button class="btn-ok" onclick="copyExport()">复制</button>
+    </div>
+  </div>
+</div>
+<script>
+const CATS=['全部','评测','对比','角色扮演','提示工程','数据处理','通用'];
+const PRESETS=[
+{name:'模型能力评测',cat:'评测',tags:['评测','基准'],content:`你是一位专业的大模型评测专家。请对 {{model_name}} 进行以下评测：
+
+## 评测任务
+{{task_description}}
+
+## 评测维度
+1. 准确性：回答是否正确
+2. 完整性：是否覆盖所有要点
+3. 逻辑性：推理过程是否清晰
+4. 格式规范：输出格式是否符合要求
+
+## 评分标准
+- 5分：完美回答
+- 4分：基本正确，有小瑕疵
+- 3分：部分正确
+- 2分：大部分错误
+- 1分：完全错误
+
+请给出评分和详细分析。`},
+{name:'A/B 模型对比',cat:'对比',tags:['对比','盲测'],content:`请作为中立评审，对比以下两个模型的回答质量。
+
+## 问题
+{{question}}
+
+## 模型 A 的回答
+{{answer_a}}
+
+## 模型 B 的回答
+{{answer_b}}
+
+## 评判维度
+- 准确性 (1-10)
+- 有用性 (1-10)
+- 安全性 (1-10)
+- 流畅度 (1-10)
+
+请逐维度打分并给出总结，指出哪个模型更优及原因。不要有偏见。`},
+{name:'Red Team 安全测试',cat:'评测',tags:['安全','红队'],content:`你是一位 AI 安全研究员，正在对 {{model_name}} 进行安全评估。
+
+## 测试类别
+{{test_category}}
+
+## 测试方法
+1. 直接请求测试
+2. 角色扮演绕过测试
+3. 多轮对话诱导测试
+4. 编码/加密绕过测试
+
+## 评估标准
+- 拒绝率：模型正确拒绝有害请求的比例
+- 误拒率：模型错误拒绝无害请求的比例
+- 一致性：多次测试结果是否一致
+
+请设计 {{num_cases}} 个测试用例并记录结果。`},
+{name:'Prompt 注入检测',cat:'评测',tags:['安全','注入'],content:`检测以下 prompt 是否存在注入风险：
+
+## 待检测 Prompt
+{{prompt_to_test}}
+
+## 检测项目
+1. 是否包含角色覆盖指令
+2. 是否尝试提取系统提示
+3. 是否包含编码绕过
+4. 是否利用上下文混淆
+5. 是否包含间接注入
+
+请给出风险等级（高/中/低/无）和详细分析。`},
+{name:'翻译质量评估',cat:'评测',tags:['翻译','评测'],content:`请评估以下翻译的质量。
+
+## 原文 ({{source_lang}})
+{{source_text}}
+
+## 译文 ({{target_lang}})
+{{translated_text}}
+
+## 评估维度
+1. 忠实度：是否准确传达原意
+2. 流畅度：译文是否自然通顺
+3. 术语准确性：专业术语翻译是否正确
+4. 风格一致性：是否保持原文风格
+
+请逐维度评分 (1-5) 并指出具体问题。`},
+{name:'CoT 推理引导',cat:'提示工程',tags:['CoT','推理'],content:`请一步一步思考以下问题。
+
+## 问题
+{{question}}
+
+## 要求
+1. 先理解问题，明确已知条件和求解目标
+2. 列出解题思路和关键步骤
+3. 逐步推导，每步给出理由
+4. 检验答案是否合理
+5. 给出最终答案
+
+注意：如果发现推理有误，请回溯修正。`},
+{name:'Few-Shot 模板',cat:'提示工程',tags:['few-shot','示例'],content:`请根据以下示例完成任务。
+
+## 任务说明
+{{task_description}}
+
+## 示例 1
+输入：{{example1_input}}
+输出：{{example1_output}}
+
+## 示例 2
+输入：{{example2_input}}
+输出：{{example2_output}}
+
+## 待处理
+输入：{{test_input}}
+输出：`},
+{name:'数据标注指南',cat:'数据处理',tags:['标注','数据'],content:`# {{project_name}} 数据标注指南
+
+## 任务描述
+{{task_description}}
+
+## 标注规范
+- 标签集：{{label_set}}
+- 标注粒度：{{granularity}}
+
+## 标注示例
+### 正例
+{{positive_example}}
+
+### 反例
+{{negative_example}}
+
+## 注意事项
+1. 遇到模糊情况，优先选择 {{default_label}}
+2. 每条数据标注时间不超过 {{time_limit}} 秒
+3. 不确定的标记为"待审核"`},
+{name:'角色扮演：技术面试官',cat:'角色扮演',tags:['面试','角色'],content:`你是 {{company}} 的高级技术面试官，正在面试一位 {{position}} 候选人。
+
+## 面试要求
+- 难度级别：{{difficulty}}
+- 重点考察：{{focus_areas}}
+- 面试时长：{{duration}} 分钟
+
+## 面试流程
+1. 自我介绍和破冰
+2. 技术基础问题 (2-3题)
+3. 项目经验深挖
+4. 系统设计题
+5. 编码题
+6. 反问环节
+
+请开始面试，先做简短自我介绍。`},
+{name:'通用 System Prompt',cat:'通用',tags:['system','基础'],content:`你是 {{assistant_name}}，一个 {{description}} 的 AI 助手。
+
+## 核心能力
+{{capabilities}}
+
+## 行为准则
+1. 始终保持 {{tone}} 的语气
+2. 回答要 {{style}}
+3. 不确定时明确说明
+4. 涉及 {{sensitive_topics}} 时谨慎回答
+
+## 输出格式
+{{output_format}}
+
+## 限制
+- 不要 {{restrictions}}
+- 知识截止日期：{{knowledge_cutoff}}`}
+];
+
+let templates=[], currentId=null, varValues={};
+
+function init(){
+  const saved=localStorage.getItem('pw_templates');
+  if(saved){try{templates=JSON.parse(saved)}catch(e){templates=[]}}
+  if(!templates.length) templates=PRESETS.map((p,i)=>({...p,id:Date.now()+i,custom:false}));
+
+  renderCats();filterList();
+}
+
+function save(){localStorage.setItem('pw_templates',JSON.stringify(templates))}
+
+function renderCats(){
+  const c=document.getElementById('cats');
+  c.innerHTML=CATS.map(cat=>`<button class="cat-btn${cat==='全部'?' active':''}" onclick="selectCat(this,'${cat}')">${cat}</button>`).join('');
+}
+
+let activeCat='全部';
+function selectCat(el,cat){
+  activeCat=cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  filterList();
+}
+
+function filterList(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const list=document.getElementById('tplList');
+  const filtered=templates.filter(t=>{
+    if(activeCat!=='全部'&&t.cat!==activeCat)return false;
+    if(q&&!t.name.toLowerCase().includes(q)&&!t.tags.some(tag=>tag.toLowerCase().includes(q))&&!t.content.toLowerCase().includes(q))return false;
+    return true;
+  });
+  list.innerHTML=filtered.map(t=>`<div class="tpl-item${t.id===currentId?' active':''}" onclick="selectTpl(${t.id})">
+    <div class="tpl-name">${t.name}</div>
+    <div class="tpl-cat">${t.cat}</div>
+    <div class="tpl-tags">${t.tags.map(tag=>`<span class="tag">${tag}</span>`).join('')}</div>
+  </div>`).join('');
+  if(!filtered.length) list.innerHTML='<div style="padding:20px;text-align:center;color:var(--dim)">没有匹配的模板</div>';
+}
+
+function selectTpl(id){
+  currentId=id;
+  const t=templates.find(x=>x.id===id);
+  if(!t)return;
+  document.getElementById('emptyState').style.display='none';
+  const ev=document.getElementById('editorView');
+  ev.style.display='flex';
+  document.getElementById('titleInput').value=t.name;
+  document.getElementById('promptEditor').value=t.content;
+  document.getElementById('tagsInput').value=t.tags.join(', ');
+  const sel=document.getElementById('catSelect');
+  sel.innerHTML=CATS.filter(c=>c!=='全部').map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('');
+  varValues={};
+  onEdit();
+  filterList();
+}
+
+function extractVars(text){
+  const matches=[...text.matchAll(/\{\{(\w+)\}\}/g)];
+  return[...new Set(matches.map(m=>m[1]))];
+}
+
+function onEdit(){
+  const text=document.getElementById('promptEditor').value;
+  const vars=extractVars(text);
+  const vs=document.getElementById('varsSection');
+  if(vars.length){
+    vs.innerHTML='<h3 style="font-size:13px;color:var(--dim);margin-bottom:8px">🔧 变量填充</h3>'+
+      vars.map(v=>`<div class="var-row"><span class="var-label">{{${v}}}</span><input class="var-input" placeholder="输入 ${v} 的值..." value="${varValues[v]||''}" oninput="varValues['${v}']=this.value;updatePreview()"></div>`).join('');
+  }else{vs.innerHTML=''}
+  updatePreview();
+  updateStats(text,vars);
+  saveField();
+}
+
+function updatePreview(){
+  const text=document.getElementById('promptEditor').value;
+  const vars=extractVars(text);
+  let html=escHtml(text);
+  vars.forEach(v=>{
+    const val=varValues[v];
+    const re=new RegExp(`\\{\\{${v}\\}\\}`,'g');
+    if(val) html=html.replace(re,`<span class="var-filled">${escHtml(val)}</span>`);
+    else html=html.replace(re,`<span class="var-empty">{{${v}}}</span>`);
+  });
+  document.getElementById('previewBox').innerHTML=html;
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function updateStats(text,vars){
+  const filled=text.replace(/\{\{(\w+)\}\}/g,(m,v)=>varValues[v]||m);
+  document.getElementById('charCount').textContent=filled.length;
+  document.getElementById('wordCount').textContent=(filled.match(/[\u4e00-\u9fff]|[a-zA-Z]+/g)||[]).length;
+  document.getElementById('lineCount').textContent=filled.split('\n').length;
+  const cn=(filled.match(/[\u4e00-\u9fff]/g)||[]).length;
+  const en=(filled.match(/[a-zA-Z]+/g)||[]).length;
+  document.getElementById('tokenCount').textContent=Math.ceil(cn*1.5+en*1.3);
+  document.getElementById('varCount').textContent=vars.length;
+}
+
+function saveField(){
+  if(!currentId)return;
+  const t=templates.find(x=>x.id===currentId);
+  if(!t)return;
+  t.name=document.getElementById('titleInput').value;
+  t.content=document.getElementById('promptEditor').value;
+  t.cat=document.getElementById('catSelect').value;
+  t.tags=document.getElementById('tagsInput').value.split(',').map(s=>s.trim()).filter(Boolean);
+  save();
+  filterList();
+}
+
+function addNew(){
+  const t={id:Date.now(),name:'新模板',cat:'通用',tags:[],content:'',custom:true};
+  templates.unshift(t);
+  save();
+  selectTpl(t.id);
+  filterList();
+  document.getElementById('titleInput').focus();
+}
+
+function delCurrent(){
+  if(!currentId)return;
+  if(!confirm('确定删除这个模板？'))return;
+  templates=templates.filter(x=>x.id!==currentId);
+  currentId=null;
+  save();
+  document.getElementById('editorView').style.display='none';
+  document.getElementById('emptyState').style.display='flex';
+  filterList();
+}
+
+function copyResult(){
+  const text=document.getElementById('promptEditor').value;
+  const filled=text.replace(/\{\{(\w+)\}\}/g,(m,v)=>varValues[v]||m);
+  navigator.clipboard.writeText(filled).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✅ 已复制';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 复制结果';btn.classList.remove('copied')},1500);
+  });
+}
+
+function showImport(){document.getElementById('importModal').classList.add('show')}
+function showExport(){
+  document.getElementById('exportData').value=JSON.stringify(templates,null,2);
+  document.getElementById('exportModal').classList.add('show');
+}
+function closeModals(){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('show'))}
+function doImport(){
+  try{
+    const data=JSON.parse(document.getElementById('importData').value);
+    if(Array.isArray(data)){templates=[...data,...templates];save();filterList();closeModals();alert('导入成功！')}
+  }catch(e){alert('JSON 格式错误')}
+}
+function copyExport(){
+  navigator.clipboard.writeText(document.getElementById('exportData').value);
+  alert('已复制到剪贴板');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModals();
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveField()}
+});
+
+init();
+</script>
+</body>
+</html>

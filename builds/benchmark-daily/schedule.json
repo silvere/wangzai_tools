@@ -1,0 +1,228 @@
+{
+  "name": "每日 Benchmark 讲堂",
+  "schedule": "每天下午 2:00 (Asia/Shanghai)",
+  "current_day": 67,
+  "format": {
+    "sections": [
+      "测什么",
+      "为什么重要",
+      "题目类型与特性",
+      "题目数量",
+      "典型题目例子",
+      "当前各模型排名",
+      "局限性"
+    ]
+  },
+  "plan": [
+    {
+      "day": 1,
+      "category": "代码能力",
+      "name": "HumanEval",
+      "source": "OpenAI"
+    },
+    {
+      "day": 2,
+      "category": "代码能力",
+      "name": "LiveCodeBench",
+      "source": "LiveCodeBench Team"
+    },
+    {
+      "day": 3,
+      "category": "代码能力",
+      "name": "SWE-bench",
+      "source": "Princeton NLP"
+    },
+    {
+      "day": 4,
+      "category": "代码能力",
+      "name": "Aider Polyglot",
+      "source": "Aider"
+    },
+    {
+      "day": 5,
+      "category": "推理与数学",
+      "name": "GSM8K",
+      "source": "OpenAI"
+    },
+    {
+      "day": 6,
+      "category": "推理与数学",
+      "name": "MATH",
+      "source": "UC Berkeley"
+    },
+    {
+      "day": 7,
+      "category": "推理与数学",
+      "name": "AIME 2024/2025",
+      "source": "AMC/MAA"
+    },
+    {
+      "day": 8,
+      "category": "推理与数学",
+      "name": "ARC-AGI",
+      "source": "Francois Chollet"
+    },
+    {
+      "day": 9,
+      "category": "推理与数学",
+      "name": "ZebraLogic",
+      "source": "AI2"
+    },
+    {
+      "day": 10,
+      "category": "知识与理解",
+      "name": "MMLU",
+      "source": "UC Berkeley"
+    },
+    {
+      "day": 11,
+      "category": "知识与理解",
+      "name": "MMLU-Pro",
+      "source": "TIGER-Lab"
+    },
+    {
+      "day": 12,
+      "category": "知识与理解",
+      "name": "GPQA",
+      "source": "NYU"
+    },
+    {
+      "day": 13,
+      "category": "知识与理解",
+      "name": "SimpleQA",
+      "source": "OpenAI"
+    },
+    {
+      "day": 14,
+      "category": "知识与理解",
+      "name": "Humanity's Last Exam",
+      "source": "CAIE"
+    },
+    {
+      "day": 15,
+      "category": "指令遵循",
+      "name": "IFEval",
+      "source": "Google"
+    },
+    {
+      "day": 16,
+      "category": "指令遵循",
+      "name": "Chatbot Arena (LMArena)",
+      "source": "LMSYS"
+    },
+    {
+      "day": 17,
+      "category": "指令遵循",
+      "name": "AlpacaEval",
+      "source": "Stanford"
+    },
+    {
+      "day": 18,
+      "category": "Agent",
+      "name": "Tau-bench",
+      "source": "Sierra AI"
+    },
+    {
+      "day": 19,
+      "category": "Agent",
+      "name": "WebArena",
+      "source": "CMU"
+    },
+    {
+      "day": 20,
+      "category": "Agent",
+      "name": "GAIA",
+      "source": "Meta/HuggingFace"
+    },
+    {
+      "day": 21,
+      "category": "Agent",
+      "name": "SWE-bench Multilingual",
+      "source": "OpenAI"
+    },
+    {
+      "day": 22,
+      "category": "多模态",
+      "name": "MMMU",
+      "source": "IN.AI"
+    },
+    {
+      "day": 23,
+      "category": "多模态",
+      "name": "MathVista",
+      "source": "UCLA"
+    },
+    {
+      "day": 24,
+      "category": "多模态",
+      "name": "Video-MME",
+      "source": "Tsinghua"
+    },
+    {
+      "day": 25,
+      "category": "长上下文",
+      "name": "RULER",
+      "source": "NVIDIA"
+    },
+    {
+      "day": 26,
+      "category": "长上下文",
+      "name": "Needle-in-a-Haystack",
+      "source": "Greg Kamradt"
+    },
+    {
+      "day": 27,
+      "category": "长上下文",
+      "name": "LongBench",
+      "source": "Tsinghua"
+    },
+    {
+      "day": 28,
+      "category": "安全与鲁棒性",
+      "name": "TruthfulQA",
+      "source": "Oxford"
+    },
+    {
+      "day": 29,
+      "category": "安全与鲁棒性",
+      "name": "BBQ",
+      "source": "Google"
+    },
+    {
+      "day": 30,
+      "category": "代码能力",
+      "name": "MBPP / EvalPlus",
+      "source": "Google/NTU"
+    },
+    {
+      "day": 31,
+      "category": "代码能力",
+      "name": "TerminalBench",
+      "source": "Terminal Research"
+    },
+    {
+      "day": 32,
+      "category": "工具调用",
+      "name": "BFCL (Berkeley Function Calling Leaderboard)",
+      "source": "UC Berkeley / Gorilla"
+    },
+    {
+      "day": 33,
+      "category": "指令遵循",
+      "name": "MT-Bench",
+      "source": "LMSYS / UC Berkeley"
+    },
+    {
+      "day": 34,
+      "category": "综合对话",
+      "name": "WildBench",
+      "source": "Allen AI (AI2)"
+    },
+    {
+      "day": 35,
+      "category": "代码能力",
+      "name": "BigCodeBench",
+      "source": "BigCode Community / ICLR 2025"
+    }
+  ]
+}

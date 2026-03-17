@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Chart 数据可视化速写板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#38bdf8;--accent2:#818cf8;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--pink:#f472b6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{padding:16px 24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:20px;font-weight:700}
+.header span{color:var(--text2);font-size:13px}
+.main{display:grid;grid-template-columns:400px 1fr;height:calc(100vh - 57px)}
+.panel{padding:16px;overflow-y:auto}
+.left{border-right:1px solid var(--border);display:flex;flex-direction:column;gap:12px}
+label{font-size:12px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'SF Mono',Monaco,Consolas,monospace;font-size:13px;padding:12px;resize:vertical;outline:none;transition:border-color .2s}
+textarea:focus{border-color:var(--accent)}
+#dataInput{height:200px}
+.row{display:flex;gap:8px;align-items:end}
+.row>div{flex:1}
+select,input[type=text]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none}
+select:focus,input:focus{border-color:var(--accent)}
+.chart-types{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.chart-type{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .2s;font-size:12px}
+.chart-type:hover{border-color:var(--accent);background:var(--surface2)}
+.chart-type.active{border-color:var(--accent);background:rgba(56,189,248,.15);color:var(--accent)}
+.chart-type .icon{font-size:20px;display:block;margin-bottom:2px}
+.themes{display:flex;gap:6px;flex-wrap:wrap}
+.theme-dot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;position:relative}
+.theme-dot:hover{transform:scale(1.15)}
+.theme-dot.active{border-color:var(--text);transform:scale(1.15)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface2);border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#0f172a;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:#7dd3fc}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.preset{padding:4px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-size:11px;cursor:pointer;transition:all .2s}
+.preset:hover{border-color:var(--accent);color:var(--accent)}
+.right{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative}
+.chart-wrap{width:100%;max-width:800px;max-height:calc(100vh - 160px);position:relative;background:var(--surface);border-radius:12px;padding:20px;border:1px solid var(--border)}
+canvas{width:100%!important;max-height:calc(100vh - 220px)}
+.empty-state{text-align:center;color:var(--text2)}
+.empty-state .big{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px;line-height:1.6}
+.stats{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px}
+.stat b{color:var(--accent);font-size:16px;display:block}
+.toggle-row{display:flex;gap:8px;align-items:center;font-size:13px}
+.toggle{position:relative;width:36px;height:20px;background:var(--surface2);border-radius:10px;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s}
+.toggle.on::after{left:18px}
+.error-msg{color:var(--red);font-size:12px;padding:8px;background:rgba(248,113,113,.1);border-radius:6px;display:none}
+@media(max-width:900px){.main{grid-template-columns:1fr;height:auto}.left{border-right:none;border-bottom:1px solid var(--border)}.chart-wrap{max-height:60vh}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>📊 Quick Chart</h1>
+<span>粘贴数据，秒出图表 — Build #51 by 旺仔</span>
+</div>
+<div class="main">
+<div class="panel left">
+<div>
+<label>📋 数据输入 (CSV / TSV / JSON)</label>
+<textarea id="dataInput" placeholder="粘贴 CSV、TSV 或 JSON 数据&#10;&#10;CSV 示例:&#10;模型,MMLU,HumanEval,GSM8K&#10;GPT-4o,88.7,90.2,95.3&#10;Claude-3.5,88.3,92.0,96.4&#10;Gemini-1.5,85.9,84.1,91.7&#10;&#10;JSON 示例:&#10;[{&quot;name&quot;:&quot;A&quot;,&quot;score&quot;:85},{&quot;name&quot;:&quot;B&quot;,&quot;score&quot;:92}]"></textarea>
+<div id="errorMsg" class="error-msg"></div>
+</div>
+<div>
+<label>🎯 预设数据</label>
+<div class="presets">
+<span class="preset" data-preset="llm">🤖 LLM Benchmark</span>
+<span class="preset" data-preset="lang">💻 编程语言热度</span>
+<span class="preset" data-preset="fruit">🍎 水果销量</span>
+<span class="preset" data-preset="quarterly">📈 季度营收</span>
+<span class="preset" data-preset="radar">🎯 能力雷达</span>
+<span class="preset" data-preset="scatter">🔬 散点数据</span>
+</div>
+</div>
+<div>
+<label>📊 图表类型</label>
+<div class="chart-types">
+<div class="chart-type active" data-type="bar"><span class="icon">📊</span>柱状图</div>
+<div class="chart-type" data-type="line"><span class="icon">📈</span>折线图</div>
+<div class="chart-type" data-type="pie"><span class="icon">🥧</span>饼图</div>
+<div class="chart-type" data-type="doughnut"><span class="icon">🍩</span>环形图</div>
+<div class="chart-type" data-type="radar"><span class="icon">🎯</span>雷达图</div>
+<div class="chart-type" data-type="polarArea"><span class="icon">🌀</span>极区图</div>
+<div class="chart-type" data-type="horizontalBar"><span class="icon">📏</span>条形图</div>
+<div class="chart-type" data-type="scatter"><span class="icon">🔬</span>散点图</div>
+<div class="chart-type" data-type="bubble"><span class="icon">🫧</span>气泡图</div>
+</div>
+</div>
+<div>
+<label>🎨 配色方案</label>
+<div class="themes" id="themes"></div>
+</div>
+<div class="row">
+<div>
+<label>标题</label>
+<input type="text" id="chartTitle" placeholder="图表标题（可选）">
+</div>
+</div>
+<div class="row">
+<div class="toggle-row">
+<div class="toggle" id="toggleLegend" onclick="this.classList.toggle('on');renderChart()"></div>
+<span>显示图例</span>
+</div>
+<div class="toggle-row">
+<div class="toggle on" id="toggleAnimation" onclick="this.classList.toggle('on');renderChart()"></div>
+<span>动画</span>
+</div>
+<div class="toggle-row">
+<div class="toggle" id="toggleGrid" onclick="this.classList.toggle('on');renderChart()"></div>
+<span>网格线</span>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn primary" onclick="renderChart()">🎨 生成图表</button>
+<button class="btn" onclick="exportPNG()">📥 导出 PNG</button>
+<button class="btn" onclick="exportSVG()">📋 复制数据</button>
+<button class="btn" onclick="clearAll()">🗑️ 清空</button>
+</div>
+<div class="stats" id="stats"></div>
+</div>
+<div class="panel right" id="chartPanel">
+<div class="empty-state" id="emptyState">
+<div class="big">📊</div>
+<p>粘贴数据到左侧，点击「生成图表」<br>支持 CSV、TSV、JSON 格式<br>或点击预设数据快速体验</p>
+</div>
+<div class="chart-wrap" id="chartWrap" style="display:none">
+<canvas id="myChart"></canvas>
+</div>
+</div>
+</div>
+<script>
+const THEMES = [
+  {name:'活力',colors:['#38bdf8','#818cf8','#34d399','#fbbf24','#f87171','#f472b6','#a78bfa','#fb923c','#2dd4bf','#e879f9']},
+  {name:'莫兰迪',colors:['#8EACBB','#D4A5A5','#A5C4D4','#C4B7A6','#B5C4B1','#D4C5A9','#A5B5C4','#C4A5B5','#B1C4B5','#C4B1A5']},
+  {name:'霓虹',colors:['#FF006E','#FB5607','#FFBE0B','#8338EC','#3A86FF','#06D6A0','#EF476F','#FFD166','#118AB2','#073B4C']},
+  {name:'森林',colors:['#2D6A4F','#40916C','#52B788','#74C69D','#95D5B2','#B7E4C7','#1B4332','#081C15','#D8F3DC','#344E41']},
+  {name:'日落',colors:['#FF6B6B','#FFA06B','#FFD93D','#6BCB77','#4D96FF','#FF6B9D','#C56BFF','#6BFFF0','#FF9F6B','#FFE66B']},
+  {name:'商务',colors:['#264653','#2A9D8F','#E9C46A','#F4A261','#E76F51','#606C38','#283618','#DDA15E','#BC6C25','#FEFAE0']},
+  {name:'赛博',colors:['#00F5FF','#FF00FF','#FFE500','#00FF87','#FF3366','#7B68EE','#FF6EC7','#39FF14','#FF4500','#00CED1']},
+  {name:'柔和',colors:['#A8DADC','#F1FAEE','#457B9D','#E63946','#1D3557','#F4A261','#2A9D8F','#E9C46A','#264653','#E76F51']}
+];
+let currentTheme=0, currentType='bar', chart=null;
+
+// Init themes
+const themesEl=document.getElementById('themes');
+THEMES.forEach((t,i)=>{
+  const d=document.createElement('div');
+  d.className='theme-dot'+(i===0?' active':'');
+  d.title=t.name;
+  d.style.background=`conic-gradient(${t.colors.slice(0,4).map((c,j)=>`${c} ${j*90}deg ${(j+1)*90}deg`).join(',')})`;
+  d.onclick=()=>{document.querySelectorAll('.theme-dot').forEach(x=>x.classList.remove('active'));d.classList.add('active');currentTheme=i;renderChart()};
+  themesEl.appendChild(d);
+});
+
+// Chart type selection
+document.querySelectorAll('.chart-type').forEach(el=>{
+  el.onclick=()=>{document.querySelectorAll('.chart-type').forEach(x=>x.classList.remove('active'));el.classList.add('active');currentType=el.dataset.type;renderChart()};
+});
+
+// Presets
+const PRESETS={
+  llm:`模型,MMLU,HumanEval,GSM8K,MATH,ARC-C
+GPT-4o,88.7,90.2,95.3,76.6,96.4
+Claude-3.5-Sonnet,88.3,92.0,96.4,78.3,96.7
+Gemini-1.5-Pro,85.9,84.1,91.7,67.7,93.1
+Llama-3.1-405B,87.3,89.0,96.8,73.8,96.1
+DeepSeek-V3,87.1,82.6,91.4,75.9,95.3
+Qwen-2.5-72B,86.1,86.4,95.8,83.1,95.7`,
+  lang:`语言,2024指数,2023指数,增长率
+Python,100,95,5.3
+JavaScript,62,65,-4.6
+TypeScript,48,40,20.0
+Java,45,50,-10.0
+C++,38,35,8.6
+Rust,28,20,40.0
+Go,25,22,13.6
+Kotlin,18,15,20.0`,
+  fruit:`水果,一月,二月,三月,四月,五月,六月
+苹果,120,132,101,134,90,230
+香蕉,220,182,191,234,290,330
+橙子,150,232,201,154,190,330
+草莓,80,90,300,280,200,100
+葡萄,60,70,80,120,250,310`,
+  quarterly:`季度,产品A,产品B,产品C
+Q1,450,320,280
+Q2,520,380,310
+Q3,610,420,390
+Q4,780,510,450`,
+  radar:`维度,ChatGPT,Claude,Gemini
+推理能力,92,95,88
+代码生成,90,93,85
+创意写作,88,91,86
+数学能力,85,87,82
+多语言,90,88,92
+指令遵循,91,94,89`,
+  scatter:`x,y
+1.2,2.4
+2.5,4.1
+3.1,3.8
+4.0,5.2
+4.8,6.1
+5.5,5.8
+6.2,7.3
+7.0,8.1
+7.8,7.5
+8.5,9.2
+9.1,8.8
+10.0,10.5`
+};
+document.querySelectorAll('.preset').forEach(el=>{
+  el.onclick=()=>{document.getElementById('dataInput').value=PRESETS[el.dataset.preset];renderChart()};
+});
+
+function parseData(raw){
+  raw=raw.trim();
+  if(!raw)return null;
+  // Try JSON
+  if(raw[0]==='['||raw[0]==='{'){
+    try{
+      let arr=JSON.parse(raw);
+      if(!Array.isArray(arr))arr=[arr];
+      if(!arr.length)return null;
+      const keys=Object.keys(arr[0]);
+      const labelKey=keys[0];
+      const dataKeys=keys.slice(1);
+      return{
+        labels:arr.map(r=>String(r[labelKey])),
+        datasets:dataKeys.map(k=>({label:k,data:arr.map(r=>parseFloat(r[k])||0)}))
+      };
+    }catch(e){throw new Error('JSON 解析失败: '+e.message)}
+  }
+  // CSV/TSV
+  const sep=raw.includes('\t')?'\t':',';
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(lines.length<2)throw new Error('至少需要表头+1行数据');
+  const headers=lines[0].split(sep).map(h=>h.trim());
+  const rows=lines.slice(1).map(l=>l.split(sep).map(c=>c.trim()));
+  const labels=rows.map(r=>r[0]);
+  const datasets=[];
+  for(let i=1;i<headers.length;i++){
+    datasets.push({label:headers[i],data:rows.map(r=>parseFloat(r[i])||0)});
+  }
+  return{labels,datasets};
+}
+
+function renderChart(){
+  const raw=document.getElementById('dataInput').value;
+  const errEl=document.getElementById('errorMsg');
+  errEl.style.display='none';
+  if(!raw.trim()){
+    document.getElementById('emptyState').style.display='';
+    document.getElementById('chartWrap').style.display='none';
+    return;
+  }
+  let parsed;
+  try{parsed=parseData(raw)}catch(e){errEl.textContent='⚠️ '+e.message;errEl.style.display='block';return}
+  if(!parsed){errEl.textContent='⚠️ 无法解析数据';errEl.style.display='block';return}
+
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('chartWrap').style.display='';
+
+  const colors=THEMES[currentTheme].colors;
+  const showLegend=document.getElementById('toggleLegend').classList.contains('on');
+  const showAnimation=document.getElementById('toggleAnimation').classList.contains('on');
+  const showGrid=document.getElementById('toggleGrid').classList.contains('on');
+  const title=document.getElementById('chartTitle').value;
+
+  let type=currentType;
+  let datasets=parsed.datasets;
+  let indexAxis='x';
+
+  if(type==='horizontalBar'){type='bar';indexAxis='y'}
+
+  const isPie=['pie','doughnut','polarArea'].includes(type);
+
+  if(isPie){
+    // For pie/doughnut, use first dataset only
+    datasets=[{
+      data:datasets[0].data,
+      backgroundColor:colors.slice(0,datasets[0].data.length).map(c=>c+'CC'),
+      borderColor:colors.slice(0,datasets[0].data.length),
+      borderWidth:2
+    }];
+  }else if(type==='scatter'||type==='bubble'){
+    // Scatter: pair columns as x,y
+    if(parsed.datasets.length>=2){
+      const xData=parsed.datasets[0].data;
+      const yData=parsed.datasets[1].data;
+      const zData=parsed.datasets[2]?parsed.datasets[2].data:null;
+      datasets=[{
+        label:parsed.datasets[1].label+' vs '+parsed.datasets[0].label,
+        data:xData.map((x,i)=>({x,y:yData[i],r:zData?Math.max(3,zData[i]/2):6})),
+        backgroundColor:colors[0]+'99',
+        borderColor:colors[0],
+        borderWidth:2
+      }];
+    }else{
+      // Single column: use labels as x
+      datasets=[{
+        label:datasets[0].label,
+        data:parsed.labels.map((l,i)=>({x:parseFloat(l)||i,y:datasets[0].data[i]})),
+        backgroundColor:colors[0]+'99',
+        borderColor:colors[0],
+        borderWidth:2
+      }];
+    }
+  }else{
+    datasets=datasets.map((ds,i)=>({
+      ...ds,
+      backgroundColor:type==='line'?colors[i%colors.length]+'33':colors[i%colors.length]+'CC',
+      borderColor:colors[i%colors.length],
+      borderWidth:2,
+      tension:type==='line'?0.3:0,
+      fill:type==='line',
+      pointRadius:type==='line'?4:0,
+      pointBackgroundColor:colors[i%colors.length]
+    }));
+  }
+
+  if(chart)chart.destroy();
+  const ctx=document.getElementById('myChart').getContext('2d');
+  chart=new Chart(ctx,{
+    type:type==='bubble'?'bubble':type,
+    data:{labels:parsed.labels,datasets},
+    options:{
+      indexAxis,
+      responsive:true,
+      maintainAspectRatio:true,
+      animation:showAnimation?{duration:800,easing:'easeOutQuart'}:false,
+      plugins:{
+        legend:{display:showLegend||isPie,labels:{color:getComputedStyle(document.body).getPropertyValue('--text').trim(),font:{size:12},padding:12}},
+        title:{display:!!title,text:title,color:getComputedStyle(document.body).getPropertyValue('--text').trim(),font:{size:16,weight:'bold'},padding:{bottom:16}},
+        tooltip:{backgroundColor:'rgba(15,23,42,0.9)',titleFont:{size:13},bodyFont:{size:12},padding:10,cornerRadius:8}
+      },
+      scales:isPie||type==='radar'?
+        (type==='radar'?{r:{ticks:{color:'#94a3b8',backdropColor:'transparent'},grid:{color:'#334155'},pointLabels:{color:'#e2e8f0',font:{size:12}}}}:{})
+        :{
+          x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:showGrid?'#334155':'transparent'}},
+          y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:showGrid?'#334155':'transparent'},beginAtZero:true}
+        }
+    }
+  });
+
+  // Stats
+  const allVals=parsed.datasets.flatMap(d=>d.data);
+  const sum=allVals.reduce((a,b)=>a+b,0);
+  const avg=(sum/allVals.length).toFixed(1);
+  const min=Math.min(...allVals).toFixed(1);
+  const max=Math.max(...allVals).toFixed(1);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><b>${parsed.labels.length}</b>数据行</div>
+    <div class="stat"><b>${parsed.datasets.length}</b>数据列</div>
+    <div class="stat"><b>${avg}</b>平均值</div>
+    <div class="stat"><b>${min}</b>最小值</div>
+    <div class="stat"><b>${max}</b>最大值</div>
+  `;
+}
+
+function exportPNG(){
+  if(!chart)return;
+  const link=document.createElement('a');
+  link.download='quick-chart.png';
+  link.href=chart.toBase64Image('image/png',1);
+  link.click();
+}
+function exportSVG(){
+  const raw=document.getElementById('dataInput').value;
+  if(raw)navigator.clipboard.writeText(raw).then(()=>alert('✅ 数据已复制到剪贴板'));
+}
+function clearAll(){
+  document.getElementById('dataInput').value='';
+  document.getElementById('chartTitle').value='';
+  document.getElementById('errorMsg').style.display='none';
+  document.getElementById('stats').innerHTML='';
+  if(chart){chart.destroy();chart=null}
+  document.getElementById('emptyState').style.display='';
+  document.getElementById('chartWrap').style.display='none';
+}
+
+// Auto-render on paste
+document.getElementById('dataInput').addEventListener('paste',()=>setTimeout(renderChart,100));
+document.getElementById('chartTitle').addEventListener('input',()=>{if(chart)renderChart()});
+</script>
+</body>
+</html>

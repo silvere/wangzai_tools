@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>习惯追踪器 | Habit Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .icon-selector {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .icon-option {
+            font-size: 2em;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .icon-option:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+
+        .icon-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .habits-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .habit-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .habit-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .habit-icon {
+            font-size: 2.5em;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .habit-info {
+            flex: 1;
+        }
+
+        .habit-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .habit-target {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .habit-stats {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .streak {
+            text-align: center;
+        }
+
+        .streak-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .streak-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .check-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #667eea;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            transition: all 0.3s;
+        }
+
+        .check-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .check-btn.checked {
+            background: #667eea;
+            color: white;
+        }
+
+        .heatmap {
+            margin-top: 20px;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .heatmap-day {
+            aspect-ratio: 1;
+            background: #e0e0e0;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .heatmap-day:hover {
+            transform: scale(1.1);
+        }
+
+        .heatmap-day.level-0 { background: #ebedf0; }
+        .heatmap-day.level-1 { background: #c6e48b; }
+        .heatmap-day.level-2 { background: #7bc96f; }
+        .heatmap-day.level-3 { background: #239a3b; }
+        .heatmap-day.level-4 { background: #196127; }
+
+        .achievements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .achievement {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .achievement.unlocked {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+        }
+
+        .achievement-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .achievement-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .achievement-desc {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .delete-btn {
+            padding: 8px 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .delete-btn:hover {
+            background: #ff5252;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .icon-selector {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 习惯追踪器</h1>
+            <p>坚持每一天，成就更好的自己</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalHabits">0</div>
+                <div class="stat-label">总习惯数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todayChecks">0</div>
+                <div class="stat-label">今日打卡</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="weekRate">0%</div>
+                <div class="stat-label">本周完成率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="longestStreak">0</div>
+                <div class="stat-label">最长连续</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>➕ 添加新习惯</h2>
+                <form id="habitForm">
+                    <div class="form-group">
+                        <label>习惯名称</label>
+                        <input type="text" id="habitName" placeholder="例如：晨跑" required>
+                    </div>
+                    <div class="form-group">
+                        <label>目标频率</label>
+                        <select id="habitFrequency">
+                            <option value="daily">每天</option>
+                            <option value="weekly">每周3次</option>
+                            <option value="biweekly">每周5次</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>选择图标</label>
+                        <div class="icon-selector" id="iconSelector">
+                            <div class="icon-option selected" data-icon="📚">📚</div>
+                            <div class="icon-option" data-icon="🏃">🏃</div>
+                            <div class="icon-option" data-icon="💪">💪</div>
+                            <div class="icon-option" data-icon="🏸">🏸</div>
+                            <div class="icon-option" data-icon="🧘">🧘</div>
+                            <div class="icon-option" data-icon="💻">💻</div>
+                            <div class="icon-option" data-icon="🎨">🎨</div>
+                            <div class="icon-option" data-icon="🎵">🎵</div>
+                            <div class="icon-option" data-icon="✍️">✍️</div>
+                            <div class="icon-option" data-icon="🌱">🌱</div>
+                            <div class="icon-option" data-icon="💧">💧</div>
+                            <div class="icon-option" data-icon="🎯">🎯</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">添加习惯</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>📋 我的习惯</h2>
+                <div class="habits-list" id="habitsList"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔥 习惯热力图</h2>
+            <div class="heatmap">
+                <div class="heatmap-grid" id="heatmapGrid"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2>🏆 成就徽章</h2>
+            <div class="achievements" id="achievements"></div>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储
+        let habits = JSON.parse(localStorage.getItem('habits')) || [];
+        let checks = JSON.parse(localStorage.getItem('checks')) || {};
+
+        // 图标选择
+        document.querySelectorAll('.icon-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+            });
+        });
+
+        // 添加习惯
+        document.getElementById('habitForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('habitName').value;
+            const frequency = document.getElementById('habitFrequency').value;
+            const icon = document.querySelector('.icon-option.selected').dataset.icon;
+
+            const habit = {
+                id: Date.now(),
+                name,
+                frequency,
+                icon,
+                createdAt: new Date().toISOString()
+            };
+
+            habits.push(habit);
+            saveData();
+            renderHabits();
+            document.getElementById('habitForm').reset();
+            document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+            document.querySelector('.icon-option').classList.add('selected');
+        });
+
+        // 渲染习惯列表
+        function renderHabits() {
+            const container = document.getElementById('habitsList');
+            if (habits.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">还没有添加习惯，快来添加第一个吧！</p>';
+                return;
+            }
+
+            container.innerHTML = habits.map(habit => {
+                const streak = calculateStreak(habit.id);
+                const isCheckedToday = isCheckedToday(habit.id);
+                const frequencyText = {
+                    'daily': '每天',
+                    'weekly': '每周3次',
+                    'biweekly': '每周5次'
+                }[habit.frequency];
+
+                return `
+                    <div class="habit-item">
+                        <div class="habit-icon">${habit.icon}</div>
+                        <div class="habit-info">
+                            <div class="habit-name">${habit.name}</div>
+                            <div class="habit-target">目标：${frequencyText}</div>
+                        </div>
+                        <div class="habit-stats">
+                            <div class="streak">
+                                <div class="streak-number">${streak}</div>
+                                <div class="streak-label">连续天数</div>
+                            </div>
+                            <button class="check-btn ${isCheckedToday ? 'checked' : ''}" onclick="toggleCheck(${habit.id})">
+                                ${isCheckedToday ? '✓' : ''}
+                            </button>
+                            <button class="delete-btn" onclick="deleteHabit(${habit.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateStats();
+            renderHeatmap();
+            renderAchievements();
+        }
+
+        // 切换打卡状态
+        function toggleCheck(habitId) {
+            const today = new Date().toISOString().split('T')[0];
+            if (!checks[habitId]) checks[habitId] = [];
+
+            const index = checks[habitId].indexOf(today);
+            if (index > -1) {
+                checks[habitId].splice(index, 1);
+            } else {
+                checks[habitId].push(today);
+            }
+
+            saveData();
+            renderHabits();
+        }
+
+        // 检查今天是否已打卡
+        function isCheckedToday(habitId) {
+            const today = new Date().toISOString().split('T')[0];
+            return checks[habitId] && checks[habitId].includes(today);
+        }
+
+        // 计算连续天数
+        function calculateStreak(habitId) {
+            if (!checks[habitId] || checks[habitId].length === 0) return 0;
+
+            const sortedDates = checks[habitId].sort().reverse();
+            let streak = 0;
+            let currentDate = new Date();
+
+            for (let i = 0; i < sortedDates.length; i++) {
+                const checkDate = new Date(sortedDates[i]);
+                const diffDays = Math.floor((currentDate - checkDate) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === streak) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+
+            return streak;
+        }
+
+        // 删除习惯
+        function deleteHabit(habitId) {
+            if (confirm('确定要删除这个习惯吗？')) {
+                habits = habits.filter(h => h.id !== habitId);
+                delete checks[habitId];
+                saveData();
+                renderHabits();
+            }
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            document.getElementById('totalHabits').textContent = habits.length;
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayChecks = Object.values(checks).filter(dates => dates.includes(today)).length;
+            document.getElementById('todayChecks').textContent = todayChecks;
+
+            // 本周完成率
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            let weekTotal = 0;
+            let weekCompleted = 0;
+
+            habits.forEach(habit => {
+                const daysInWeek = 7;
+                weekTotal += daysInWeek;
+                if (checks[habit.id]) {
+                    weekCompleted += checks[habit.id].filter(date => {
+                        const checkDate = new Date(date);
+                        return checkDate >= weekStart;
+                    }).length;
+                }
+            });
+
+            const weekRate = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0;
+            document.getElementById('weekRate').textContent = weekRate + '%';
+
+            // 最长连续
+            const longestStreak = habits.reduce((max, habit) => {
+                const streak = calculateStreak(habit.id);
+                return Math.max(max, streak);
+            }, 0);
+            document.getElementById('longestStreak').textContent = longestStreak;
+        }
+
+        // 渲染热力图
+        function renderHeatmap() {
+            const container = document.getElementById('heatmapGrid');
+            const days = 49; // 7周
+            const today = new Date();
+            let html = '';
+
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                let level = 0;
+                habits.forEach(habit => {
+                    if (checks[habit.id] && checks[habit.id].includes(dateStr)) {
+                        level++;
+                    }
+                });
+
+                const levelClass = level === 0 ? 'level-0' : 
+                                  level === 1 ? 'level-1' :
+                                  level === 2 ? 'level-2' :
+                                  level === 3 ? 'level-3' : 'level-4';
+
+                html += `<div class="heatmap-day ${levelClass}" title="${dateStr}: ${level}个习惯"></div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // 渲染成就
+        function renderAchievements() {
+            const achievements = [
+                { icon: '🌟', name: '初次尝试', desc: '完成第一次打卡', condition: () => Object.values(checks).some(dates => dates.length > 0) },
+                { icon: '🔥', name: '连续3天', desc: '任意习惯连续3天', condition: () => habits.some(h => calculateStreak(h.id) >= 3) },
+                { icon: '💎', name: '连续7天', desc: '任意习惯连续7天', condition: () => habits.some(h => calculateStreak(h.id) >= 7) },
+                { icon: '👑', name: '连续30天', desc: '任意习惯连续30天', condition: () => habits.some(h => calculateStreak(h.id) >= 30) },
+                { icon: '🎯', name: '习惯达人', desc: '同时追踪5个习惯', condition: () => habits.length >= 5 },
+                { icon: '💯', name: '完美一周', desc: '一周内完成率100%', condition: () => {
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    let weekTotal = 0;
+                    let weekCompleted = 0;
+                    habits.forEach(habit => {
+                        weekTotal += 7;
+                        if (checks[habit.id]) {
+                            weekCompleted += checks[habit.id].filter(date => new Date(date) >= weekStart).length;
+                        }
+                    });
+                    return weekTotal > 0 && weekCompleted === weekTotal;
+                }}
+            ];
+
+            const container = document.getElementById('achievements');
+            container.innerHTML = achievements.map(ach => {
+                const unlocked = ach.condition();
+                return `
+                    <div class="achievement ${unlocked ? 'unlocked' : ''}">
+                        <div class="achievement-icon">${ach.icon}</div>
+                        <div class="achievement-name">${ach.name}</div>
+                        <div class="achievement-desc">${ach.desc}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 保存数据
+        function saveData() {
+            localStorage.setItem('habits', JSON.stringify(habits));
+            localStorage.setItem('checks', JSON.stringify(checks));
+        }
+
+        // 初始化
+        renderHabits();
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 🎮</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e4e4e7;--dim:#6b7084;--accent:#6c5ce7}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;touch-action:none;user-select:none}
+h1{font-size:36px;font-weight:800;margin-bottom:4px;letter-spacing:-1px}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--dim);font-size:12px;margin-bottom:16px}
+.score-row{display:flex;gap:12px;margin-bottom:16px}
+.score-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 20px;text-align:center;min-width:90px}
+.score-box .label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.score-box .val{font-size:22px;font-weight:700;color:var(--accent)}
+.score-box .val.best{color:#fdcb6e}
+.board{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:340px;height:340px;position:relative}
+.cell{border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;transition:transform .12s,background .15s;background:#1e2030}
+.actions{display:flex;gap:10px;margin-top:16px}
+.btn{padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+.btn-new{background:var(--accent);color:#fff}
+.btn-new:hover{opacity:.85}
+.btn-undo{background:var(--border);color:var(--text)}
+.btn-undo:hover{background:#3a3d4a}
+.overlay{position:absolute;inset:0;background:rgba(15,17,23,.85);border-radius:12px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:10}
+.overlay.show{display:flex}
+.overlay h2{font-size:28px;font-weight:700}
+.overlay .win{color:#fdcb6e}
+.overlay .lose{color:#ff6b6b}
+.hint{color:var(--dim);font-size:11px;margin-top:12px}
+</style>
+</head>
+<body>
+<h1><span>2048</span></h1>
+<p class="subtitle">方向键 / WASD / 滑动操作</p>
+<div class="score-row">
+  <div class="score-box"><div class="label">分数</div><div class="val" id="score">0</div></div>
+  <div class="score-box"><div class="label">最高</div><div class="val best" id="best">0</div></div>
+  <div class="score-box"><div class="label">步数</div><div class="val" id="moves">0</div></div>
+</div>
+<div class="board" id="board">
+  <div class="overlay" id="overlay">
+    <h2 id="overlayMsg"></h2>
+    <button class="btn btn-new" onclick="newGame()">再来一局</button>
+  </div>
+</div>
+<div class="actions">
+  <button class="btn btn-new" onclick="newGame()">🔄 新游戏</button>
+  <button class="btn btn-undo" onclick="undo()">↩ 撤销</button>
+</div>
+<p class="hint">合并相同数字，目标达到 2048！</p>
+<script>
+const COLORS={
+  0:'#1e2030',2:'#2a2d4a',4:'#2d3055',8:'#e17055',16:'#d63031',
+  32:'#e84393',64:'#fd79a8',128:'#6c5ce7',256:'#a29bfe',
+  512:'#00b894',1024:'#00cec9',2048:'#fdcb6e',4096:'#e17055',8192:'#d63031'
+};
+const TEXT_COLORS={
+  0:'transparent',2:'#b8bcd0',4:'#b8bcd0',8:'#fff',16:'#fff',
+  32:'#fff',64:'#fff',128:'#fff',256:'#fff',
+  512:'#fff',1024:'#fff',2048:'#1a1d27',4096:'#fff',8192:'#fff'
+};
+
+let grid,score,moves,bestScore,prevState=null,gameOver=false,won=false;
+
+function init(){
+  bestScore=parseInt(localStorage.getItem('best2048')||'0');
+  document.getElementById('best').textContent=bestScore;
+  newGame();
+}
+
+function newGame(){
+  grid=Array(4).fill(null).map(()=>Array(4).fill(0));
+  score=0;moves=0;gameOver=false;won=false;prevState=null;
+  document.getElementById('overlay').classList.remove('show');
+  addRandom();addRandom();
+  render();
+}
+
+function addRandom(){
+  const empty=[];
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++)if(grid[r][c]===0)empty.push([r,c]);
+  if(!empty.length)return;
+  const[r,c]=empty[Math.floor(Math.random()*empty.length)];
+  grid[r][c]=Math.random()<0.9?2:4;
+}
+
+function render(){
+  const board=document.getElementById('board');
+  const cells=board.querySelectorAll('.cell');
+  if(cells.length===0){
+    let html='';
+    for(let r=0;r<4;r++)for(let c=0;c<4;c++)html+=`<div class="cell" id="c${r}${c}"></div>`;
+    // Keep overlay
+    const overlay=document.getElementById('overlay').outerHTML;
+    board.innerHTML=html+overlay;
+  }
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    const cell=document.getElementById(`c${r}${c}`);
+    const v=grid[r][c];
+    cell.textContent=v||'';
+    cell.style.background=COLORS[v]||COLORS[4096];
+    cell.style.color=TEXT_COLORS[v]||'#fff';
+    cell.style.fontSize=v>=1024?'18px':v>=128?'20px':'24px';
+  }
+  document.getElementById('score').textContent=score;
+  document.getElementById('moves').textContent=moves;
+  if(score>bestScore){bestScore=score;localStorage.setItem('best2048',bestScore);document.getElementById('best').textContent=bestScore}
+}
+
+function clone(g){return g.map(r=>[...r])}
+
+function move(dir){
+  if(gameOver)return;
+  prevState={grid:clone(grid),score,moves};
+  let moved=false;
+  const rotated=dir==='up'||dir==='down';
+  const reversed=dir==='right'||dir==='down';
+  for(let i=0;i<4;i++){
+    let line=[];
+    for(let j=0;j<4;j++){
+      const r=rotated?j:i;
+      const c=rotated?i:j;
+      line.push(grid[r][c]);
+    }
+    if(reversed)line.reverse();
+    const merged=mergeLine(line);
+    if(reversed)merged.reverse();
+    for(let j=0;j<4;j++){
+      const r=rotated?j:i;
+      const c=rotated?i:j;
+      if(grid[r][c]!==merged[j])moved=true;
+      grid[r][c]=merged[j];
+    }
+  }
+  if(moved){
+    moves++;
+    addRandom();
+    render();
+    checkWin();
+    if(!canMove()){
+      gameOver=true;
+      setTimeout(()=>{
+        document.getElementById('overlayMsg').innerHTML='<span class="lose">游戏结束</span>';
+        document.getElementById('overlay').classList.add('show');
+      },300);
+    }
+  }else{prevState=null}
+}
+
+function mergeLine(line){
+  let arr=line.filter(x=>x!==0);
+  for(let i=0;i<arr.length-1;i++){
+    if(arr[i]===arr[i+1]){
+      arr[i]*=2;score+=arr[i];
+      arr.splice(i+1,1);
+    }
+  }
+  while(arr.length<4)arr.push(0);
+  return arr;
+}
+
+function canMove(){
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    if(grid[r][c]===0)return true;
+    if(c<3&&grid[r][c]===grid[r][c+1])return true;
+    if(r<3&&grid[r][c]===grid[r+1][c])return true;
+  }
+  return false;
+}
+
+function checkWin(){
+  if(won)return;
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    if(grid[r][c]===2048){
+      won=true;
+      document.getElementById('overlayMsg').innerHTML='<span class="win">🎉 2048!</span>';
+      document.getElementById('overlay').classList.add('show');
+      setTimeout(()=>document.getElementById('overlay').classList.remove('show'),2000);
+    }
+  }
+}
+
+function undo(){
+  if(!prevState)return;
+  grid=prevState.grid;score=prevState.score;moves=prevState.moves;
+  prevState=null;gameOver=false;
+  document.getElementById('overlay').classList.remove('show');
+  render();
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
+  if(map[e.key]){e.preventDefault();move(map[e.key])}
+});
+
+// Touch/swipe
+let tx=0,ty=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  const dy=e.changedTouches[0].clientY-ty;
+  const ax=Math.abs(dx),ay=Math.abs(dy);
+  if(Math.max(ax,ay)<30)return;
+  if(ax>ay)move(dx>0?'right':'left');
+  else move(dy>0?'down':'up');
+});
+
+init();
+</script>
+</body>
+</html>

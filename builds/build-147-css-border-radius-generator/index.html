@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS Border-Radius 可视化生成器 - 旺仔工具百宝箱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .preview-box {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(45deg, #eee 25%, transparent 25%), 
+        linear-gradient(-45deg, #eee 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #eee 75%), 
+        linear-gradient(-45deg, transparent 75%, #eee 75%);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">CSS Border-Radius 可视化生成器 🟢</h1>
+      <p class="text-gray-600">拖拽可视化调整圆角，支持四个角独立设置，一键生成 CSS 代码</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 左侧控制面板 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- 统一设置 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">统一设置</h2>
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">所有圆角: <span id="allValue">8px</span></label>
+            </div>
+            <input type="range" id="allSlider" min="0" max="100" value="8" class="w-full">
+            <button id="applyAllBtn" class="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">应用到所有四个角</button>
+          </div>
+        </section>
+
+        <!-- 四个角独立设置 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">分别设置每个角</h2>
+          
+          <!-- 左上角 -->
+          <div class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">左上角 (top-left): <span id="tlValue">8px</span></label>
+            </div>
+            <input type="range" id="tlSlider" min="0" max="100" value="8" class="w-full">
+          </div>
+          
+          <!-- 右上角 -->
+          <div class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">右上角 (top-right): <span id="trValue">8px</span></label>
+            </div>
+            <input type="range" id="trSlider" min="0" max="100" value="8" class="w-full">
+          </div>
+          
+          <!-- 左下角 -->
+          <div class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">左下角 (bottom-left): <span id="blValue">8px</span></label>
+            </div>
+            <input type="range" id="blSlider" min="0" max="100" value="8" class="w-full">
+          </div>
+          
+          <!-- 右下角 -->
+          <div class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">右下角 (bottom-right): <span id="brValue">8px</span></label>
+            </div>
+            <input type="range" id="brSlider" min="0" max="100" value="8" class="w-full">
+          </div>
+        </section>
+
+        <!-- 椭圆圆角 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">椭圆圆角 (可选)</h2>
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">水平半径: <span id="ellipseXValue">0</span></label>
+            </div>
+            <input type="range" id="ellipseXSlider" min="0" max="100" value="0" class="w-full">
+          </div>
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">垂直半径: <span id="ellipseYValue">0</span></label>
+            </div>
+            <input type="range" id="ellipseYSlider" min="0" max="100" value="0" class="w-full">
+          </div>
+          <div class="text-sm text-gray-500">💡 设置不同的水平/垂直半径就能得到椭圆圆角，做西瓜形状很方便！</div>
+        </section>
+
+        <!-- 边框 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">边框设置</h2>
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium text-gray-700">边框宽度: <span id="borderWidthValue">0px</span></label>
+            </div>
+            <input type="range" id="borderWidthSlider" min="0" max="10" value="0" class="w-full">
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">边框颜色</label>
+            <div class="flex items-center gap-4">
+              <input type="color" id="borderColor" value="#333333" class="w-16 h-10 rounded cursor-pointer">
+              <input type="text" id="borderColorHex" value="#333333" class="flex-1 px-3 py-2 border rounded-md">
+            </div>
+          </div>
+        </section>
+
+        <!-- 背景颜色 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">背景颜色</h2>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">盒子背景</label>
+            <div class="flex items-center gap-4">
+              <input type="color" id="bgColor" value="#3b82f6" class="w-16 h-10 rounded cursor-pointer">
+              <input type="text" id="bgColorHex" value="#3b82f6" class="flex-1 px-3 py-2 border rounded-md">
+            </div>
+          </div>
+        </section>
+
+        <!-- 预设 -->
+        <section class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">常用预设</h2>
+          <div id="presets" class="grid grid-cols-2 gap-2">
+            <!-- 预设由 JS 生成 -->
+          </div>
+        </section>
+
+        <!-- 输出代码 -->
+        <section>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">生成的 CSS</h2>
+            <button id="copyBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600">复制代码</button>
+          </div>
+          <textarea id="cssOutput" readonly class="w-full h-28 px-4 py-3 font-mono text-sm bg-gray-900 text-green-400 rounded-md"></textarea>
+          <div id="copyToast" class="hidden mt-2 p-2 bg-green-100 text-green-700 rounded-md text-center">
+            复制成功！
+          </div>
+        </section>
+      </div>
+
+      <!-- 右侧预览 -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">实时预览</h2>
+          <div class="preview-box rounded-lg p-12">
+            <div id="previewBox" class="w-full h-[400px] flex items-center justify-center">
+              <div class="text-center text-white">
+                <div class="text-2xl font-bold mb-2">圆角预览</div>
+                <div class="text-white/80">调整参数看效果</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Border-Radius 速查表 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">border-radius 语法速查</h2>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p><code class="bg-gray-100 px-2 py-1 rounded">border-radius: 8px;</code> — 四个角都是 8px</p>
+            <p><code class="bg-gray-100 px-2 py-1 rounded">border-radius: 8px 16px;</code> — 左上+右下 8px，右上+左下 16px</p>
+            <p><code class="bg-gray-100 px-2 py-1 rounded">border-radius: 8px 16px 24px 32px;</code> — 顺时针依次设置左上 右上 右下 左下</p>
+            <p><code class="bg-gray-100 px-2 py-1 rounded">border-top-left-radius: 16px;</code> — 只设置左上角</p>
+            <p><code class="bg-gray-100 px-2 py-1 rounded">border-radius: 16px / 8px;</code> — 水平半径 16px / 垂直半径 8px（椭圆圆角）</p>
+            <p class="text-gray-500 mt-2">💡 支持百分比 (%)，比如 50% 就可以得到圆形/椭圆形</p>
+          </div>
+        </div>
+
+        <!-- 常用效果 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">常用圆角效果</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">小圆角卡片</div>
+              <code class="text-xs">border-radius: 8px;</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">大圆角卡片</div>
+              <code class="text-xs">border-radius: 16px;</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">圆形头像</div>
+              <code class="text-xs">border-radius: 50%;</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">叶子形状 (切一个角)</div>
+              <code class="text-xs">border-radius: 16px 16px 16px 0;</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">胶囊按钮</div>
+              <code class="text-xs">border-radius: 9999px;</code>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+              <div class="font-semibold">西瓜半月形</div>
+              <code class="text-xs">border-radius: 200px 200px 200px 0;</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center mt-8 text-gray-500 text-sm">
+      <p>完全本地运行，零数据上传 | 旺仔工具百宝箱 🥛</p>
+    </footer>
+  </div>
+
+  <script>
+    // 状态
+    const state = {
+      tl: 8,
+      tr: 8,
+      bl: 8,
+      br: 8,
+      ellipseX: 0,
+      ellipseY: 0,
+      borderWidth: 0,
+      borderColor: '#333333',
+      bgColor: '#3b82f6'
+    };
+
+    // 预设
+    const presets = [
+      {
+        name: '统一小圆角',
+        values: { tl: 8, tr: 8, bl: 8, br: 8, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '统一大圆角',
+        values: { tl: 16, tr: 16, bl: 16, br: 16, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '胶囊按钮',
+        values: { tl: 9999, tr: 9999, bl: 9999, br: 9999, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '圆形',
+        values: { tl: 50, tr: 50, bl: 50, br: 50, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '只切左下角',
+        values: { tl: 16, tr: 16, br: 16, bl: 0, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '叶子标签',
+        values: { tl: 16, tr: 16, br: 16, bl: 0, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '西瓜半月',
+        values: { tl: 100, tr: 100, br: 100, bl: 0, ellipseX: 0, ellipseY: 0 }
+      },
+      {
+        name: '椭圆形圆角',
+        values: { tl: 30, tr: 30, bl: 30, br: 30, ellipseX: 60, ellipseY: 30 }
+      }
+    ];
+
+    // DOM 元素
+    const elements = {
+      allSlider: document.getElementById('allSlider'),
+      allValue: document.getElementById('allValue'),
+      applyAllBtn: document.getElementById('applyAllBtn'),
+      tlSlider: document.getElementById('tlSlider'),
+      tlValue: document.getElementById('tlValue'),
+      trSlider: document.getElementById('trSlider'),
+      trValue: document.getElementById('trValue'),
+      blSlider: document.getElementById('blSlider'),
+      blValue: document.getElementById('blValue'),
+      brSlider: document.getElementById('brSlider'),
+      brValue: document.getElementById('brValue'),
+      ellipseXSlider: document.getElementById('ellipseXSlider'),
+      ellipseXValue: document.getElementById('ellipseXValue'),
+      ellipseYSlider: document.getElementById('ellipseYSlider'),
+      ellipseYValue: document.getElementById('ellipseYValue'),
+      borderWidthSlider: document.getElementById('borderWidthSlider'),
+      borderWidthValue: document.getElementById('borderWidthValue'),
+      borderColor: document.getElementById('borderColor'),
+      borderColorHex: document.getElementById('borderColorHex'),
+      bgColor: document.getElementById('bgColor'),
+      bgColorHex: document.getElementById('bgColorHex'),
+      previewBox: document.getElementById('previewBox'),
+      cssOutput: document.getElementById('cssOutput'),
+      copyBtn: document.getElementById('copyBtn'),
+      copyToast: document.getElementById('copyToast'),
+      presetsContainer: document.getElementById('presets')
+    };
+
+    // 生成 CSS
+    function generateCSS() {
+      let css = '.rounded-box {\n';
+      
+      // 标准语法
+      if (state.ellipseX === 0 && state.ellipseY === 0) {
+        css += `  border-radius: ${state.tl}px ${state.tr}px ${state.br}px ${state.bl}px;\n`;
+      } else {
+        // 椭圆语法
+        const horizontal = `${state.tl}px ${state.tr}px ${state.br}px ${state.bl}px`;
+        const vertical = `${state.ellipseX}px ${state.ellipseY}px`;
+        css += `  border-radius: ${horizontal} / ${vertical};\n`;
+      }
+
+      if (state.borderWidth > 0) {
+        css += `  border: ${state.borderWidth}px solid ${state.borderColor};\n`;
+      }
+
+      css += `  background-color: ${state.bgColor};\n`;
+      css += '}\n';
+
+      return css;
+    }
+
+    // 更新预览
+    function updatePreview() {
+      let borderRadius;
+      if (state.ellipseX === 0 && state.ellipseY === 0) {
+        borderRadius = `${state.tl}px ${state.tr}px ${state.br}px ${state.bl}px`;
+      } else {
+        const horizontal = `${state.tl}px ${state.tr}px ${state.br}px ${state.bl}px`;
+        const vertical = `${state.ellipseX}px ${state.ellipseY}px`;
+        borderRadius = `${horizontal} / ${vertical}`;
+      }
+
+      elements.previewBox.style.borderRadius = borderRadius;
+      elements.previewBox.style.backgroundColor = state.bgColor;
+      if (state.borderWidth > 0) {
+        elements.previewBox.style.border = `${state.borderWidth}px solid ${state.borderColor}`;
+      } else {
+        elements.previewBox.style.border = 'none';
+      }
+
+      elements.cssOutput.value = generateCSS();
+    }
+
+    // 更新 UI 显示
+    function updateUIFields() {
+      elements.allValue.textContent = elements.allSlider.value + 'px';
+      elements.tlValue.textContent = state.tl + 'px';
+      elements.trValue.textContent = state.tr + 'px';
+      elements.blValue.textContent = state.bl + 'px';
+      elements.brValue.textContent = state.br + 'px';
+      elements.ellipseXValue.textContent = state.ellipseX;
+      elements.ellipseYValue.textContent = state.ellipseY;
+      elements.borderWidthValue.textContent = state.borderWidth + 'px';
+      elements.borderColor.value = state.borderColor;
+      elements.borderColorHex.value = state.borderColor;
+      elements.bgColor.value = state.bgColor;
+      elements.bgColorHex.value = state.bgColor;
+    }
+
+    // 渲染预设
+    function renderPresets() {
+      elements.presetsContainer.innerHTML = '';
+      presets.forEach((preset, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-left';
+        btn.textContent = preset.name;
+        btn.addEventListener('click', () => {
+          Object.assign(state, preset.values);
+          // 更新滑块
+          elements.tlSlider.value = state.tl;
+          elements.trSlider.value = state.tr;
+          elements.blSlider.value = state.bl;
+          elements.brSlider.value = state.br;
+          elements.ellipseXSlider.value = state.ellipseX;
+          elements.ellipseYSlider.value = state.ellipseY;
+          updateUIFields();
+          updatePreview();
+        });
+        elements.presetsContainer.appendChild(btn);
+      });
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 应用到所有
+      elements.applyAllBtn.addEventListener('click', () => {
+        const val = parseInt(elements.allSlider.value);
+        state.tl = val;
+        state.tr = val;
+        state.bl = val;
+        state.br = val;
+        elements.tlSlider.value = val;
+        elements.trSlider.value = val;
+        elements.blSlider.value = val;
+        elements.brSlider.value = val;
+        updateUIFields();
+        updatePreview();
+      });
+
+      // 每个角的滑块
+      elements.tlSlider.addEventListener('input', e => {
+        state.tl = parseInt(e.target.value);
+        elements.tlValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.trSlider.addEventListener('input', e => {
+        state.tr = parseInt(e.target.value);
+        elements.trValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.blSlider.addEventListener('input', e => {
+        state.bl = parseInt(e.target.value);
+        elements.blValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.brSlider.addEventListener('input', e => {
+        state.br = parseInt(e.target.value);
+        elements.brValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      // 椭圆
+      elements.ellipseXSlider.addEventListener('input', e => {
+        state.ellipseX = parseInt(e.target.value);
+        elements.ellipseXValue.textContent = e.target.value;
+        updatePreview();
+      });
+
+      elements.ellipseYSlider.addEventListener('input', e => {
+        state.ellipseY = parseInt(e.target.value);
+        elements.ellipseYValue.textContent = e.target.value;
+        updatePreview();
+      });
+
+      // 边框
+      elements.borderWidthSlider.addEventListener('input', e => {
+        state.borderWidth = parseInt(e.target.value);
+        elements.borderWidthValue.textContent = e.target.value + 'px';
+        updatePreview();
+      });
+
+      elements.borderColor.addEventListener('input', e => {
+        state.borderColor = e.target.value;
+        elements.borderColorHex.value = e.target.value;
+        updatePreview();
+      });
+
+      elements.borderColorHex.addEventListener('change', e => {
+        let color = e.target.value.trim();
+        if (!color.startsWith('#')) color = '#' + color;
+        if (/^#[0-9A-Fa-f]{6}$/.test(color) || /^#[0-9A-Fa-f]{3}$/.test(color)) {
+          state.borderColor = color;
+          elements.borderColor.value = color;
+          updatePreview();
+        }
+      });
+
+      // 背景
+      elements.bgColor.addEventListener('input', e => {
+        state.bgColor = e.target.value;
+        elements.bgColorHex.value = e.target.value;
+        updatePreview();
+      });
+
+      elements.bgColorHex.addEventListener('change', e => {
+        let color = e.target.value.trim();
+        if (!color.startsWith('#')) color = '#' + color;
+        if (/^#[0-9A-Fa-f]{6}$/.test(color) || /^#[0-9A-Fa-f]{3}$/.test(color)) {
+          state.bgColor = color;
+          elements.bgColor.value = color;
+          updatePreview();
+        }
+      });
+
+      // 复制按钮
+      elements.copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(elements.cssOutput.value);
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        } catch (err) {
+          elements.cssOutput.select();
+          document.execCommand('copy');
+          elements.copyToast.classList.remove('hidden');
+          setTimeout(() => {
+            elements.copyToast.classList.add('hidden');
+          }, 2000);
+        }
+      });
+    }
+
+    // 初始化
+    function init() {
+      bindEvents();
+      renderPresets();
+      updateUIFields();
+      updatePreview();
+    }
+
+    init();
+  </script>
+</body>
+</html>

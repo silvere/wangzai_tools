@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 编码解码工具 🔄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .convert-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .convert-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+        }
+        
+        .history-item {
+            transition: all 0.3s ease;
+        }
+        
+        .history-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-gray-800">
+    <div class="container mx-auto px-4 py-12 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                <i class="fas fa-exchange-alt mr-3"></i>Base64 编码解码工具
+            </h1>
+            <p class="text-lg text-white/90 font-light">
+                支持文本、图片、文件的Base64编码解码，完全离线运行，安全可靠
+            </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">输入大小</p>
+                        <p class="text-3xl font-bold" id="inputSize">0 B</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">输出大小</p>
+                        <p class="text-3xl font-bold" id="outputSize">0 B</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">转换时间</p>
+                        <p class="text-3xl font-bold" id="convertTime">0 ms</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Selector -->
+        <div class="bg-white rounded-2xl p-4 mb-6 card-shadow">
+            <div class="flex flex-wrap gap-2">
+                <button id="textModeBtn" class="mode-btn px-6 py-3 rounded-xl font-semibold bg-purple-600 text-white">
+                    <i class="fas fa-font mr-2"></i>文本模式
+                </button>
+                <button id="imageModeBtn" class="mode-btn px-6 py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                    <i class="fas fa-image mr-2"></i>图片模式
+                </button>
+                <button id="fileModeBtn" class="mode-btn px-6 py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                    <i class="fas fa-file mr-2"></i>文件模式
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Converter -->
+        <div class="grid grid-cols-1 lg:grid-cols-11 gap-4 mb-8">
+            <!-- Input Panel -->
+            <div class="lg:col-span-5 bg-white rounded-3xl card-shadow overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-arrow-down text-purple-600"></i>
+                        <span class="font-semibold text-gray-700" id="inputLabel">原始文本</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <label for="fileInput" id="uploadLabel" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-200 transition hidden">
+                            <i class="fas fa-upload mr-1"></i>上传文件
+                            <input type="file" id="fileInput" class="hidden">
+                        </label>
+                        <button id="clearInputBtn" class="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition">
+                            <i class="fas fa-trash mr-1"></i>清空
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="textInputContainer" class="p-6">
+                    <textarea 
+                        id="textInput" 
+                        class="w-full h-[300px] p-4 rounded-xl border-2 border-gray-200 code-font outline-none focus:border-purple-500 resize-none"
+                        placeholder="输入要编码/解码的文本..."
+                    >Hello, World! 这是测试文本 👋</textarea>
+                </div>
+                
+                <div id="imageInputContainer" class="p-6 hidden">
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500 transition" id="imageDropZone">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">点击或拖拽图片到这里上传</p>
+                        <p class="text-sm text-gray-500">支持 JPG, PNG, GIF, WebP 格式</p>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                    </div>
+                    <div id="imagePreview" class="mt-4 hidden">
+                        <img id="previewImg" src="" alt="预览图" class="max-w-full rounded-xl mx-auto max-h-[250px]">
+                    </div>
+                </div>
+                
+                <div id="fileInputContainer" class="p-6 hidden">
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500 transition" id="fileDropZone">
+                        <i class="fas fa-file-upload text-5xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">点击或拖拽任意文件到这里上传</p>
+                        <p class="text-sm text-gray-500">最大支持 10MB 文件</p>
+                    </div>
+                    <div id="fileInfo" class="mt-4 hidden">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i class="fas fa-file text-purple-600 text-2xl"></i>
+                                <div class="flex-1">
+                                    <p id="fileName" class="font-semibold text-gray-800"></p>
+                                    <p id="fileSize" class="text-sm text-gray-500"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convert Button -->
+            <div class="lg:col-span-1 flex items-center justify-center">
+                <button id="convertBtn" class="convert-btn w-16 h-16 rounded-full bg-purple-600 text-white text-2xl shadow-lg flex items-center justify-center">
+                    <i class="fas fa-exchange-alt"></i>
+                </button>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="lg:col-span-5 bg-white rounded-3xl card-shadow overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-arrow-up text-purple-600"></i>
+                        <span class="font-semibold text-gray-700" id="outputLabel">Base64 编码结果</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="copyOutputBtn" class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition">
+                            <i class="fas fa-copy mr-1"></i>复制
+                        </button>
+                        <button id="downloadOutputBtn" class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition">
+                            <i class="fas fa-download mr-1"></i>下载
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="textOutputContainer" class="p-6">
+                    <textarea 
+                        id="textOutput" 
+                        class="w-full h-[300px] p-4 rounded-xl border-2 border-gray-200 code-font outline-none bg-gray-50 resize-none"
+                        readonly
+                        placeholder="转换结果将显示在这里..."
+                    ></textarea>
+                </div>
+                
+                <div id="imageOutputContainer" class="p-6 hidden">
+                    <div id="imageResult" class="rounded-xl overflow-hidden">
+                        <img id="resultImg" src="" alt="Base64图片预览" class="max-w-full rounded-xl mx-auto max-h-[250px]">
+                    </div>
+                    <div class="mt-4 bg-gray-50 rounded-xl p-4">
+                        <p class="text-sm text-gray-600 mb-2 font-medium">Base64 编码：</p>
+                        <textarea 
+                            id="imageBase64Output" 
+                            class="w-full h-[100px] p-3 rounded-lg border border-gray-200 code-font text-sm outline-none resize-none"
+                            readonly
+                        ></textarea>
+                    </div>
+                </div>
+                
+                <div id="fileOutputContainer" class="p-6 hidden">
+                    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                        <p class="text-sm text-gray-600 mb-2 font-medium">Base64 编码：</p>
+                        <textarea 
+                            id="fileBase64Output" 
+                            class="w-full h-[200px] p-3 rounded-lg border border-gray-200 code-font text-sm outline-none resize-none"
+                            readonly
+                        ></textarea>
+                    </div>
+                    <div id="fileDownloadSection" class="hidden">
+                        <button id="downloadFileBtn" class="w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition">
+                            <i class="fas fa-download mr-2"></i>下载解码后的文件
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="bg-white rounded-2xl p-6 mb-8 card-shadow">
+            <div class="flex flex-wrap gap-4 justify-between items-center">
+                <div class="flex flex-wrap gap-3">
+                    <button id="encodeBtn" class="btn-hover px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-lock mr-2"></i>编码 (文本 → Base64)
+                    </button>
+                    <button id="decodeBtn" class="btn-hover px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
+                        <i class="fas fa-unlock mr-2"></i>解码 (Base64 → 文本)
+                    </button>
+                    <button id="swapBtn" class="btn-hover px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold">
+                        <i class="fas fa-exchange-alt mr-2"></i>交换输入输出
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600">自动转换</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="autoConvert" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion History -->
+        <div class="bg-white rounded-3xl card-shadow p-8 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-history mr-3 text-purple-600"></i>转换历史
+                </h2>
+                <button id="clearHistoryBtn" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition">
+                    <i class="fas fa-trash mr-1"></i>清空历史
+                </button>
+            </div>
+
+            <div id="historyList" class="space-y-4">
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                    <p class="text-lg">还没有转换记录</p>
+                    <p class="text-sm mt-1">转换的内容会保存在这里（最多20条）</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="bg-white rounded-3xl card-shadow p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-lightbulb mr-3 text-yellow-500"></i>使用提示
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                    <h3 class="font-semibold text-yellow-800 mb-2">📝 文本编码</h3>
+                    <p class="text-sm text-yellow-700">支持中英文、特殊字符、emoji等所有文本内容的编码解码，自动处理UTF-8编码。</p>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <h3 class="font-semibold text-blue-800 mb-2">🖼️ 图片转Base64</h3>
+                    <p class="text-sm text-blue-700">将图片转换为Base64字符串，可以直接嵌入到HTML、CSS、JSON中，无需单独上传文件。</p>
+                </div>
+                <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                    <h3 class="font-semibold text-green-800 mb-2">📁 文件编码</h3>
+                    <p class="text-sm text-green-700">支持任意格式文件的Base64编码，方便在不支持文件上传的场景下传递数据。</p>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                    <h3 class="font-semibold text-purple-800 mb-2">🔒 本地处理</h3>
+                    <p class="text-sm text-purple-700">所有编码解码都在本地浏览器完成，数据绝不会上传到任何服务器，绝对安全。</p>
+                </div>
+                <div class="bg-red-50 rounded-xl p-4 border border-red-100">
+                    <h3 class="font-semibold text-red-800 mb-2">⚠️ 注意事项</h3>
+                    <p class="text-sm text-red-700">Base64编码后体积会增大约33%，大文件建议使用其他压缩方式。</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h3 class="font-semibold text-gray-800 mb-2">💡 常见用途</h3>
+                    <p class="text-sm text-gray-700">网页嵌入小图片、数据URL、API参数传递、邮件附件、简单加密传输等场景。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/70 text-sm">
+            <p>🔄 所有转换都在本地完成，数据绝不会上传到任何服务器</p>
+            <p class="mt-1">支持文本、图片、任意文件格式，最大支持10MB文件转换</p>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let currentMode = 'text'; // text, image, file
+        let autoConvertEnabled = true;
+        let conversionHistory = JSON.parse(localStorage.getItem('base64History') || '[]');
+        let currentFile = null;
+        
+        // DOM Elements
+        const textModeBtn = document.getElementById('textModeBtn');
+        const imageModeBtn = document.getElementById('imageModeBtn');
+        const fileModeBtn = document.getElementById('fileModeBtn');
+        const inputLabel = document.getElementById('inputLabel');
+        const outputLabel = document.getElementById('outputLabel');
+        const uploadLabel = document.getElementById('uploadLabel');
+        const textInputContainer = document.getElementById('textInputContainer');
+        const imageInputContainer = document.getElementById('imageInputContainer');
+        const fileInputContainer = document.getElementById('fileInputContainer');
+        const textOutputContainer = document.getElementById('textOutputContainer');
+        const imageOutputContainer = document.getElementById('imageOutputContainer');
+        const fileOutputContainer = document.getElementById('fileOutputContainer');
+        const textInput = document.getElementById('textInput');
+        const textOutput = document.getElementById('textOutput');
+        const imageInput = document.getElementById('imageInput');
+        const imageDropZone = document.getElementById('imageDropZone');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const fileInput = document.getElementById('fileInput');
+        const fileDropZone = document.getElementById('fileDropZone');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const convertBtn = document.getElementById('convertBtn');
+        const encodeBtn = document.getElementById('encodeBtn');
+        const decodeBtn = document.getElementById('decodeBtn');
+        const swapBtn = document.getElementById('swapBtn');
+        const autoConvert = document.getElementById('autoConvert');
+        const copyOutputBtn = document.getElementById('copyOutputBtn');
+        const downloadOutputBtn = document.getElementById('downloadOutputBtn');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const historyList = document.getElementById('historyList');
+        const inputSize = document.getElementById('inputSize');
+        const outputSize = document.getElementById('outputSize');
+        const convertTime = document.getElementById('convertTime');
+        const imageBase64Output = document.getElementById('imageBase64Output');
+        const resultImg = document.getElementById('resultImg');
+        const fileBase64Output = document.getElementById('fileBase64Output');
+        const fileDownloadSection = document.getElementById('fileDownloadSection');
+        const downloadFileBtn = document.getElementById('downloadFileBtn');
+        
+        // Initialize
+        renderHistory();
+        updateStats();
+        encodeText();
+        
+        // Update file size display
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+        
+        // Update stats
+        function updateStats(inputBytes = 0, outputBytes = 0, timeMs = 0) {
+            inputSize.textContent = formatFileSize(inputBytes);
+            outputSize.textContent = formatFileSize(outputBytes);
+            convertTime.textContent = `${timeMs} ms`;
+        }
+        
+        // Encode text to Base64
+        function encodeText() {
+            try {
+                const startTime = performance.now();
+                const input = textInput.value;
+                const encoded = btoa(unescape(encodeURIComponent(input)));
+                textOutput.value = encoded;
+                
+                const endTime = performance.now();
+                const timeTaken = Math.round(endTime - startTime);
+                
+                updateStats(new Blob([input]).size, new Blob([encoded]).size, timeTaken);
+                addToHistory('encode', 'text', input, encoded);
+                
+                return encoded;
+            } catch (e) {
+                textOutput.value = `编码错误: ${e.message}`;
+                return null;
+            }
+        }
+        
+        // Decode Base64 to text
+        function decodeText() {
+            try {
+                const startTime = performance.now();
+                const input = textInput.value.trim();
+                const decoded = decodeURIComponent(escape(atob(input)));
+                textOutput.value = decoded;
+                
+                const endTime = performance.now();
+                const timeTaken = Math.round(endTime - startTime);
+                
+                updateStats(new Blob([input]).size, new Blob([decoded]).size, timeTaken);
+                addToHistory('decode', 'text', input, decoded);
+                
+                return decoded;
+            } catch (e) {
+                textOutput.value = `解码错误: ${e.message}`;
+                return null;
+            }
+        }
+        
+        // Encode image to Base64
+        function encodeImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64 = e.target.result;
+                    imageBase64Output.value = base64;
+                    resultImg.src = base64;
+                    
+                    updateStats(file.size, base64.length, 0);
+                    addToHistory('encode', 'image', file.name, base64.slice(0, 100) + '...');
+                    
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Encode file to Base64
+        function encodeFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64 = e.target.result;
+                    fileBase64Output.value = base64;
+                    
+                    updateStats(file.size, base64.length, 0);
+                    addToHistory('encode', 'file', file.name, base64.slice(0, 100) + '...');
+                    
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Decode Base64 to file
+        function decodeBase64File(base64, filename = 'download') {
+            try {
+                const arr = base64.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                
+                const blob = new Blob([u8arr], { type: mime });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                return true;
+            } catch (e) {
+                alert(`解码失败: ${e.message}`);
+                return false;
+            }
+        }
+        
+        // Add to history
+        function addToHistory(type, mode, input, output) {
+            const entry = {
+                id: Date.now().toString(),
+                type: type, // encode/decode
+                mode: mode, // text/image/file
+                input: input.slice(0, 100) + (input.length > 100 ? '...' : ''),
+                output: output.slice(0, 100) + (output.length > 100 ? '...' : ''),
+                timestamp: new Date().toISOString()
+            };
+            
+            conversionHistory.unshift(entry);
+            if (conversionHistory.length > 20) {
+                conversionHistory = conversionHistory.slice(0, 20);
+            }
+            
+            localStorage.setItem('base64History', JSON.stringify(conversionHistory));
+            renderHistory();
+        }
+        
+        // Render history
+        function renderHistory() {
+            if (conversionHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg">还没有转换记录</p>
+                        <p class="text-sm mt-1">转换的内容会保存在这里（最多20条）</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyList.innerHTML = conversionHistory.map(entry => {
+                const date = new Date(entry.timestamp);
+                const dateStr = date.toLocaleString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const typeIcon = entry.type === 'encode' ? '🔒' : '🔓';
+                const typeColor = entry.type === 'encode' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+                const modeIcon = {
+                    'text': '📝',
+                    'image': '🖼️',
+                    'file': '📁'
+                }[entry.mode];
+                
+                return `
+                    <div class="history-item bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium ${typeColor}">
+                                    ${typeIcon} ${entry.type === 'encode' ? '编码' : '解码'}
+                                </span>
+                                <span class="text-gray-500 text-sm">${modeIcon} ${entry.mode}</span>
+                                <span class="text-gray-400 text-sm">${dateStr}</span>
+                            </div>
+                            <button class="p-1.5 text-red-500 hover:bg-red-100 rounded" onclick="deleteHistory('${entry.id}')" title="删除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-gray-500 text-xs mb-1">输入:</p>
+                                <p class="font-mono text-gray-800 break-all">${entry.input}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-xs mb-1">输出:</p>
+                                <p class="font-mono text-gray-800 break-all">${entry.output}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Delete history entry
+        window.deleteHistory = function(id) {
+            if (confirm('确定要删除这条历史记录吗？')) {
+                conversionHistory = conversionHistory.filter(entry => entry.id !== id);
+                localStorage.setItem('base64History', JSON.stringify(conversionHistory));
+                renderHistory();
+            }
+        }
+        
+        // Copy to clipboard
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return true;
+            }
+        }
+        
+        // Switch mode
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update button styles
+            [textModeBtn, imageModeBtn, fileModeBtn].forEach(btn => {
+                btn.className = 'mode-btn px-6 py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition';
+            });
+            
+            const activeBtn = {
+                'text': textModeBtn,
+                'image': imageModeBtn,
+                'file': fileModeBtn
+            }[mode];
+            activeBtn.className = 'mode-btn px-6 py-3 rounded-xl font-semibold bg-purple-600 text-white';
+            
+            // Show/hide containers
+            textInputContainer.classList.add('hidden');
+            imageInputContainer.classList.add('hidden');
+            fileInputContainer.classList.add('hidden');
+            textOutputContainer.classList.add('hidden');
+            imageOutputContainer.classList.add('hidden');
+            fileOutputContainer.classList.add('hidden');
+            uploadLabel.classList.add('hidden');
+            fileDownloadSection.classList.add('hidden');
+            
+            if (mode === 'text') {
+                textInputContainer.classList.remove('hidden');
+                textOutputContainer.classList.remove('hidden');
+                inputLabel.textContent = '原始文本';
+                outputLabel.textContent = 'Base64 编码结果';
+            } else if (mode === 'image') {
+                imageInputContainer.classList.remove('hidden');
+                imageOutputContainer.classList.remove('hidden');
+                inputLabel.textContent = '原始图片';
+                outputLabel.textContent = 'Base64 编码结果';
+                uploadLabel.classList.remove('hidden');
+                uploadLabel.htmlFor = 'imageInput';
+            } else if (mode === 'file') {
+                fileInputContainer.classList.remove('hidden');
+                fileOutputContainer.classList.remove('hidden');
+                inputLabel.textContent = '原始文件';
+                outputLabel.textContent = 'Base64 编码结果';
+                uploadLabel.classList.remove('hidden');
+                uploadLabel.htmlFor = 'fileInput';
+            }
+            
+            updateStats();
+        }
+        
+        // Event Listeners
+        textModeBtn.addEventListener('click', () => switchMode('text'));
+        imageModeBtn.addEventListener('click', () => switchMode('image'));
+        fileModeBtn.addEventListener('click', () => switchMode('file'));
+        
+        textInput.addEventListener('input', () => {
+            if (autoConvertEnabled && currentMode === 'text') {
+                encodeText();
+            }
+        });
+        
+        encodeBtn.addEventListener('click', () => {
+            if (currentMode === 'text') {
+                encodeText();
+            } else if (currentMode === 'image' && currentFile) {
+                encodeImage(currentFile);
+            } else if (currentMode === 'file' && currentFile) {
+                encodeFile(currentFile);
+            }
+        });
+        
+        decodeBtn.addEventListener('click', () => {
+            if (currentMode === 'text') {
+                decodeText();
+            } else if (currentMode === 'file') {
+                const base64 = fileBase64Output.value.trim();
+                if (base64) {
+                    decodeBase64File(base64, 'decoded_file');
+                } else {
+                    alert('请先输入Base64编码');
+                }
+            }
+        });
+        
+        convertBtn.addEventListener('click', () => {
+            if (currentMode === 'text') {
+                // Auto detect if input is Base64
+                const input = textInput.value.trim();
+                const isBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(input) && input.length % 4 === 0;
+                if (isBase64) {
+                    decodeText();
+                } else {
+                    encodeText();
+                }
+            }
+        });
+        
+        swapBtn.addEventListener('click', () => {
+            if (currentMode === 'text') {
+                const temp = textInput.value;
+                textInput.value = textOutput.value;
+                textOutput.value = temp;
+                encodeText();
+            }
+        });
+        
+        autoConvert.addEventListener('change', () => {
+            autoConvertEnabled = autoConvert.checked;
+            if (autoConvertEnabled && currentMode === 'text') {
+                encodeText();
+            }
+        });
+        
+        copyOutputBtn.addEventListener('click', async () => {
+            let textToCopy = '';
+            if (currentMode === 'text') {
+                textToCopy = textOutput.value;
+            } else if (currentMode === 'image') {
+                textToCopy = imageBase64Output.value;
+            } else if (currentMode === 'file') {
+                textToCopy = fileBase64Output.value;
+            }
+            
+            if (textToCopy) {
+                await copyToClipboard(textToCopy);
+                copyOutputBtn.innerHTML = '<i class="fas fa-check mr-1"></i>已复制';
+                setTimeout(() => {
+                    copyOutputBtn.innerHTML = '<i class="fas fa-copy mr-1"></i>复制';
+                }, 2000);
+            }
+        });
+        
+        downloadOutputBtn.addEventListener('click', () => {
+            let content = '';
+            let filename = 'base64_result.txt';
+            
+            if (currentMode === 'text') {
+                content = textOutput.value;
+            } else if (currentMode === 'image') {
+                content = imageBase64Output.value;
+            } else if (currentMode === 'file') {
+                content = fileBase64Output.value;
+            }
+            
+            if (content) {
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        });
+        
+        clearInputBtn.addEventListener('click', () => {
+            if (confirm('确定要清空输入内容吗？')) {
+                textInput.value = '';
+                textOutput.value = '';
+                previewImg.src = '';
+                imagePreview.classList.add('hidden');
+                resultImg.src = '';
+                imageBase64Output.value = '';
+                fileInfo.classList.add('hidden');
+                fileBase64Output.value = '';
+                currentFile = null;
+                updateStats();
+            }
+        });
+        
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有转换历史吗？此操作不可恢复！')) {
+                conversionHistory = [];
+                localStorage.removeItem('base64History');
+                renderHistory();
+            }
+        });
+        
+        downloadFileBtn.addEventListener('click', () => {
+            const base64 = fileBase64Output.value.trim();
+            if (base64) {
+                decodeBase64File(base64, 'decoded_file');
+            }
+        });
+        
+        // Image upload handling
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('请上传图片文件');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('图片大小不能超过10MB');
+                    return;
+                }
+                
+                currentFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    encodeImage(file);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        imageDropZone.addEventListener('click', () => imageInput.click());
+        
+        imageDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageDropZone.classList.add('border-purple-500');
+        });
+        
+        imageDropZone.addEventListener('dragleave', () => {
+            imageDropZone.classList.remove('border-purple-500');
+        });
+        
+        imageDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageDropZone.classList.remove('border-purple-500');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                imageInput.files = e.dataTransfer.files;
+                imageInput.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        // File upload handling
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('文件大小不能超过10MB');
+                    return;
+                }
+                
+                currentFile = file;
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.classList.remove('hidden');
+                fileDownloadSection.classList.remove('hidden');
+                encodeFile(file);
+            }
+        });
+        
+        fileDropZone.addEventListener('click', () => fileInput.click());
+        
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('border-purple-500');
+        });
+        
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('border-purple-500');
+        });
+        
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('border-purple-500');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + E to encode
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                encodeBtn.click();
+            }
+            // Ctrl/Cmd + D to decode
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                decodeBtn.click();
+            }
+            // Ctrl/Cmd + C to copy output
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && document.activeElement !== textInput && document.activeElement !== textOutput) {
+                e.preventDefault();
+                copyOutputBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

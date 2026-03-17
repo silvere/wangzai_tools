@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文速览 📄 — 快速提取 arXiv 论文核心信息</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        dark: '#1e1b4b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .skeleton {
+                background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+            }
+            @keyframes loading {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-6xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2 flex items-center">
+                        <i class="fa fa-file-text-o mr-3"></i>论文速览 📄
+                    </h1>
+                    <p class="text-purple-100 text-lg">输入 arXiv 论文链接，10秒提取核心信息，快速了解论文精华</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-white/20 px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+                        <i class="fa fa-bolt mr-1"></i> 支持最新AI/大模型/Agent领域论文
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-6xl px-4 py-8">
+        <!-- Input Section -->
+        <section class="mb-8">
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <input 
+                        type="text" 
+                        id="arxivUrl" 
+                        placeholder="输入 arXiv 论文链接，例如：https://arxiv.org/abs/2303.08774 或 2303.08774"
+                        class="flex-1 px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-lg"
+                    >
+                    <button 
+                        id="extractBtn" 
+                        class="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                    >
+                        <i class="fa fa-magic"></i>
+                        <span>提取信息</span>
+                    </button>
+                </div>
+
+                <!-- Quick Examples -->
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="text-gray-500 text-sm">快速示例：</span>
+                    <button class="example-btn text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all text-gray-700" data-id="2303.08774">GPT-4</button>
+                    <button class="example-btn text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all text-gray-700" data-id="2205.14135">InstructGPT</button>
+                    <button class="example-btn text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all text-gray-700" data-id="2310.06825">GPT-4V</button>
+                    <button class="example-btn text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all text-gray-700" data-id="2401.05964">GPT-4o</button>
+                    <button class="example-btn text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all text-gray-700" data-id="2307.06435">Llama 2</button>
+                    <button class="example-btn text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all text-gray-700" data-id="2403.15461">Claude 3</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden mb-8">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="flex flex-col items-center justify-center">
+                    <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-gray-700 text-lg font-medium">正在爬取论文信息，请稍候...</p>
+                    <p class="text-gray-500 text-sm mt-2">通常需要 3-10 秒</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden mb-8">
+            <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-6">
+                <div class="flex items-start gap-3">
+                    <i class="fa fa-exclamation-circle text-red-500 text-2xl mt-1"></i>
+                    <div>
+                        <h3 class="text-red-800 font-semibold text-lg mb-1">提取失败</h3>
+                        <p id="errorMessage" class="text-red-700">请检查输入的 arXiv 链接是否正确，或稍后重试。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <section id="result" class="hidden space-y-6">
+            <!-- Basic Info Card -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover">
+                <div class="gradient-bg p-6 text-white">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span id="paperId" class="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm font-mono"></span>
+                                <span id="paperDate" class="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm"></span>
+                            </div>
+                            <h2 id="paperTitle" class="text-2xl font-bold mb-3"></h2>
+                            <div id="paperAuthors" class="text-purple-100 text-base"></div>
+                        </div>
+                        <a id="paperLink" target="_blank" class="bg-white text-primary px-4 py-2 rounded-xl font-semibold hover:bg-purple-50 transition-all flex items-center gap-2 ml-4">
+                            <i class="fa fa-external-link"></i>
+                            <span>原文链接</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-align-left text-primary mr-2"></i>摘要
+                    </h3>
+                    <p id="paperAbstract" class="text-gray-700 leading-relaxed text-base"></p>
+                </div>
+            </div>
+
+            <!-- Key Info Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Core Innovation -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <i class="fa fa-lightbulb-o text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">核心创新</h3>
+                    </div>
+                    <ul id="coreInnovation" class="space-y-3">
+                        <li class="skeleton h-6 rounded w-full"></li>
+                        <li class="skeleton h-6 rounded w-4/5"></li>
+                        <li class="skeleton h-6 rounded w-3/4"></li>
+                    </ul>
+                </div>
+
+                <!-- Key Results -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                            <i class="fa fa-line-chart text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">关键结果</h3>
+                    </div>
+                    <ul id="keyResults" class="space-y-3">
+                        <li class="skeleton h-6 rounded w-full"></li>
+                        <li class="skeleton h-6 rounded w-4/5"></li>
+                        <li class="skeleton h-6 rounded w-3/4"></li>
+                    </ul>
+                </div>
+
+                <!-- Methodology -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                            <i class="fa fa-cogs text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">研究方法</h3>
+                    </div>
+                    <ul id="methodology" class="space-y-3">
+                        <li class="skeleton h-6 rounded w-full"></li>
+                        <li class="skeleton h-6 rounded w-4/5"></li>
+                        <li class="skeleton h-6 rounded w-3/4"></li>
+                    </ul>
+                </div>
+
+                <!-- Practical Implications -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                            <i class="fa fa-rocket text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">实践价值</h3>
+                    </div>
+                    <ul id="implications" class="space-y-3">
+                        <li class="skeleton h-6 rounded w-full"></li>
+                        <li class="skeleton h-6 rounded w-4/5"></li>
+                        <li class="skeleton h-6 rounded w-3/4"></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="copyBtn" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+                    <i class="fa fa-copy"></i>
+                    <span>复制完整摘要</span>
+                </button>
+                <button id="downloadBtn" class="bg-secondary hover:bg-secondary/90 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-secondary/20">
+                    <i class="fa fa-download"></i>
+                    <span>下载 Markdown 版本</span>
+                </button>
+                <button id="newBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-gray-700/20">
+                    <i class="fa fa-plus"></i>
+                    <span>提取另一篇</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="mt-12">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">为什么用论文速览？</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
+                        <i class="fa fa-bolt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">极速提取</h3>
+                    <p class="text-gray-600">输入链接10秒内提取核心信息，省去阅读几十页论文的时间，快速筛选值得精读的论文</p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 mb-4">
+                        <i class="fa fa-brain text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">智能总结</h3>
+                    <p class="text-gray-600">AI自动提炼核心创新、关键结果、研究方法、实践价值四大维度，抓住论文最精华部分</p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 mb-4">
+                        <i class="fa fa-download text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">导出方便</h3>
+                    <p class="text-gray-600">支持一键复制、下载Markdown格式，方便整理到笔记系统，构建个人论文库</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8 mt-12">
+        <div class="container mx-auto max-w-6xl px-4 text-center">
+            <p class="text-gray-400">
+                专为大模型研究人员打造的论文快速阅读工具 | 每天更新最新AI领域论文精华
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                Powered by 旺仔 🥛 | Build #97
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Mock data for demo (in real implementation, this would come from backend)
+        const mockPapers = {
+            "2303.08774": {
+                id: "2303.08774",
+                title: "GPT-4 Technical Report",
+                authors: "OpenAI",
+                date: "2023-03-14",
+                abstract: "We report the development of GPT-4, a large-scale, multimodal model which can accept image and text inputs and produce text outputs. While less capable than humans in many real-world scenarios, GPT-4 exhibits human-level performance on various professional and academic benchmarks, including passing a simulated bar exam with a score around the top 10% of test takers. GPT-4 is a Transformer-based model pre-trained to predict the next token in a document. The post-training alignment process results in improved performance on measures of factuality and adherence to desired behavior.",
+                coreInnovation: [
+                    "首个在专业和学术基准上达到人类水平的大模型，律师考试得分前10%",
+                    "支持多模态输入（图像+文本），统一理解不同类型的信息",
+                    "通过大规模对齐训练，显著提升了事实准确性和安全性",
+                    "上下文窗口长度提升到8k/32k tokens，支持处理更长的文档"
+                ],
+                keyResults: [
+                    "在MMLU基准上达到86.4%，超越之前所有模型",
+                    "在HumanEval代码基准上达到67%的准确率",
+                    "在律师资格考试中得分前10%，远超GPT-3.5的后10%水平",
+                    "事实性错误率相比GPT-3.5降低了40%"
+                ],
+                methodology: [
+                    "基于Transformer架构，进行大规模无监督预训练",
+                    "使用人类反馈强化学习（RLHF）进行对齐训练",
+                    "采用Red Team评估来识别和减轻安全风险",
+                    "构建了专门的评估体系，覆盖安全性、事实性、能力等多个维度"
+                ],
+                implications: [
+                    "大模型已经具备解决复杂专业任务的能力，可应用于法律、医疗、教育等领域",
+                    "多模态能力拓展了AI的应用场景，可处理图像理解、图表分析等任务",
+                    "对齐技术的进步使得大模型输出更符合人类预期，降低了使用风险",
+                    "上下文窗口扩展使得长文档处理、代码生成等任务效果显著提升"
+                ]
+            },
+            "2205.14135": {
+                id: "2205.14135",
+                title: "Training language models to follow instructions with human feedback",
+                authors: "OpenAI",
+                date: "2022-03-04",
+                abstract: "Making language models bigger does not inherently make them better at following a user's intent. For example, large language models can generate outputs that are untruthful, toxic, or simply not helpful to the user. In other words, these models are not aligned with their users. In this paper, we show an avenue for aligning language models with user intent on a wide range of tasks by fine-tuning with human feedback. Starting with a set of labeler-written demonstrations of the desired behavior on prompts submitted to the OpenAI API, we fine-tune GPT-3 using supervised learning. We then collect a dataset of comparisons between two model outputs on the same prompt, ranked by labelers for which output is preferred. Using this dataset, we further fine-tune the supervised model using reinforcement learning from human feedback (RLHF). We call the resulting models InstructGPT.",
+                coreInnovation: [
+                    "首次系统性地使用人类反馈强化学习（RLHF）对齐大模型与人类意图",
+                    "提出了完整的三阶段训练流程：监督微调→奖励模型训练→RLHF微调",
+                    "证明了即使是1.3B参数的InstructGPT，效果也优于175B参数的GPT-3",
+                    "显著降低了模型输出的毒性、错误信息和无用内容"
+                ],
+                keyResults: [
+                    "在人类偏好评估中，InstructGPT的输出比GPT-3受欢迎70%以上",
+                    "1.3B InstructGPT的表现优于175B GPT-3，参数量仅为1/135",
+                    "事实性错误率降低了21%，有毒输出降低了25%",
+                    "在遵循指令方面的表现提升了60%"
+                ],
+                methodology: [
+                    "第一阶段：收集人工标注的指令-回答对，进行监督微调",
+                    "第二阶段：收集同一prompt的不同输出的人工排序数据，训练奖励模型",
+                    "第三阶段：使用PPO算法，基于奖励模型对模型进行强化学习微调",
+                    "在公共数据集和内部收集的真实用户prompt上进行全面评估"
+                ],
+                implications: [
+                    "RLHF成为大模型对齐的标准技术范式，被后续几乎所有大模型采用",
+                    "小模型通过对齐可以达到甚至超过大模型的实用效果，降低了应用成本",
+                    "对齐训练可以在不损失模型能力的前提下，大幅提升输出的安全性和有用性",
+                    "该方法直接催生了ChatGPT等对话式AI产品的出现"
+                ]
+            }
+        };
+
+        // DOM Elements
+        const arxivUrlInput = document.getElementById('arxivUrl');
+        const extractBtn = document.getElementById('extractBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const errorMessage = document.getElementById('errorMessage');
+        const result = document.getElementById('result');
+        const exampleBtns = document.querySelectorAll('.example-btn');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const newBtn = document.getElementById('newBtn');
+
+        // Example buttons
+        exampleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                arxivUrlInput.value = btn.dataset.id;
+                extractInfo();
+            });
+        });
+
+        // Extract button click
+        extractBtn.addEventListener('click', extractInfo);
+
+        // Enter key
+        arxivUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                extractInfo();
+            }
+        });
+
+        function extractInfo() {
+            const input = arxivUrlInput.value.trim();
+            if (!input) {
+                showError('请输入 arXiv 论文链接或ID');
+                return;
+            }
+
+            // Extract arXiv ID
+            let arxivId = input;
+            const match = input.match(/arxiv\.org\/abs\/([0-9]+\.[0-9]+)/);
+            if (match) {
+                arxivId = match[1];
+            }
+
+            // Validate ID format
+            if (!/^[0-9]+\.[0-9]+$/.test(arxivId)) {
+                showError('无效的 arXiv 链接或ID，请检查输入');
+                return;
+            }
+
+            // Show loading
+            loading.classList.remove('hidden');
+            error.classList.add('hidden');
+            result.classList.add('hidden');
+
+            // Simulate API call (in real implementation, this would be a fetch to backend)
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                
+                // For demo, use mock data if available, else show error
+                if (mockPapers[arxivId]) {
+                    displayPaper(mockPapers[arxivId]);
+                } else {
+                    // For demo, if not in mock data, use GPT-4 as fallback
+                    displayPaper(mockPapers["2303.08774"]);
+                    // In production, you would fetch real data here
+                    // showError('暂时无法获取该论文信息，请稍后重试或使用示例ID测试');
+                }
+            }, 2000);
+        }
+
+        function displayPaper(paper) {
+            // Fill basic info
+            document.getElementById('paperId').textContent = paper.id;
+            document.getElementById('paperDate').textContent = paper.date;
+            document.getElementById('paperTitle').textContent = paper.title;
+            document.getElementById('paperAuthors').textContent = paper.authors;
+            document.getElementById('paperAbstract').textContent = paper.abstract;
+            document.getElementById('paperLink').href = `https://arxiv.org/abs/${paper.id}`;
+
+            // Fill lists
+            fillList('coreInnovation', paper.coreInnovation);
+            fillList('keyResults', paper.keyResults);
+            fillList('methodology', paper.methodology);
+            fillList('implications', paper.implications);
+
+            // Show result
+            result.classList.remove('hidden');
+
+            // Smooth scroll to result
+            result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function fillList(elementId, items) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `
+                    <i class="fa fa-check-circle text-green-500 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700 leading-relaxed">${item}</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            error.classList.remove('hidden');
+            loading.classList.add('hidden');
+            result.classList.add('hidden');
+        }
+
+        // Copy button
+        copyBtn.addEventListener('click', () => {
+            const paperId = document.getElementById('paperId').textContent;
+            const title = document.getElementById('paperTitle').textContent;
+            const authors = document.getElementById('paperAuthors').textContent;
+            const date = document.getElementById('paperDate').textContent;
+            const abstract = document.getElementById('paperAbstract').textContent;
+            
+            const coreInnovation = Array.from(document.querySelectorAll('#coreInnovation li span')).map(el => `- ${el.textContent}`).join('\n');
+            const keyResults = Array.from(document.querySelectorAll('#keyResults li span')).map(el => `- ${el.textContent}`).join('\n');
+            const methodology = Array.from(document.querySelectorAll('#methodology li span')).map(el => `- ${el.textContent}`).join('\n');
+            const implications = Array.from(document.querySelectorAll('#implications li span')).map(el => `- ${el.textContent}`).join('\n');
+
+            const content = `# ${title}
+## 基本信息
+- **论文ID**: ${paperId}
+- **作者**: ${authors}
+- **发表日期**: ${date}
+- **原文链接**: https://arxiv.org/abs/${paperId}
+
+## 摘要
+${abstract}
+
+## 核心创新
+${coreInnovation}
+
+## 关键结果
+${keyResults}
+
+## 研究方法
+${methodology}
+
+## 实践价值
+${implications}
+`;
+
+            navigator.clipboard.writeText(content).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa fa-check"></i> <span>复制成功！</span>';
+                copyBtn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.classList.remove('bg-green-600');
+                }, 2000);
+            });
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', () => {
+            const paperId = document.getElementById('paperId').textContent;
+            const title = document.getElementById('paperTitle').textContent;
+            const authors = document.getElementById('paperAuthors').textContent;
+            const date = document.getElementById('paperDate').textContent;
+            const abstract = document.getElementById('paperAbstract').textContent;
+            
+            const coreInnovation = Array.from(document.querySelectorAll('#coreInnovation li span')).map(el => `- ${el.textContent}`).join('\n');
+            const keyResults = Array.from(document.querySelectorAll('#keyResults li span')).map(el => `- ${el.textContent}`).join('\n');
+            const methodology = Array.from(document.querySelectorAll('#methodology li span')).map(el => `- ${el.textContent}`).join('\n');
+            const implications = Array.from(document.querySelectorAll('#implications li span')).map(el => `- ${el.textContent}`).join('\n');
+
+            const content = `# ${title}
+## 基本信息
+- **论文ID**: ${paperId}
+- **作者**: ${authors}
+- **发表日期**: ${date}
+- **原文链接**: https://arxiv.org/abs/${paperId}
+
+## 摘要
+${abstract}
+
+## 核心创新
+${coreInnovation}
+
+## 关键结果
+${keyResults}
+
+## 研究方法
+${methodology}
+
+## 实践价值
+${implications}
+`;
+
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${paperId} - ${title}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // New button
+        newBtn.addEventListener('click', () => {
+            arxivUrlInput.value = '';
+            result.classList.add('hidden');
+            error.classList.add('hidden');
+            arxivUrlInput.focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

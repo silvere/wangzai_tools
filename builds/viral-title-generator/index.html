@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爆款标题生成器 🔥</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .input-section input,
+        .input-section textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-section input:focus,
+        .input-section textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-section textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .platform-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .platform-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .platform-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .platform-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .style-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .style-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .style-btn:hover {
+            border-color: #667eea;
+        }
+
+        .style-btn.active {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .title-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .title-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .title-text {
+            flex: 1;
+            font-size: 15px;
+            color: #333;
+        }
+
+        .title-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+
+        .copy-btn {
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .tips {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .tips h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .tips ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+
+        .tips li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .style-selector {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 爆款标题生成器</h1>
+            <p>10秒生成吸睛标题，让你的内容脱颖而出</p>
+        </div>
+
+        <div class="card">
+            <div class="input-section">
+                <label>选择平台</label>
+                <div class="platform-selector">
+                    <button class="platform-btn active" data-platform="xiaohongshu">小红书</button>
+                    <button class="platform-btn" data-platform="wechat">公众号</button>
+                    <button class="platform-btn" data-platform="weibo">微博</button>
+                    <button class="platform-btn" data-platform="douyin">抖音</button>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <label>输入主题或关键词</label>
+                <input type="text" id="topic" placeholder="例如：减肥、理财、职场、旅行、美食...">
+            </div>
+
+            <div class="input-section">
+                <label>补充描述（可选）</label>
+                <textarea id="description" placeholder="例如：30天瘦10斤的方法、适合新手的理财技巧..."></textarea>
+            </div>
+
+            <div class="input-section">
+                <label>选择标题风格（可多选）</label>
+                <div class="style-selector">
+                    <button class="style-btn active" data-style="number">数字型</button>
+                    <button class="style-btn active" data-style="question">疑问型</button>
+                    <button class="style-btn active" data-style="emotion">情感型</button>
+                    <button class="style-btn active" data-style="suspense">悬念型</button>
+                    <button class="style-btn active" data-style="benefit">利益型</button>
+                    <button class="style-btn active" data-style="contrast">对比型</button>
+                </div>
+            </div>
+
+            <button class="generate-btn" onclick="generateTitles()">🚀 生成爆款标题</button>
+
+            <div class="results" id="results"></div>
+
+            <div class="tips">
+                <h3>💡 爆款标题技巧</h3>
+                <ul>
+                    <li>使用具体数字（3个方法、7天见效）</li>
+                    <li>制造悬念和好奇心（你绝对不知道的...）</li>
+                    <li>突出利益点（省钱、变美、涨薪）</li>
+                    <li>加入情感共鸣（打工人必看、宝妈福利）</li>
+                    <li>使用emoji增加视觉吸引力</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlatform = 'xiaohongshu';
+        let selectedStyles = new Set(['number', 'question', 'emotion', 'suspense', 'benefit', 'contrast']);
+
+        // 平台选择
+        document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentPlatform = this.dataset.platform;
+            });
+        });
+
+        // 风格选择
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const style = this.dataset.style;
+                if (selectedStyles.has(style)) {
+                    selectedStyles.delete(style);
+                    this.classList.remove('active');
+                } else {
+                    selectedStyles.add(style);
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // 标题模板库
+        const titleTemplates = {
+            number: [
+                '{topic}的{num}个秘诀，第{num2}个太实用了！',
+                '{num}天{topic}挑战，效果惊人！',
+                '{topic}必备的{num}件事，你做到了几个？',
+                '只需{num}步，轻松搞定{topic}',
+                '{num}个{topic}技巧，让你少走{num2}年弯路'
+            ],
+            question: [
+                '为什么{topic}总是失败？原来是这个原因',
+                '{topic}真的有用吗？我试了{num}天后...',
+                '你还在为{topic}发愁吗？看完这篇就懂了',
+                '{topic}怎么做才最有效？答案在这里',
+                '关于{topic}，你是不是也有这些疑问？'
+            ],
+            emotion: [
+                '{topic}让我哭了，太真实了',
+                '作为{identity}，{topic}真的太难了',
+                '{topic}的那一刻，我破防了',
+                '终于找到{topic}的方法了，感动哭',
+                '{topic}改变了我的生活，分享给你们'
+            ],
+            suspense: [
+                '{topic}的真相，99%的人都不知道',
+                '你绝对想不到{topic}还能这样做',
+                '{topic}背后的秘密，终于被我发现了',
+                '震惊！{topic}竟然可以这样',
+                '{topic}的内幕，不看后悔一辈子'
+            ],
+            benefit: [
+                '{topic}省钱攻略，一年省下{num}万',
+                '学会{topic}，月入过万不是梦',
+                '{topic}让我{benefit}，真的太爽了',
+                '掌握{topic}，轻松{benefit}',
+                '{topic}实现{benefit}，亲测有效'
+            ],
+            contrast: [
+                '{topic}前VS{topic}后，差距太大了',
+                '别人{topic}失败，我却成功了，因为...',
+                '同样是{topic}，为什么她能成功？',
+                '{topic}的正确打开方式VS错误方式',
+                '普通人{topic} VS 高手{topic}，区别在这'
+            ]
+        };
+
+        const emojis = ['✨', '🔥', '💡', '⚡', '🎯', '💪', '🌟', '👀', '❤️', '🎉'];
+        const numbers = [3, 5, 7, 10, 15, 30];
+        const identities = ['打工人', '宝妈', '学生党', '新手', '上班族'];
+        const benefits = ['变美', '变瘦', '涨薪', '升职', '脱单', '逆袭'];
+
+        function generateTitles() {
+            const topic = document.getElementById('topic').value.trim();
+            const description = document.getElementById('description').value.trim();
+
+            if (!topic) {
+                alert('请输入主题或关键词');
+                return;
+            }
+
+            if (selectedStyles.size === 0) {
+                alert('请至少选择一种标题风格');
+                return;
+            }
+
+            const titles = [];
+            const stylesArray = Array.from(selectedStyles);
+
+            // 为每种风格生成2-3个标题
+            stylesArray.forEach(style => {
+                const templates = titleTemplates[style];
+                const count = Math.min(2, templates.length);
+                
+                for (let i = 0; i < count; i++) {
+                    const template = templates[Math.floor(Math.random() * templates.length)];
+                    const title = fillTemplate(template, topic, description);
+                    const score = calculateScore(title);
+                    titles.push({ text: title, score });
+                }
+            });
+
+            // 按分数排序
+            titles.sort((a, b) => b.score - a.score);
+
+            displayResults(titles);
+        }
+
+        function fillTemplate(template, topic, description) {
+            let result = template;
+            
+            // 替换变量
+            result = result.replace(/{topic}/g, topic);
+            result = result.replace(/{num}/g, numbers[Math.floor(Math.random() * numbers.length)]);
+            result = result.replace(/{num2}/g, numbers[Math.floor(Math.random() * numbers.length)]);
+            result = result.replace(/{identity}/g, identities[Math.floor(Math.random() * identities.length)]);
+            result = result.replace(/{benefit}/g, benefits[Math.floor(Math.random() * benefits.length)]);
+
+            // 随机添加emoji
+            if (Math.random() > 0.5) {
+                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                result = emoji + ' ' + result;
+            }
+
+            return result;
+        }
+
+        function calculateScore(title) {
+            let score = 60;
+
+            // 长度评分
+            if (title.length >= 15 && title.length <= 30) score += 10;
+            
+            // 包含数字
+            if (/\d+/.test(title)) score += 10;
+            
+            // 包含emoji
+            if (/[\u{1F300}-\u{1F9FF}]/u.test(title)) score += 5;
+            
+            // 包含感叹号或问号
+            if (/[！？!?]/.test(title)) score += 5;
+            
+            // 包含关键词
+            const keywords = ['秘诀', '技巧', '方法', '攻略', '必看', '实用', '干货'];
+            if (keywords.some(kw => title.includes(kw))) score += 10;
+
+            return Math.min(100, score);
+        }
+
+        function displayResults(titles) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3 style="margin-bottom: 15px; color: #333;">生成的标题（按吸引力排序）</h3>';
+
+            titles.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'title-item';
+                div.innerHTML = `
+                    <span class="title-text">${item.text}</span>
+                    <span class="title-score">${item.score}分</span>
+                    <button class="copy-btn" onclick="copyTitle('${item.text.replace(/'/g, "\\'")}')">复制</button>
+                `;
+                resultsDiv.appendChild(div);
+            });
+        }
+
+        function copyTitle(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('标题已复制到剪贴板！');
+            });
+        }
+    </script>
+</body>
+</html>

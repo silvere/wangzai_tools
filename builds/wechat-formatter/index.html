@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公众号排版助手 | 旺仔</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#0a0a1a;color:#e0e0e0;min-height:100vh}
+.header{text-align:center;padding:20px;border-bottom:1px solid #1e1e40}
+.header h1{font-size:1.4em;background:linear-gradient(135deg,#7c83ff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .sub{color:#666;font-size:0.85em;margin-top:4px}
+.main{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 80px)}
+.editor-pane{border-right:1px solid #1e1e40;display:flex;flex-direction:column}
+.preview-pane{display:flex;flex-direction:column;background:#1a1a2e}
+.pane-header{padding:10px 16px;background:#12122a;border-bottom:1px solid #1e1e40;display:flex;justify-content:space-between;align-items:center;font-size:0.9em;color:#888}
+.pane-header .title{color:#7c83ff;font-weight:600}
+textarea{flex:1;background:#0a0a1a;color:#d4d4d4;border:none;padding:16px;font-family:'Fira Code',Consolas,monospace;font-size:14px;line-height:1.8;resize:none;outline:none;tab-size:2}
+textarea::placeholder{color:#333}
+.preview-wrap{flex:1;overflow-y:auto;display:flex;justify-content:center;padding:20px;background:#f5f5f5}
+.wechat-preview{width:100%;max-width:375px;background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.1);padding:20px 16px;color:#333;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;font-size:15px;line-height:1.8;min-height:400px}
+.wechat-preview h1{font-size:22px;font-weight:700;color:#000;margin:16px 0 12px;line-height:1.4}
+.wechat-preview h2{font-size:18px;font-weight:700;color:#000;margin:20px 0 10px;padding-left:10px;border-left:4px solid #07c160;line-height:1.4}
+.wechat-preview h3{font-size:16px;font-weight:700;color:#333;margin:16px 0 8px}
+.wechat-preview p{margin:8px 0;color:#3f3f3f;font-size:15px;letter-spacing:0.5px}
+.wechat-preview strong{color:#07c160;font-weight:700}
+.wechat-preview em{font-style:italic;color:#666}
+.wechat-preview blockquote{background:#f7f7f7;border-left:3px solid #07c160;padding:10px 16px;margin:12px 0;color:#666;font-size:14px;border-radius:0 4px 4px 0}
+.wechat-preview ul,.wechat-preview ol{margin:8px 0 8px 20px;color:#3f3f3f}
+.wechat-preview li{margin:4px 0}
+.wechat-preview code{background:#f2f2f2;padding:2px 6px;border-radius:3px;font-size:13px;color:#c7254e;font-family:Consolas,monospace}
+.wechat-preview pre{background:#2d2d2d;color:#f8f8f2;padding:14px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:13px;line-height:1.6}
+.wechat-preview pre code{background:none;color:#f8f8f2;padding:0}
+.wechat-preview img{max-width:100%;border-radius:4px;margin:8px 0}
+.wechat-preview hr{border:none;border-top:1px dashed #ddd;margin:20px 0}
+.wechat-preview a{color:#576b95;text-decoration:none}
+.wechat-preview .wx-highlight{background:linear-gradient(to bottom,transparent 60%,rgba(7,193,96,0.2) 60%);padding:0 2px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap}
+.toolbar button{background:#1a1a3e;border:1px solid #2a2a4a;color:#aaa;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8em}
+.toolbar button:hover{border-color:#7c83ff;color:#fff}
+.style-select{background:#1a1a3e;border:1px solid #2a2a4a;color:#aaa;padding:4px 8px;border-radius:4px;font-size:0.8em}
+.copy-btn{background:#07c160!important;color:#fff!important;border-color:#07c160!important;font-weight:600}
+.copy-btn:hover{background:#06ad56!important}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#07c160;color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.templates{display:flex;gap:6px}
+.tpl-btn{background:#12122a;border:1px solid #2a2a4a;color:#888;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:0.75em}
+.tpl-btn:hover{border-color:#ff6b9d;color:#ff6b9d}
+@media(max-width:768px){.main{grid-template-columns:1fr;grid-template-rows:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>✍️ 公众号排版助手</h1>
+  <div class="sub">Markdown 写作 → 微信公众号风格预览 → 一键复制 · 旺仔出品</div>
+</div>
+<div class="main">
+  <div class="editor-pane">
+    <div class="pane-header">
+      <span class="title">📝 Markdown 编辑</span>
+      <div class="templates">
+        <button class="tpl-btn" onclick="loadTemplate('tech')">🔧 技术文</button>
+        <button class="tpl-btn" onclick="loadTemplate('story')">📖 故事</button>
+        <button class="tpl-btn" onclick="loadTemplate('list')">📋 清单体</button>
+        <button class="tpl-btn" onclick="loadTemplate('review')">🎬 影评</button>
+      </div>
+    </div>
+    <textarea id="editor" placeholder="在这里写 Markdown...&#10;&#10;支持：标题、加粗、斜体、引用、列表、代码块、分割线&#10;&#10;**加粗文字** 会显示为微信绿色强调&#10;> 引用会显示为微信风格引用框&#10;&#10;试试右边的模板按钮 →" oninput="render()"></textarea>
+  </div>
+  <div class="preview-pane">
+    <div class="pane-header">
+      <span class="title">📱 公众号预览</span>
+      <div class="toolbar">
+        <select class="style-select" id="themeSelect" onchange="render()">
+          <option value="green">微信绿</option>
+          <option value="blue">知性蓝</option>
+          <option value="orange">活力橙</option>
+          <option value="purple">优雅紫</option>
+        </select>
+        <button class="copy-btn" onclick="copyHtml()">📋 复制排版</button>
+        <button class="toolbar" onclick="copyPlain()">📄 复制纯文本</button>
+      </div>
+    </div>
+    <div class="preview-wrap">
+      <div class="wechat-preview" id="preview"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">已复制到剪贴板 ✅</div>
+
+<script>
+const THEMES = {
+  green: {accent:'#07c160',heading:'#07c160',quote:'#07c160',strong:'#07c160'},
+  blue: {accent:'#576b95',heading:'#1a73e8',quote:'#1a73e8',strong:'#1a73e8'},
+  orange: {accent:'#ff6d00',heading:'#ff6d00',quote:'#ff6d00',strong:'#e65100'},
+  purple: {accent:'#7c4dff',heading:'#7c4dff',quote:'#7c4dff',strong:'#6200ea'}
+};
+
+const TEMPLATES = {
+  tech: `# 5个让你效率翻倍的VS Code插件
+
+> 工欲善其事，必先利其器。今天分享几个我每天都在用的神器。
+
+## 1. GitHub Copilot
+
+**AI 结对编程**的天花板，写代码的速度直接翻倍。
+
+它不只是自动补全，更像一个懂你意图的搭档。你写注释，它写代码；你写函数名，它补逻辑。
+
+\`\`\`python
+# 计算斐波那契数列
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+\`\`\`
+
+## 2. Error Lens
+
+把错误信息**直接显示在代码行内**，不用再盯着底部面板了。
+
+---
+
+*你最常用的插件是什么？评论区聊聊 👇*`,
+
+  story: `# 那个深夜加班的程序员，后来怎样了
+
+> "代码改变世界"，他曾经深信不疑。
+
+凌晨两点，办公室只剩下键盘的敲击声和咖啡机的嗡鸣。
+
+**小李**盯着屏幕上密密麻麻的日志，第三杯美式已经凉透了。这个 bug 他追了整整两天，像是在迷宫里打转。
+
+"要不明天再说？"旁边的工位早已空无一人。
+
+他摇了摇头，指尖继续在键盘上飞舞。不是因为 deadline，而是因为——
+
+**他就是想搞明白。**
+
+---
+
+三个月后，那个 bug 修复方案被写进了团队的最佳实践文档。而小李，已经在准备他的第一次技术分享。
+
+> 热爱，是最好的老师。不是每个深夜都有意义，但每个坚持都值得尊重。`,
+
+  list: `# 2026年值得关注的10个AI趋势
+
+> 这一年，AI 不再是概念，而是基础设施。
+
+## 🔥 趋势一览
+
+1. **Agent 成为主流** — 从聊天机器人到能干活的智能体
+2. **多模态融合** — 文字、图片、视频、代码，一个模型全搞定
+3. **端侧AI爆发** — 手机上跑大模型不再是梦
+4. **AI编程普及** — 50%的代码由AI辅助生成
+5. **开源追赶闭源** — DeepSeek、Qwen 等持续缩小差距
+
+---
+
+## 💡 我的判断
+
+最大的变化不是技术本身，而是**人和AI协作方式**的转变。
+
+未来不是"AI取代人"，而是"会用AI的人取代不会用的人"。
+
+> 你觉得哪个趋势影响最大？欢迎留言讨论 👇`,
+
+  review: `# 《流浪地球3》：中国科幻的又一次突破
+
+> ⭐⭐⭐⭐⭐ 年度必看
+
+## 不剧透短评
+
+一句话：**这不只是一部电影，这是一次文明级别的思考。**
+
+导演郭帆用了4年时间，交出了一份让人窒息的答卷。从第一帧到最后一帧，你能感受到每一分钱都花在了刀刃上。
+
+## 三个亮点
+
+1. **视觉奇观** — 太空电梯的长镜头，值回票价
+2. **情感内核** — 科幻的外壳下，讲的是选择与牺牲
+3. **硬核设定** — 终于有人认真对待"科"这个字了
+
+## 一个遗憾
+
+节奏在中段略有拖沓，但瑕不掩瑜。
+
+---
+
+*推荐 IMAX 观看，普通厅会损失至少30%的震撼感。*`
+};
+
+function loadTemplate(key) {
+  document.getElementById('editor').value = TEMPLATES[key];
+  render();
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function render() {
+  const md = document.getElementById('editor').value;
+  const theme = THEMES[document.getElementById('themeSelect').value];
+  let html = parseMd(md, theme);
+  document.getElementById('preview').innerHTML = html;
+  // Apply theme colors dynamically
+  document.querySelectorAll('.wechat-preview h2').forEach(el => {
+    el.style.borderLeftColor = theme.heading;
+  });
+  document.querySelectorAll('.wechat-preview strong').forEach(el => {
+    el.style.color = theme.strong;
+  });
+  document.querySelectorAll('.wechat-preview blockquote').forEach(el => {
+    el.style.borderLeftColor = theme.quote;
+  });
+}
+
+function parseMd(md, theme) {
+  let lines = md.split('\n');
+  let html = '';
+  let inCode = false;
+  let codeBlock = '';
+  let codeLang = '';
+  let inList = false;
+  let listType = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Code block
+    if (line.trim().startsWith('```')) {
+      if (inCode) {
+        html += '<pre><code>' + escapeHtml(codeBlock.trim()) + '</code></pre>';
+        inCode = false;
+        codeBlock = '';
+        continue;
+      } else {
+        if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+        inCode = true;
+        codeLang = line.trim().slice(3);
+        continue;
+      }
+    }
+    if (inCode) { codeBlock += line + '\n'; continue; }
+
+    // Empty line
+    if (line.trim() === '') {
+      if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+      continue;
+    }
+
+    // HR
+    if (/^---+$/.test(line.trim())) {
+      if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+      html += '<hr>';
+      continue;
+    }
+
+    // Headings
+    if (line.startsWith('# ')) {
+      if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+      html += '<h1>' + inline(line.slice(2)) + '</h1>';
+      continue;
+    }
+    if (line.startsWith('## ')) {
+      if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+      html += '<h2>' + inline(line.slice(3)) + '</h2>';
+      continue;
+    }
+    if (line.startsWith('### ')) {
+      if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+      html += '<h3>' + inline(line.slice(4)) + '</h3>';
+      continue;
+    }
+
+    // Blockquote
+    if (line.startsWith('> ')) {
+      if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+      html += '<blockquote>' + inline(line.slice(2)) + '</blockquote>';
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*] /.test(line.trim())) {
+      if (!inList || listType !== 'ul') {
+        if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+        html += '<ul>';
+        inList = true;
+        listType = 'ul';
+      }
+      html += '<li>' + inline(line.trim().slice(2)) + '</li>';
+      continue;
+    }
+
+    // Ordered list
+    if (/^\d+\. /.test(line.trim())) {
+      if (!inList || listType !== 'ol') {
+        if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+        html += '<ol>';
+        inList = true;
+        listType = 'ol';
+      }
+      html += '<li>' + inline(line.trim().replace(/^\d+\. /, '')) + '</li>';
+      continue;
+    }
+
+    // Paragraph
+    if (inList) { html += listType === 'ul' ? '</ul>' : '</ol>'; inList = false; }
+    html += '<p>' + inline(line) + '</p>';
+  }
+
+  if (inCode) html += '<pre><code>' + escapeHtml(codeBlock.trim()) + '</code></pre>';
+  if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+  return html;
+}
+
+function inline(text) {
+  // Bold
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code
+  text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+  // Links
+  text = text.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+  // Emoji shortcuts
+  return text;
+}
+
+function copyHtml() {
+  const preview = document.getElementById('preview');
+  const range = document.createRange();
+  range.selectNodeContents(preview);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  document.execCommand('copy');
+  sel.removeAllRanges();
+  showToast('排版已复制，直接粘贴到公众号编辑器 ✅');
+}
+
+function copyPlain() {
+  const text = document.getElementById('editor').value;
+  navigator.clipboard.writeText(text);
+  showToast('纯文本已复制 ✅');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// Load default template
+loadTemplate('tech');
+</script>
+</body>
+</html>

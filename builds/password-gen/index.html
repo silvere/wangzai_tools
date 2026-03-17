@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>密码生成器 🔐</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--card:#12122a;--border:#1e1e40;--text:#e0e0e0;--dim:#888;--accent:#7c83ff;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--gold:#d4a853}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+.container{max-width:560px;width:100%}
+.header{text-align:center;padding:20px 0 16px}
+.header h1{font-size:1.6em;color:#fff}
+.header .sub{color:var(--dim);font-size:0.85em;margin-top:4px}
+.pw-display{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;position:relative}
+.pw-text{font-family:'SF Mono',Monaco,'Cascadia Code',monospace;font-size:1.2em;word-break:break-all;line-height:1.6;min-height:1.6em;letter-spacing:1px}
+.pw-text .ch-upper{color:#60a5fa}
+.pw-text .ch-lower{color:var(--text)}
+.pw-text .ch-num{color:var(--green)}
+.pw-text .ch-sym{color:var(--gold)}
+.pw-actions{display:flex;gap:8px;margin-top:12px}
+.pw-actions button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.85em;cursor:pointer;transition:all 0.2s}
+.pw-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.pw-actions .gen-btn{background:linear-gradient(135deg,var(--accent),#5a5fd6);border:none;color:#fff;font-weight:600}
+.pw-actions .gen-btn:hover{opacity:0.9}
+.strength-bar{height:6px;background:var(--border);border-radius:3px;margin-top:10px;overflow:hidden}
+.strength-fill{height:100%;border-radius:3px;transition:width 0.3s,background 0.3s}
+.strength-label{display:flex;justify-content:space-between;margin-top:6px;font-size:0.78em}
+.strength-text{font-weight:600}
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.section-title{font-size:0.9em;font-weight:600;color:var(--dim);margin-bottom:12px}
+.option-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.option-row:last-child{border:none}
+.option-row label{font-size:0.9em;cursor:pointer;display:flex;align-items:center;gap:8px}
+.option-row .val{color:var(--accent);font-weight:600;font-size:0.9em;min-width:32px;text-align:right}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;background:var(--border);border-radius:3px;outline:none;flex:1;margin:0 12px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:pointer}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:0.2s}
+.toggle .slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:0.2s}
+.toggle input:checked+.slider{background:var(--accent)}
+.toggle input:checked+.slider::before{transform:translateX(20px)}
+.range-row{display:flex;align-items:center;gap:0}
+.mode-tabs{display:flex;gap:8px;margin-bottom:12px}
+.mode-tab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--dim);font-size:0.85em;cursor:pointer;text-align:center;transition:all 0.2s}
+.mode-tab:hover{border-color:var(--accent);color:var(--accent)}
+.mode-tab.active{background:rgba(124,131,255,0.12);border-color:var(--accent);color:var(--accent)}
+.bulk-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.bulk-item{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.2);border-radius:8px;padding:8px 12px;font-family:monospace;font-size:0.85em;cursor:pointer;transition:background 0.2s}
+.bulk-item:hover{background:rgba(124,131,255,0.08)}
+.bulk-item .idx{color:var(--dim);font-size:0.75em;min-width:20px}
+.bulk-item .pw{flex:1;word-break:break-all}
+.bulk-item .copy-icon{color:var(--dim);font-size:0.8em}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:var(--green);padding:10px 20px;border-radius:8px;font-size:0.9em;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+.tips{font-size:0.78em;color:var(--dim);line-height:1.6;margin-top:8px}
+.footer{text-align:center;padding:16px 0;color:#444;font-size:0.8em}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🔐 密码生成器</h1>
+    <div class="sub">安全随机 · 本地生成 · 不联网</div>
+  </div>
+
+  <div class="mode-tabs">
+    <div class="mode-tab active" onclick="setMode('password')">🔑 密码</div>
+    <div class="mode-tab" onclick="setMode('passphrase')">📝 口令短语</div>
+    <div class="mode-tab" onclick="setMode('memorable')">🧠 中文助记</div>
+    <div class="mode-tab" onclick="setMode('pin')">🔢 PIN</div>
+  </div>
+
+  <div class="pw-display">
+    <div class="pw-text" id="pwDisplay"></div>
+    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+    <div class="strength-label">
+      <span id="strengthText" class="strength-text"></span>
+      <span id="entropyText" style="color:var(--dim)"></span>
+    </div>
+    <div class="pw-actions">
+      <button class="gen-btn" onclick="generate()">🎲 生成</button>
+      <button onclick="copyPw()">📋 复制</button>
+      <button onclick="generateBulk()">📦 批量(5)</button>
+    </div>
+  </div>
+
+  <div id="bulkArea"></div>
+
+  <div class="section" id="pwOptions">
+    <div class="section-title">⚙️ 密码选项</div>
+    <div class="option-row">
+      <span>长度</span>
+      <div class="range-row" style="flex:1">
+        <input type="range" id="lenSlider" min="4" max="64" value="16" oninput="updateLen()">
+        <span class="val" id="lenVal">16</span>
+      </div>
+    </div>
+    <div class="option-row">
+      <label for="optUpper">ABC 大写字母</label>
+      <label class="toggle"><input type="checkbox" id="optUpper" checked onchange="generate()"><span class="slider"></span></label>
+    </div>
+    <div class="option-row">
+      <label for="optLower">abc 小写字母</label>
+      <label class="toggle"><input type="checkbox" id="optLower" checked onchange="generate()"><span class="slider"></span></label>
+    </div>
+    <div class="option-row">
+      <label for="optNum">123 数字</label>
+      <label class="toggle"><input type="checkbox" id="optNum" checked onchange="generate()"><span class="slider"></span></label>
+    </div>
+    <div class="option-row">
+      <label for="optSym">!@# 符号</label>
+      <label class="toggle"><input type="checkbox" id="optSym" checked onchange="generate()"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div class="section" id="ppOptions" style="display:none">
+    <div class="section-title">⚙️ 口令短语选项</div>
+    <div class="option-row">
+      <span>词数</span>
+      <div class="range-row" style="flex:1">
+        <input type="range" id="wordSlider" min="3" max="8" value="4" oninput="updateWordCount()">
+        <span class="val" id="wordVal">4</span>
+      </div>
+    </div>
+    <div class="option-row">
+      <label for="optSep">分隔符</label>
+      <select id="optSep" onchange="generate()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px">
+        <option value="-">- 横线</option>
+        <option value=".">. 点</option>
+        <option value="_">_ 下划线</option>
+        <option value=" ">空格</option>
+        <option value="">无</option>
+      </select>
+    </div>
+    <div class="option-row">
+      <label for="optCapitalize">首字母大写</label>
+      <label class="toggle"><input type="checkbox" id="optCapitalize" checked onchange="generate()"><span class="slider"></span></label>
+    </div>
+    <div class="option-row">
+      <label for="optAddNum">附加数字</label>
+      <label class="toggle"><input type="checkbox" id="optAddNum" checked onchange="generate()"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div class="section" id="pinOptions" style="display:none">
+    <div class="section-title">⚙️ PIN 选项</div>
+    <div class="option-row">
+      <span>位数</span>
+      <div class="range-row" style="flex:1">
+        <input type="range" id="pinSlider" min="4" max="12" value="6" oninput="updatePinLen()">
+        <span class="val" id="pinVal">6</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="memorableOptions" style="display:none">
+    <div class="section-title">⚙️ 中文助记选项</div>
+    <div class="option-row">
+      <span>方式</span>
+      <select id="memMethod" onchange="generate()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px">
+        <option value="phrase">句子首字母法</option>
+        <option value="pinyin">拼音缩写法</option>
+        <option value="story">故事联想法</option>
+      </select>
+    </div>
+    <div class="tips" style="margin-top:4px">生成密码的同时给出中文记忆口诀，安全又好记</div>
+  </div>
+
+  <div id="mnemonicArea" style="display:none">
+    <div class="section" style="border-color:var(--gold)">
+      <div class="section-title" style="color:var(--gold)">🧠 记忆口诀</div>
+      <div id="mnemonicText" style="font-size:1em;line-height:1.8"></div>
+      <div id="mnemonicExplain" style="font-size:0.8em;color:var(--dim);margin-top:8px;line-height:1.6"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💡 安全提示</div>
+    <div class="tips">
+      · 密码在浏览器本地生成，不会发送到任何服务器<br>
+      · 建议使用 16 位以上包含大小写+数字+符号的密码<br>
+      · 不同网站使用不同密码，配合密码管理器使用<br>
+      · 口令短语更容易记忆，4 个词以上安全性就很高
+    </div>
+  </div>
+
+  <div class="footer">🥛 旺仔出品 · 密码生成器 · 100% 本地运行</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const WORDS=['alpha','brave','cloud','delta','eagle','flame','grace','haven','ivory','jewel','karma','lunar','maple','noble','ocean','pearl','quest','river','solar','tiger','ultra','vivid','whale','xenon','yield','zephyr','amber','blaze','coral','drift','ember','frost','gleam','haste','index','jolly','knack','lemon','mirth','nexus','orbit','prism','quilt','ridge','storm','torch','unity','vault','woven','pixel','cyber','logic','swift','spark','bloom','crest','forge','glint','hover','joust','kneel','lance','mocha','nerve','oasis','plume','quota','reign','shade','thorn','umbra','vigor','waltz','axiom','brisk','charm','dwell','epoch','flint','glyph','heron','inlet','jazzy','kiosk','lyric','mango','niche','optic','plank','quirk','roost','spire','trove','usher','venom','whirl','xerox','yacht','zebra'];
+
+// 中文助记素材
+const CN_PHRASES=[
+  {phrase:'天上星星亮晶晶',pw:'Tsxljj@88',explain:'天(T)上(s)星(x)星(x)亮(l)晶(j)晶(j) + @88'},
+  {phrase:'春风吹过小河边',pw:'Cfcg#xhb1',explain:'春(C)风(f)吹(c)过(g) + # + 小(x)河(h)边(b)1'},
+  {phrase:'今天天气真不错',pw:'Jttq&zbc5',explain:'今(J)天(t)天(t)气(q) + & + 真(z)不(b)错(c)5'},
+  {phrase:'大鱼吃小鱼小鱼吃虾米',pw:'Dycxy$xycxm',explain:'大(D)鱼(y)吃(c)小(x)鱼(y) + $ + 小(x)鱼(y)吃(c)虾(x)米(m)'},
+  {phrase:'早起的鸟儿有虫吃',pw:'Zqdne#ycc7',explain:'早(Z)起(q)的(d)鸟(n)儿(e) + # + 有(y)虫(c)吃(c)7'},
+  {phrase:'千里之行始于足下',pw:'Qlzx@syzx3',explain:'千(Q)里(l)之(z)行(x) + @ + 始(s)于(y)足(z)下(x)3'},
+  {phrase:'好好学习天天向上',pw:'Hhxx!ttxs9',explain:'好(H)好(h)学(x)习(x) + ! + 天(t)天(t)向(x)上(s)9'},
+  {phrase:'世上无难事只怕有心人',pw:'Sswns$zpyxr',explain:'世(S)上(s)无(w)难(n)事(s) + $ + 只(z)怕(p)有(y)心(x)人(r)'},
+  {phrase:'不经一番寒彻骨怎得梅花扑鼻香',pw:'Bjyf&hcg#zdmhpbx',explain:'不(B)经(j)一(y)番(f) + & + 寒(h)彻(c)骨(g) + # + 怎(z)得(d)梅(m)花(h)扑(p)鼻(b)香(x)'},
+  {phrase:'山不在高有仙则名',pw:'Sbzg@yxzm6',explain:'山(S)不(b)在(z)高(g) + @ + 有(y)仙(x)则(z)名(m)6'},
+  {phrase:'海内存知己天涯若比邻',pw:'Hnczj!tyrbl',explain:'海(H)内(n)存(c)知(z)己(j) + ! + 天(t)涯(y)若(r)比(b)邻(l)'},
+  {phrase:'路漫漫其修远兮',pw:'Lmmq#xyuxi2',explain:'路(L)漫(m)漫(m)其(q) + # + 修(x)远(y)兮(xi)2'},
+];
+const CN_PINYIN=[
+  {words:['快乐','编程','每一天'],pw:'KuaLe#BianCheng@m1t',explain:'快乐(KuaLe) + # + 编程(BianCheng) + @ + 每1天(m1t)'},
+  {words:['阳光','灿烂','好心情'],pw:'YgCr!Hxq2026',explain:'阳光(Yg) + 灿烂(Cr) + ! + 好心情(Hxq) + 2026'},
+  {words:['代码','改变','世界'],pw:'DaiMa$GaiBian#ShiJie',explain:'代码(DaiMa) + $ + 改变(GaiBian) + # + 世界(ShiJie)'},
+  {words:['星辰','大海','梦想'],pw:'XcDh@Mx666',explain:'星辰(Xc) + 大海(Dh) + @ + 梦想(Mx) + 666'},
+  {words:['咖啡','代码','深夜'],pw:'KaFei!DaiMa#ShenYe',explain:'咖啡(KaFei) + ! + 代码(DaiMa) + # + 深夜(ShenYe)'},
+  {words:['春天','花开','满园'],pw:'ChunTian$HuaKai@ManYuan',explain:'春天(ChunTian) + $ + 花开(HuaKai) + @ + 满园(ManYuan)'},
+  {words:['勇敢','追梦','少年'],pw:'YongGan!ZhuiMeng#ShaoNian',explain:'勇敢(YongGan) + ! + 追梦(ZhuiMeng) + # + 少年(ShaoNian)'},
+  {words:['月亮','弯弯','照九州'],pw:'YueLiang$WanWan@z9z',explain:'月亮(YueLiang) + $ + 弯弯(WanWan) + @ + 照9州(z9z)'},
+];
+const CN_STORIES=[
+  {story:'一只🐱猫坐在3楼窗台看🌙月亮',pw:'1zMzz3lct#kYl',explain:'1只(z)猫(M)坐(z)在(z)3楼(l)窗(c)台(t) + # + 看(k)月(Y)亮(l)'},
+  {story:'小明买了5个🍎苹果花了8块钱',pw:'Xmml5g#Pg&hl8kq',explain:'小(X)明(m)买(m)了(l)5个(g) + # + 苹(P)果(g) + & + 花(h)了(l)8块(k)钱(q)'},
+  {story:'下午3点☕喝咖啡写了200行代码',pw:'Xw3d@hKf#xl200hDm',explain:'下(X)午(w)3点(d) + @ + 喝(h)咖(K)啡(f) + # + 写(x)了(l)200行(h)代(D)码(m)'},
+  {story:'7个🧑‍💻程序员在2楼开会讨论Bug',pw:'7gCxy@z2l#khTlBug',explain:'7个(g)程(C)序(x)员(y) + @ + 在(z)2楼(l) + # + 开(k)会(h)讨(T)论(l)Bug'},
+  {story:'周末和2个朋友去🏔️爬山走了10公里',pw:'Zmh2gPy@qPs#zl10gl',explain:'周(Z)末(m)和(h)2个(g)朋(P)友(y) + @ + 去(q)爬(P)山(s) + # + 走(z)了(l)10公(g)里(l)'},
+  {story:'早上6点起床跑了🏃5公里然后吃🥐面包',pw:'Zs6d@qcPl5gl#rhcMb',explain:'早(Z)上(s)6点(d) + @ + 起(q)床(c)跑(P)了(l)5公(g)里(l) + # + 然(r)后(h)吃(c)面(M)包(b)'},
+];
+
+let currentMode='password',currentPw='',currentMnemonic=null;
+
+function setMode(m){
+  currentMode=m;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mode-tab')[['password','passphrase','memorable','pin'].indexOf(m)].classList.add('active');
+  document.getElementById('pwOptions').style.display=m==='password'?'block':'none';
+  document.getElementById('ppOptions').style.display=m==='passphrase'?'block':'none';
+  document.getElementById('memorableOptions').style.display=m==='memorable'?'block':'none';
+  document.getElementById('pinOptions').style.display=m==='pin'?'block':'none';
+  generate();
+}
+
+function secureRandom(max){
+  const arr=new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0]%max;
+}
+
+function generatePassword(){
+  const len=parseInt(document.getElementById('lenSlider').value);
+  let chars='';
+  if(document.getElementById('optUpper').checked)chars+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if(document.getElementById('optLower').checked)chars+='abcdefghijklmnopqrstuvwxyz';
+  if(document.getElementById('optNum').checked)chars+='0123456789';
+  if(document.getElementById('optSym').checked)chars+='!@#$%^&*()_+-=[]{}|;:,.<>?';
+  if(!chars)chars='abcdefghijklmnopqrstuvwxyz';
+  let pw='';
+  for(let i=0;i<len;i++)pw+=chars[secureRandom(chars.length)];
+  return pw;
+}
+
+function generatePassphrase(){
+  const count=parseInt(document.getElementById('wordSlider').value);
+  const sep=document.getElementById('optSep').value;
+  const cap=document.getElementById('optCapitalize').checked;
+  const addNum=document.getElementById('optAddNum').checked;
+  let words=[];
+  for(let i=0;i<count;i++){
+    let w=WORDS[secureRandom(WORDS.length)];
+    if(cap)w=w[0].toUpperCase()+w.slice(1);
+    words.push(w);
+  }
+  let result=words.join(sep);
+  if(addNum)result+=secureRandom(100);
+  return result;
+}
+
+function generatePin(){
+  const len=parseInt(document.getElementById('pinSlider').value);
+  let pin='';
+  for(let i=0;i<len;i++)pin+=secureRandom(10);
+  return pin;
+}
+
+function generateMemorable(){
+  const method=document.getElementById('memMethod').value;
+  let pool,item;
+  if(method==='phrase'){pool=CN_PHRASES}
+  else if(method==='pinyin'){pool=CN_PINYIN}
+  else{pool=CN_STORIES}
+  item=pool[secureRandom(pool.length)];
+  currentMnemonic=item;
+  return item.pw;
+}
+
+function generate(){
+  currentMnemonic=null;
+  if(currentMode==='password')currentPw=generatePassword();
+  else if(currentMode==='passphrase')currentPw=generatePassphrase();
+  else if(currentMode==='memorable')currentPw=generateMemorable();
+  else currentPw=generatePin();
+  renderPw();
+  renderMnemonic();
+  document.getElementById('bulkArea').innerHTML='';
+}
+
+function renderPw(){
+  const el=document.getElementById('pwDisplay');
+  el.innerHTML=currentPw.split('').map(ch=>{
+    let cls='ch-lower';
+    if(/[A-Z]/.test(ch))cls='ch-upper';
+    else if(/[0-9]/.test(ch))cls='ch-num';
+    else if(/[^a-zA-Z0-9]/.test(ch))cls='ch-sym';
+    return `<span class="${cls}">${ch==='<'?'&lt;':ch==='>'?'&gt;':ch}</span>`;
+  }).join('');
+  updateStrength();
+}
+
+function updateStrength(){
+  let poolSize=0;
+  if(currentMode==='password'){
+    if(/[a-z]/.test(currentPw))poolSize+=26;
+    if(/[A-Z]/.test(currentPw))poolSize+=26;
+    if(/[0-9]/.test(currentPw))poolSize+=10;
+    if(/[^a-zA-Z0-9]/.test(currentPw))poolSize+=30;
+  }else if(currentMode==='passphrase'){
+    poolSize=WORDS.length;
+    const wordCount=parseInt(document.getElementById('wordSlider').value);
+    const entropy=Math.log2(Math.pow(poolSize,wordCount));
+    showStrength(entropy);return;
+  }else{
+    poolSize=10;
+  }
+  const entropy=currentPw.length*Math.log2(poolSize||1);
+  showStrength(entropy);
+}
+
+function showStrength(entropy){
+  const fill=document.getElementById('strengthFill');
+  const text=document.getElementById('strengthText');
+  const ent=document.getElementById('entropyText');
+  const pct=Math.min(entropy/128*100,100);
+  let color,label;
+  if(entropy<28){color='var(--red)';label='⚠️ 极弱';}
+  else if(entropy<36){color='var(--red)';label='🔴 弱';}
+  else if(entropy<60){color='var(--yellow)';label='🟡 一般';}
+  else if(entropy<80){color='var(--green)';label='🟢 强';}
+  else{color='var(--accent)';label='🛡️ 极强';}
+  fill.style.width=pct+'%';fill.style.background=color;
+  text.textContent=label;text.style.color=color;
+  ent.textContent=Math.round(entropy)+' bits 熵';
+}
+
+function copyPw(){
+  navigator.clipboard.writeText(currentPw).then(()=>showToast('✅ 已复制到剪贴板'));
+}
+
+function generateBulk(){
+  const list=[];
+  for(let i=0;i<5;i++){
+    if(currentMode==='password')list.push(generatePassword());
+    else if(currentMode==='passphrase')list.push(generatePassphrase());
+    else if(currentMode==='memorable')list.push(generateMemorable());
+    else list.push(generatePin());
+  }
+  document.getElementById('bulkArea').innerHTML=`<div class="section"><div class="section-title">📦 批量生成</div><div class="bulk-list">${list.map((pw,i)=>`<div class="bulk-item" onclick="navigator.clipboard.writeText('${pw.replace(/'/g,"\\'")}').then(()=>showToast('✅ 已复制 #${i+1}'))"><span class="idx">#${i+1}</span><span class="pw">${pw}</span><span class="copy-icon">📋</span></div>`).join('')}</div></div>`;
+}
+
+function renderMnemonic(){
+  const area=document.getElementById('mnemonicArea');
+  if(!currentMnemonic||currentMode!=='memorable'){area.style.display='none';return}
+  area.style.display='block';
+  const method=document.getElementById('memMethod').value;
+  let mainText='',explainText='';
+  if(method==='phrase'){
+    mainText='📜 "'+currentMnemonic.phrase+'"';
+    explainText='取每个字的拼音首字母，穿插符号和数字：'+currentMnemonic.explain;
+  }else if(method==='pinyin'){
+    mainText='🔤 '+currentMnemonic.words.join(' + ');
+    explainText='用拼音全拼或缩写拼接，穿插符号：'+currentMnemonic.explain;
+  }else{
+    mainText='📖 '+currentMnemonic.story;
+    explainText='从故事中提取关键字首字母+数字：'+currentMnemonic.explain;
+  }
+  document.getElementById('mnemonicText').textContent=mainText;
+  document.getElementById('mnemonicExplain').textContent=explainText;
+}
+
+function updateLen(){document.getElementById('lenVal').textContent=document.getElementById('lenSlider').value;generate()}
+function updateWordCount(){document.getElementById('wordVal').textContent=document.getElementById('wordSlider').value;generate()}
+function updatePinLen(){document.getElementById('pinVal').textContent=document.getElementById('pinSlider').value;generate()}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
+
+generate();
+</script>
+</body>
+</html>

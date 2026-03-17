@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式测试工具 🔍</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5E9',
+                        secondary: '#8B5CF6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .highlight-match {
+                background: linear-gradient(120deg, rgba(14, 165, 233, 0.2), rgba(139, 92, 246, 0.2));
+                border-bottom: 2px solid #0EA5E9;
+                animation: highlightPulse 0.3s ease;
+            }
+            @keyframes highlightPulse {
+                0% { background-color: rgba(14, 165, 233, 0.4); }
+                100% { background-color: rgba(14, 165, 233, 0.2); }
+            }
+            .syntax-error {
+                animation: shake 0.3s ease-in-out;
+            }
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                正则表达式测试工具 <span class="text-3xl">🔍</span>
+            </h1>
+            <p class="text-gray-600 text-lg mb-6">实时测试正则表达式，高亮匹配结果，支持捕获分组，内置常用正则模板</p>
+            
+            <!-- 快捷操作 -->
+            <div class="flex flex-wrap gap-4 justify-center mb-6">
+                <button id="loadSampleBtn" class="bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-file-text-o mr-2"></i> 加载示例
+                </button>
+                <button id="clearBtn" class="bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow">
+                    <i class="fa fa-trash-o mr-2"></i> 清空
+                </button>
+            </div>
+        </header>
+
+        <!-- 正则输入区域 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <i class="fa fa-code text-blue-600"></i> 正则表达式
+                    </label>
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">/</div>
+                        <input type="text" id="regexInput" class="w-full pl-8 pr-24 py-3 border-2 border-gray-200 rounded-xl font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder="输入正则表达式，例如: \w+@\w+\.\w+" value="">
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <span class="text-gray-500 font-mono">/</span>
+                            <div class="flex gap-1">
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" id="flagG" checked class="w-4 h-4 text-blue-600">
+                                    <span class="text-xs text-gray-600">g</span>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" id="flagI" class="w-4 h-4 text-blue-600">
+                                    <span class="text-xs text-gray-600">i</span>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" id="flagM" class="w-4 h-4 text-blue-600">
+                                    <span class="text-xs text-gray-600">m</span>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" id="flagS" class="w-4 h-4 text-blue-600">
+                                    <span class="text-xs text-gray-600">s</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="w-full md:w-auto flex items-end">
+                    <button id="testBtn" class="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                        <i class="fa fa-play"></i> 测试匹配
+                    </button>
+                </div>
+            </div>
+            
+            <div id="regexError" class="hidden mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <i class="fa fa-exclamation-circle mr-2"></i>
+                <span id="errorMessage">正则表达式语法错误</span>
+            </div>
+        </div>
+
+        <!-- 测试文本和结果区域 -->
+        <div class="grid lg:grid-cols-2 gap-6 mb-8">
+            <!-- 测试文本输入 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-pencil text-blue-600"></i> 测试文本
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500" id="textStats">0 字符</span>
+                        <button id="pasteBtn" class="text-blue-600 hover:text-blue-800 transition-all" title="粘贴">
+                            <i class="fa fa-paste"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea id="testText" class="w-full h-[400px] p-4 border-2 border-gray-200 rounded-xl font-mono text-sm resize-none focus:border-blue-500 focus:outline-none" placeholder="在此输入要测试的文本..."></textarea>
+            </div>
+
+            <!-- 匹配结果 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-list-alt text-purple-600"></i> 匹配结果
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-500" id="matchCount">找到 0 个匹配项</span>
+                        <button id="copyMatchesBtn" class="text-blue-600 hover:text-blue-800 transition-all" title="复制所有匹配">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="resultContainer" class="h-[400px] overflow-y-auto border-2 border-gray-200 rounded-xl p-4 font-mono text-sm">
+                    <div id="resultPlaceholder" class="text-center py-16 text-gray-400">
+                        <i class="fa fa-search text-4xl mb-3"></i>
+                        <p>输入正则表达式和测试文本后点击测试按钮</p>
+                        <p class="text-sm mt-2">匹配结果将在这里高亮显示</p>
+                    </div>
+                    <div id="highlightResult" class="hidden whitespace-pre-wrap"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 捕获分组和详情 -->
+        <div class="grid lg:grid-cols-2 gap-6 mb-8">
+            <!-- 捕获分组 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-cubes text-green-600"></i> 捕获分组
+                </h3>
+                <div id="groupsContainer" class="max-h-[300px] overflow-y-auto">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fa fa-cubes text-4xl mb-3"></i>
+                        <p>匹配后将显示捕获的分组内容</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 匹配详情 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-info-circle text-orange-600"></i> 匹配详情
+                </h3>
+                <div id="detailsContainer" class="max-h-[300px] overflow-y-auto">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fa fa-info-circle text-4xl mb-3"></i>
+                        <p>匹配后将显示详细匹配信息</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 常用正则模板 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-bookmark text-blue-600"></i> 常用正则模板
+                </h3>
+                <div class="flex gap-2">
+                    <input type="text" id="templateSearch" class="border-2 border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 focus:outline-none" placeholder="搜索模板...">
+                </div>
+            </div>
+            
+            <div id="templatesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 模板将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 正则语法速查 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <i class="fa fa-book text-purple-600"></i> 正则语法速查
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold text-sm text-gray-700 mb-2">基本元字符</h4>
+                    <div class="space-y-1 text-xs text-gray-600 font-mono">
+                        <div><code>.</code> 匹配任意字符</div>
+                        <div><code>\w</code> 字母/数字/下划线</div>
+                        <div><code>\d</code> 数字</div>
+                        <div><code>\s</code> 空白字符</div>
+                        <div><code>\b</code> 单词边界</div>
+                        <div><code>^</code> 行开始</div>
+                        <div><code>$</code> 行结束</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold text-sm text-gray-700 mb-2">量词</h4>
+                    <div class="space-y-1 text-xs text-gray-600 font-mono">
+                        <div><code>*</code> 零次或多次</div>
+                        <div><code>+</code> 一次或多次</div>
+                        <div><code>?</code> 零次或一次</div>
+                        <div><code>{n}</code> 恰好n次</div>
+                        <div><code>{n,}</code> 至少n次</div>
+                        <div><code>{n,m}</code> n到m次</div>
+                        <div><code>*? / +?</code> 非贪婪模式</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold text-sm text-gray-700 mb-2">字符类</h4>
+                    <div class="space-y-1 text-xs text-gray-600 font-mono">
+                        <div><code>[abc]</code> a/b/c中的一个</div>
+                        <div><code>[^abc]</code> 除了a/b/c</div>
+                        <div><code>[a-z]</code> 小写字母</div>
+                        <div><code>[A-Z]</code> 大写字母</div>
+                        <div><code>[0-9]</code> 数字</div>
+                        <div><code>[a-zA-Z0-9]</code> 字母数字</div>
+                        <div><code>[\u4e00-\u9fa5]</code> 中文字符</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold text-sm text-gray-700 mb-2">分组与断言</h4>
+                    <div class="space-y-1 text-xs text-gray-600 font-mono">
+                        <div><code>(abc)</code> 捕获分组</div>
+                        <div><code>(?:abc)</code> 非捕获分组</div>
+                        <div><code>(?=abc)</code> 正向肯定预查</div>
+                        <div><code>(?!abc)</code> 正向否定预查</div>
+                        <div><code>(?&lt;=abc)</code> 反向肯定预查</div>
+                        <div><code>(?&lt;!abc)</code> 反向否定预查</div>
+                        <div><code>abc|def</code> 或</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>💡 提示：所有测试完全在本地完成，数据绝不会上传到服务器，支持复杂正则表达式和捕获分组</p>
+            <p class="mt-2">正则表达式测试工具 | Build #113 | 旺仔工具百宝箱 🥛</p>
+        </footer>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all transform translate-x-full opacity-0">
+        <i id="toastIcon" class="fa fa-check-circle"></i>
+        <span id="toastText"></span>
+    </div>
+
+    <script>
+        // 正则模板
+        const regexTemplates = [
+            {
+                name: "邮箱",
+                pattern: "\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*",
+                description: "匹配标准电子邮箱地址",
+                category: "验证"
+            },
+            {
+                name: "手机号",
+                pattern: "1[3-9]\\d{9}",
+                description: "匹配中国大陆手机号码",
+                category: "验证"
+            },
+            {
+                name: "身份证号",
+                pattern: "\\d{17}[[0-9]Xx]|\\d{15}",
+                description: "匹配18位或15位身份证号",
+                category: "验证"
+            },
+            {
+                name: "URL网址",
+                pattern: "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)",
+                description: "匹配HTTP/HTTPS网址",
+                category: "验证"
+            },
+            {
+                name: "IP地址",
+                pattern: "((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)",
+                description: "匹配IPv4地址",
+                category: "验证"
+            },
+            {
+                name: "中文汉字",
+                pattern: "[\\u4e00-\\u9fa5]+",
+                description: "匹配中文字符",
+                category: "匹配"
+            },
+            {
+                name: "HTML标签",
+                pattern: "<([a-z]+)([^<]+)*(?:>(.*)<\\/\\1>|\\s+\\/>)",
+                description: "匹配HTML标签",
+                category: "匹配"
+            },
+            {
+                name: "QQ号码",
+                pattern: "[1-9][0-9]{4,10}",
+                description: "匹配QQ号码",
+                category: "验证"
+            },
+            {
+                name: "邮政编码",
+                pattern: "[1-9]\\d{5}(?!\\d)",
+                description: "匹配中国大陆邮政编码",
+                category: "验证"
+            },
+            {
+                name: "日期(YYYY-MM-DD)",
+                pattern: "\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])",
+                description: "匹配年-月-日格式的日期",
+                category: "验证"
+            },
+            {
+                name: "时间(HH:MM:SS)",
+                pattern: "([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)",
+                description: "匹配时:分:秒格式的时间",
+                category: "验证"
+            },
+            {
+                name: "数字",
+                pattern: "-?\\d+(\\.\\d+)?",
+                description: "匹配整数和小数",
+                category: "匹配"
+            },
+            {
+                name: "正整数",
+                pattern: "[1-9]\\d*",
+                description: "匹配正整数",
+                category: "匹配"
+            },
+            {
+                name: "负整数",
+                pattern: "-[1-9]\\d*",
+                description: "匹配负整数",
+                category: "匹配"
+            },
+            {
+                name: "空白行",
+                pattern: "^\\s*$",
+                description: "匹配空白行",
+                category: "替换"
+            },
+            {
+                name: "行首空格",
+                pattern: "^\\s+",
+                description: "匹配行首的空白字符",
+                category: "替换"
+            },
+            {
+                name: "行尾空格",
+                pattern: "\\s+$",
+                description: "匹配行尾的空白字符",
+                category: "替换"
+            },
+            {
+                name: "双字节字符",
+                pattern: "[^\\x00-\\xff]",
+                description: "匹配中文、日文、韩文等双字节字符",
+                category: "匹配"
+            }
+        ];
+
+        // DOM 元素
+        const regexInput = document.getElementById('regexInput');
+        const flagG = document.getElementById('flagG');
+        const flagI = document.getElementById('flagI');
+        const flagM = document.getElementById('flagM');
+        const flagS = document.getElementById('flagS');
+        const testBtn = document.getElementById('testBtn');
+        const regexError = document.getElementById('regexError');
+        const errorMessage = document.getElementById('errorMessage');
+        const testText = document.getElementById('testText');
+        const textStats = document.getElementById('textStats');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const resultPlaceholder = document.getElementById('resultPlaceholder');
+        const highlightResult = document.getElementById('highlightResult');
+        const matchCount = document.getElementById('matchCount');
+        const copyMatchesBtn = document.getElementById('copyMatchesBtn');
+        const groupsContainer = document.getElementById('groupsContainer');
+        const detailsContainer = document.getElementById('detailsContainer');
+        const templateSearch = document.getElementById('templateSearch');
+        const templatesContainer = document.getElementById('templatesContainer');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastText = document.getElementById('toastText');
+
+        // 示例数据
+        const sampleRegex = '\\w+@\\w+\\.\\w+';
+        const sampleText = `联系方式：
+- 张三: zhangsan@example.com
+- 李四: lisi@company.org
+- 王五: wangwu@test.net
+- 赵六: zhaoliu123@gmail.com
+
+手机号：13812345678
+网站：https://www.example.com
+IP：192.168.1.1
+日期：2026-03-10`;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 渲染模板
+            renderTemplates(regexTemplates);
+            
+            // 事件监听
+            testBtn.addEventListener('click', testRegex);
+            regexInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') testRegex();
+            });
+            [flagG, flagI, flagM, flagS].forEach(flag => {
+                flag.addEventListener('change', testRegex);
+            });
+            testText.addEventListener('input', updateTextStats);
+            pasteBtn.addEventListener('click', pasteFromClipboard);
+            copyMatchesBtn.addEventListener('click', copyMatches);
+            templateSearch.addEventListener('input', filterTemplates);
+            loadSampleBtn.addEventListener('click', loadSample);
+            clearBtn.addEventListener('click', clearAll);
+            
+            // 初始化统计
+            updateTextStats();
+        });
+
+        // 渲染模板
+        function renderTemplates(templates) {
+            templatesContainer.innerHTML = '';
+            templates.forEach(template => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 rounded-lg p-4 hover:bg-blue-50 transition-all cursor-pointer border-2 border-transparent hover:border-blue-200';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-semibold text-gray-800">${template.name}</h4>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">${template.category}</span>
+                    </div>
+                    <p class="text-xs text-gray-600 mb-2">${template.description}</p>
+                    <code class="block text-xs font-mono bg-white p-2 rounded border border-gray-200 overflow-x-auto">${escapeHtml(template.pattern)}</code>
+                `;
+                card.addEventListener('click', () => {
+                    regexInput.value = template.pattern;
+                    testRegex();
+                    showToast(`已加载"${template.name}"模板`, 'success');
+                });
+                templatesContainer.appendChild(card);
+            });
+        }
+
+        // 过滤模板
+        function filterTemplates() {
+            const keyword = templateSearch.value.toLowerCase();
+            const filtered = regexTemplates.filter(template => 
+                template.name.toLowerCase().includes(keyword) ||
+                template.description.toLowerCase().includes(keyword) ||
+                template.pattern.includes(keyword) ||
+                template.category.toLowerCase().includes(keyword)
+            );
+            renderTemplates(filtered);
+        }
+
+        // 测试正则
+        function testRegex() {
+            const pattern = regexInput.value.trim();
+            const text = testText.value;
+            
+            if (!pattern) {
+                showToast('请输入正则表达式', 'error');
+                return;
+            }
+            
+            try {
+                // 构建标志
+                let flags = '';
+                if (flagG.checked) flags += 'g';
+                if (flagI.checked) flags += 'i';
+                if (flagM.checked) flags += 'm';
+                if (flagS.checked) flags += 's';
+                
+                const regex = new RegExp(pattern, flags);
+                regexError.classList.add('hidden');
+                
+                // 执行匹配
+                const matches = [...text.matchAll(regex)];
+                
+                // 更新匹配计数
+                matchCount.textContent = `找到 ${matches.length} 个匹配项`;
+                
+                if (matches.length === 0) {
+                    resultPlaceholder.classList.remove('hidden');
+                    highlightResult.classList.add('hidden');
+                    groupsContainer.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa fa-cubes text-4xl mb-3"></i><p>没有匹配到任何内容</p></div>';
+                    detailsContainer.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa fa-info-circle text-4xl mb-3"></i><p>没有匹配到任何内容</p></div>';
+                    return;
+                }
+                
+                // 高亮显示结果
+                resultPlaceholder.classList.add('hidden');
+                highlightResult.classList.remove('hidden');
+                
+                // 构建高亮HTML
+                let highlightedHtml = '';
+                let lastIndex = 0;
+                
+                matches.forEach(match => {
+                    const matchText = match[0];
+                    const index = match.index;
+                    
+                    // 添加匹配前的文本
+                    highlightedHtml += escapeHtml(text.slice(lastIndex, index));
+                    // 添加高亮的匹配文本
+                    highlightedHtml += `<span class="highlight-match">${escapeHtml(matchText)}</span>`;
+                    
+                    lastIndex = index + matchText.length;
+                });
+                
+                // 添加剩余文本
+                highlightedHtml += escapeHtml(text.slice(lastIndex));
+                highlightResult.innerHTML = highlightedHtml;
+                
+                // 显示捕获分组
+                renderGroups(matches);
+                
+                // 显示匹配详情
+                renderDetails(matches);
+                
+            } catch (e) {
+                regexError.classList.remove('hidden');
+                errorMessage.textContent = `语法错误: ${e.message}`;
+                regexInput.classList.add('syntax-error');
+                setTimeout(() => regexInput.classList.remove('syntax-error'), 300);
+                showToast('正则表达式语法错误', 'error');
+            }
+        }
+
+        // 渲染捕获分组
+        function renderGroups(matches) {
+            if (matches[0].length <= 1) {
+                groupsContainer.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa fa-cubes text-4xl mb-3"></i><p>没有捕获分组</p></div>';
+                return;
+            }
+            
+            groupsContainer.innerHTML = '';
+            
+            matches.forEach((match, matchIndex) => {
+                if (match.length > 1) {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.className = 'mb-4 p-4 bg-gray-50 rounded-lg';
+                    matchDiv.innerHTML = `<div class="font-semibold text-sm text-gray-700 mb-2">匹配项 ${matchIndex + 1}</div>`;
+                    
+                    const groupsGrid = document.createElement('div');
+                    groupsGrid.className = 'grid grid-cols-2 gap-2';
+                    
+                    for (let i = 1; i < match.length; i++) {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.className = 'bg-white p-2 rounded border border-gray-200';
+                        groupDiv.innerHTML = `
+                            <div class="text-xs text-gray-500 mb-1">分组 ${i}</div>
+                            <div class="text-sm font-mono break-all">${escapeHtml(match[i] || '')}</div>
+                        `;
+                        groupsGrid.appendChild(groupDiv);
+                    }
+                    
+                    matchDiv.appendChild(groupsGrid);
+                    groupsContainer.appendChild(matchDiv);
+                }
+            });
+        }
+
+        // 渲染匹配详情
+        function renderDetails(matches) {
+            detailsContainer.innerHTML = '';
+            
+            matches.forEach((match, index) => {
+                const detailDiv = document.createElement('div');
+                detailDiv.className = 'p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-all';
+                detailDiv.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-semibold text-blue-600">匹配项 ${index + 1}</span>
+                        <span class="text-xs text-gray-500">位置: ${match.index} - ${match.index + match[0].length}</span>
+                    </div>
+                    <div class="text-sm font-mono break-all text-gray-700">${escapeHtml(match[0])}</div>
+                `;
+                detailsContainer.appendChild(detailDiv);
+            });
+        }
+
+        // 更新文本统计
+        function updateTextStats() {
+            const length = testText.value.length;
+            textStats.textContent = `${length} 字符`;
+        }
+
+        // 粘贴
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                testText.value = text;
+                updateTextStats();
+                testRegex();
+                showToast('已从剪贴板粘贴', 'success');
+            } catch (err) {
+                showToast('粘贴失败，请手动粘贴', 'error');
+            }
+        }
+
+        // 复制所有匹配
+        function copyMatches() {
+            const pattern = regexInput.value.trim();
+            const text = testText.value;
+            
+            if (!pattern || !text) {
+                showToast('没有匹配内容可复制', 'error');
+                return;
+            }
+            
+            try {
+                const flags = (flagG.checked ? 'g' : '') + (flagI.checked ? 'i' : '') + (flagM.checked ? 'm' : '') + (flagS.checked ? 's' : '');
+                const regex = new RegExp(pattern, flags);
+                const matches = [...text.matchAll(regex)].map(m => m[0]);
+                
+                if (matches.length === 0) {
+                    showToast('没有匹配内容可复制', 'error');
+                    return;
+                }
+                
+                copyToClipboard(matches.join('\n'));
+                showToast(`已复制 ${matches.length} 个匹配项`, 'success');
+            } catch (e) {
+                showToast('复制失败', 'error');
+            }
+        }
+
+        // 加载示例
+        function loadSample() {
+            regexInput.value = sampleRegex;
+            testText.value = sampleText;
+            updateTextStats();
+            testRegex();
+            showToast('示例已加载', 'success');
+        }
+
+        // 清空
+        function clearAll() {
+            regexInput.value = '';
+            testText.value = '';
+            regexError.classList.add('hidden');
+            resultPlaceholder.classList.remove('hidden');
+            highlightResult.classList.add('hidden');
+            matchCount.textContent = '找到 0 个匹配项';
+            groupsContainer.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa fa-cubes text-4xl mb-3"></i><p>匹配后将显示捕获的分组内容</p></div>';
+            detailsContainer.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa fa-info-circle text-4xl mb-3"></i><p>匹配后将显示详细匹配信息</p></div>';
+            updateTextStats();
+            showToast('已清空', 'success');
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).catch(err => {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            if (type === 'success') {
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-check-circle';
+            } else {
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-exclamation-circle';
+            }
+            
+            toastText.textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

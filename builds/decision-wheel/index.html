@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>命运转盘 🎡</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--card:#12122a;--border:#1e1e40;--text:#e0e0e0;--dim:#888;--accent:#7c83ff;--gold:#d4a853}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+.container{max-width:520px;width:100%}
+.header{text-align:center;padding:20px 0 16px}
+.header h1{font-size:1.6em;color:#fff}
+.header .sub{color:var(--dim);font-size:0.85em;margin-top:4px}
+.wheel-area{position:relative;display:flex;justify-content:center;margin:16px 0}
+canvas{border-radius:50%;box-shadow:0 0 30px rgba(124,131,255,0.15)}
+.pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid var(--gold);filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));z-index:2}
+.spin-btn{display:block;width:100%;background:linear-gradient(135deg,var(--accent),#5a5fd6);color:#fff;border:none;padding:14px;border-radius:12px;font-size:1.05em;font-weight:600;cursor:pointer;margin:16px 0;transition:opacity 0.2s,transform 0.1s}
+.spin-btn:hover{opacity:0.9}
+.spin-btn:active{transform:scale(0.98)}
+.spin-btn:disabled{opacity:0.5;cursor:not-allowed}
+.result-box{background:var(--card);border:2px solid var(--gold);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px;display:none}
+.result-box .label{color:var(--gold);font-size:0.85em;margin-bottom:6px}
+.result-box .value{font-size:1.4em;font-weight:700;color:#fff}
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.section-title{font-size:0.9em;font-weight:600;margin-bottom:10px;color:var(--dim)}
+.options-input{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-family:inherit;font-size:0.9em;min-height:100px;resize:vertical;outline:none;line-height:1.6}
+.options-input:focus{border-color:var(--accent)}
+.options-input::placeholder{color:#555}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.preset-btn{background:rgba(124,131,255,0.08);border:1px solid var(--border);color:var(--dim);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.78em;transition:all 0.2s}
+.preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+.history{max-height:200px;overflow-y:auto}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:4px;font-size:0.85em}
+.history-item .time{color:var(--dim);font-size:0.8em}
+.history-item .pick{color:var(--gold);font-weight:600}
+.clear-btn{background:none;border:1px solid var(--border);color:var(--dim);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.78em;float:right;margin-bottom:8px}
+.clear-btn:hover{border-color:var(--accent);color:var(--accent)}
+.footer{text-align:center;padding:16px 0;color:#444;font-size:0.8em}
+.count-badge{display:inline-block;background:rgba(124,131,255,0.15);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:0.75em;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎡 命运转盘</h1>
+    <div class="sub">选择困难症终结者 · 把决定交给命运</div>
+  </div>
+
+  <div class="wheel-area">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="320" height="320"></canvas>
+  </div>
+
+  <button class="spin-btn" id="spinBtn" onclick="spin()">🎲 转！</button>
+
+  <div class="result-box" id="resultBox">
+    <div class="label">🎯 命运选择了</div>
+    <div class="value" id="resultValue"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">✏️ 选项（每行一个）</div>
+    <textarea class="options-input" id="optionsInput" placeholder="选项1&#10;选项2&#10;选项3&#10;..." oninput="updateWheel()">火锅
+烧烤
+日料
+麻辣烫
+汉堡
+螺蛳粉</textarea>
+    <div class="presets">
+      <span style="color:var(--dim);font-size:0.78em;line-height:2">预设：</span>
+      <button class="preset-btn" onclick="loadPreset('lunch')">🍜 午饭吃啥</button>
+      <button class="preset-btn" onclick="loadPreset('drink')">🧋 喝啥</button>
+      <button class="preset-btn" onclick="loadPreset('activity')">🎮 干啥</button>
+      <button class="preset-btn" onclick="loadPreset('yesno')">✅ 做不做</button>
+      <button class="preset-btn" onclick="loadPreset('pay')">💰 谁请客</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📜 历史记录 <span class="count-badge" id="histCount">0</span></div>
+    <button class="clear-btn" onclick="clearHistory()">清空</button>
+    <div class="history" id="historyList">
+      <div style="color:var(--dim);font-size:0.85em;text-align:center;padding:16px">还没转过，来一把？</div>
+    </div>
+  </div>
+
+  <div class="footer">🥛 旺仔出品 · 命运转盘 · 结果随机，后果自负 😄</div>
+</div>
+
+<script>
+const COLORS=['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9','#F0B27A','#82E0AA','#F1948A','#AED6F1','#D7BDE2','#A3E4D7'];
+const PRESETS={
+  lunch:['火锅','烧烤','日料','麻辣烫','汉堡','螺蛳粉','披萨','沙拉','面条','饺子'],
+  drink:['美式咖啡','拿铁','奶茶','柠檬茶','可乐','气泡水','果汁','椰子水'],
+  activity:['打游戏','看电影','刷B站','散步','健身','看书','写代码','摸鱼','睡觉'],
+  yesno:['做！冲！','算了吧','再想想','明天再说','现在就做','问问别人'],
+  pay:['你请','我请','AA','石头剪刀布决定','老板请','下次再说']
+};
+
+let options=[];
+let spinning=false;
+let rotation=0;
+let history=JSON.parse(localStorage.getItem('wheel-history')||'[]');
+
+const canvas=document.getElementById('wheel');
+const ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height,R=W/2-8;
+
+function getOptions(){
+  const text=document.getElementById('optionsInput').value.trim();
+  return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+}
+
+function drawWheel(rot=0){
+  options=getOptions();
+  const n=options.length;
+  ctx.clearRect(0,0,W,H);
+  if(n===0){
+    ctx.fillStyle='#1a1a2e';ctx.beginPath();ctx.arc(W/2,H/2,R,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#555';ctx.font='16px sans-serif';ctx.textAlign='center';ctx.fillText('请输入选项',W/2,H/2);
+    return;
+  }
+  const arc=Math.PI*2/n;
+  for(let i=0;i<n;i++){
+    const startAngle=rot+i*arc-Math.PI/2;
+    const endAngle=startAngle+arc;
+    ctx.beginPath();ctx.moveTo(W/2,H/2);
+    ctx.arc(W/2,H/2,R,startAngle,endAngle);
+    ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.2)';ctx.lineWidth=2;ctx.stroke();
+    // text
+    ctx.save();
+    ctx.translate(W/2,H/2);
+    ctx.rotate(startAngle+arc/2);
+    ctx.fillStyle='#000';
+    ctx.font='bold 14px "PingFang SC",sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    const label=options[i].length>6?options[i].slice(0,6)+'…':options[i];
+    ctx.fillText(label,R*0.6,0);
+    ctx.restore();
+  }
+  // center circle
+  ctx.beginPath();ctx.arc(W/2,H/2,22,0,Math.PI*2);
+  ctx.fillStyle='#1a1a2e';ctx.fill();
+  ctx.strokeStyle='var(--gold)';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('GO',W/2,H/2);
+}
+
+function updateWheel(){drawWheel(rotation)}
+
+function spin(){
+  options=getOptions();
+  if(options.length<2||spinning)return;
+  spinning=true;
+  document.getElementById('spinBtn').disabled=true;
+  document.getElementById('resultBox').style.display='none';
+
+  // tick sound via Web Audio
+  const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  function tick(){
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.frequency.value=800+Math.random()*400;
+    gain.gain.value=0.03;
+    osc.start();osc.stop(audioCtx.currentTime+0.03);
+  }
+  function winSound(){
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.type='triangle';osc.frequency.value=523;
+    gain.gain.setValueAtTime(0.1,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.5);
+    osc.start();osc.stop(audioCtx.currentTime+0.5);
+    setTimeout(()=>{
+      const o2=audioCtx.createOscillator();const g2=audioCtx.createGain();
+      o2.connect(g2);g2.connect(audioCtx.destination);
+      o2.type='triangle';o2.frequency.value=659;
+      g2.gain.setValueAtTime(0.1,audioCtx.currentTime);
+      g2.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.5);
+      o2.start();o2.stop(audioCtx.currentTime+0.5);
+    },150);
+  }
+
+  const totalSpin=Math.PI*2*(5+Math.random()*5);// 5-10 full rotations
+  const duration=4000+Math.random()*2000;
+  const startTime=performance.now();
+  const startRot=rotation;
+  let lastTickAngle=0;
+
+  function animate(now){
+    const elapsed=now-startTime;
+    const t=Math.min(elapsed/duration,1);
+    // ease out cubic
+    const ease=1-Math.pow(1-t,3);
+    rotation=startRot+totalSpin*ease;
+    drawWheel(rotation);
+
+    // tick sound every segment
+    const arc=Math.PI*2/options.length;
+    const currentAngle=(rotation%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    if(Math.floor(currentAngle/arc)!==Math.floor(lastTickAngle/arc)&&t<0.9){tick()}
+    lastTickAngle=currentAngle;
+
+    if(t<1){requestAnimationFrame(animate)}
+    else{
+      spinning=false;
+      document.getElementById('spinBtn').disabled=false;
+      // determine winner
+      const finalAngle=((rotation%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+      const idx=Math.floor(((Math.PI*2-finalAngle)%(Math.PI*2))/(Math.PI*2/options.length))%options.length;
+      const winner=options[idx];
+      document.getElementById('resultBox').style.display='block';
+      document.getElementById('resultValue').textContent=winner;
+      winSound();
+      // save history
+      history.unshift({pick:winner,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+      if(history.length>50)history.pop();
+      localStorage.setItem('wheel-history',JSON.stringify(history));
+      renderHistory();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function loadPreset(name){
+  document.getElementById('optionsInput').value=PRESETS[name].join('\n');
+  updateWheel();
+}
+
+function renderHistory(){
+  const el=document.getElementById('historyList');
+  document.getElementById('histCount').textContent=history.length;
+  if(history.length===0){
+    el.innerHTML='<div style="color:var(--dim);font-size:0.85em;text-align:center;padding:16px">还没转过，来一把？</div>';
+    return;
+  }
+  el.innerHTML=history.map(h=>`<div class="history-item"><span class="pick">🎯 ${h.pick}</span><span class="time">${h.time}</span></div>`).join('');
+}
+
+function clearHistory(){
+  history=[];localStorage.removeItem('wheel-history');renderHistory();
+}
+
+// init
+updateWheel();
+renderHistory();
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON 树形浏览器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:1.5em;margin-bottom:12px;background:linear-gradient(135deg,#4d96ff,#6bcb77);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.top{display:flex;gap:12px;width:100%;max-width:900px;margin-bottom:12px;flex-wrap:wrap}
+.top textarea{flex:1;min-width:200px;height:120px;padding:10px;border:1px solid #333;border-radius:8px;background:#0d1117;color:#e0e0e0;font-family:'Fira Code',monospace;font-size:13px;resize:vertical}
+.top .actions{display:flex;flex-direction:column;gap:6px;min-width:100px}
+.btn{padding:6px 14px;border:2px solid #333;border-radius:8px;background:#16213e;color:#e0e0e0;cursor:pointer;font-size:13px;transition:all .2s}
+.btn:hover{background:#0f3460;border-color:#4d96ff}
+.btn.primary{background:#4d96ff;border-color:#4d96ff;color:#fff}
+.stats{font-size:12px;color:#888;margin-bottom:8px;width:100%;max-width:900px}
+.search-bar{width:100%;max-width:900px;margin-bottom:8px;display:flex;gap:8px}
+.search-bar input{flex:1;padding:6px 12px;border:1px solid #333;border-radius:8px;background:#16213e;color:#e0e0e0;font-size:13px}
+.breadcrumb{font-size:12px;color:#4d96ff;margin-bottom:8px;width:100%;max-width:900px;word-break:break-all;min-height:18px}
+.tree-wrap{width:100%;max-width:900px;background:#0d1117;border:1px solid #333;border-radius:8px;padding:12px;overflow:auto;max-height:60vh;font-family:'Fira Code',monospace;font-size:13px;line-height:1.6}
+.node{padding-left:20px}
+.key{color:#79c0ff;cursor:pointer}.key:hover{text-decoration:underline}
+.str{color:#a5d6ff}.num{color:#56d364}.bool{color:#ff7b72}.null{color:#8b949e;font-style:italic}
+.toggle{cursor:pointer;user-select:none;color:#8b949e;display:inline-block;width:16px;text-align:center}
+.toggle:hover{color:#fff}
+.type-tag{font-size:10px;color:#8b949e;margin-left:4px}
+.collapsed>.node{display:none}
+.hidden{display:none!important}
+.highlight{background:#ffd93d33;border-radius:2px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:#4d96ff;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;transition:transform .3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.error{color:#ff7b72;font-size:13px;padding:8px}
+.samples{display:flex;gap:6px;flex-wrap:wrap}
+.samples button{padding:3px 10px;border:1px solid #333;border-radius:4px;background:#16213e;color:#aaa;cursor:pointer;font-size:11px}
+.samples button:hover{background:#0f3460;color:#fff}
+</style>
+</head>
+<body>
+<h1>JSON 树形浏览器</h1>
+<div class="top">
+  <textarea id="input" placeholder="粘贴 JSON 到这里..."></textarea>
+  <div class="actions">
+    <button class="btn primary" onclick="parseJSON()">解析</button>
+    <button class="btn" onclick="expandAll()">全部展开</button>
+    <button class="btn" onclick="collapseAll()">全部折叠</button>
+    <button class="btn" onclick="formatInput()">格式化</button>
+    <button class="btn" onclick="clearAll()">清空</button>
+    <div class="samples">
+      <button onclick="loadSample(1)">示例1</button>
+      <button onclick="loadSample(2)">示例2</button>
+    </div>
+  </div>
+</div>
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="搜索键名或值..." oninput="searchTree()">
+</div>
+<div class="stats" id="stats"></div>
+<div class="breadcrumb" id="breadcrumb"></div>
+<div class="tree-wrap" id="treeWrap"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+let jsonData=null;
+const SAMPLES={
+1:{"name":"旺仔","age":25,"skills":["JavaScript","Python","Rust"],"address":{"city":"上海","district":"浦东","zip":"200120"},"projects":[{"name":"AI助手","status":"active","stars":1024},{"name":"数据平台","status":"completed","stars":512}],"isActive":true,"score":null},
+2:{"users":[{"id":1,"name":"Alice","email":"alice@example.com","roles":["admin","editor"],"settings":{"theme":"dark","lang":"zh-CN","notifications":{"email":true,"push":false}}},{"id":2,"name":"Bob","email":"bob@example.com","roles":["viewer"],"settings":{"theme":"light","lang":"en-US","notifications":{"email":false,"push":true}}}],"meta":{"total":2,"page":1,"hasMore":false},"apiVersion":"2.0"}
+};
+
+function parseJSON(){
+  const input=document.getElementById('input').value.trim();
+  if(!input){showToast('请输入 JSON');return;}
+  try{
+    jsonData=JSON.parse(input);
+    renderTree();
+    showToast('解析成功！');
+  }catch(e){
+    document.getElementById('treeWrap').innerHTML='<div class="error">JSON 解析错误: '+e.message+'</div>';
+    document.getElementById('stats').textContent='';
+  }
+}
+
+function countNodes(obj){
+  if(obj===null||typeof obj!=='object')return{keys:0,depth:0};
+  let keys=0,maxDepth=0;
+  const entries=Array.isArray(obj)?obj.map((v,i)=>[i,v]):Object.entries(obj);
+  for(const[k,v]of entries){
+    keys++;
+    if(v&&typeof v==='object'){const c=countNodes(v);keys+=c.keys;maxDepth=Math.max(maxDepth,c.depth);}
+  }
+  return{keys,depth:maxDepth+1};
+}
+
+function getType(v){
+  if(v===null)return'null';
+  if(Array.isArray(v))return'array';
+  return typeof v;
+}
+
+function getTypeTag(v){
+  const t=getType(v);
+  if(t==='array')return'['+v.length+']';
+  if(t==='object')return'{'+Object.keys(v).length+'}';
+  return'';
+}
+
+function renderValue(v){
+  const t=getType(v);
+  if(t==='string')return'<span class="str">"'+escHtml(v.length>100?v.slice(0,100)+'...':v)+'"</span>';
+  if(t==='number')return'<span class="num">'+v+'</span>';
+  if(t==='boolean')return'<span class="bool">'+v+'</span>';
+  if(t==='null')return'<span class="null">null</span>';
+  return'';
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function buildTree(obj,path='$'){
+  if(obj===null||typeof obj!=='object')return renderValue(obj);
+  const isArr=Array.isArray(obj);
+  const entries=isArr?obj.map((v,i)=>[i,v]):Object.entries(obj);
+  let html='<div class="node-group">';
+  for(const[k,v]of entries){
+    const curPath=isArr?path+'['+k+']':path+'.'+k;
+    const isObj=v&&typeof v==='object';
+    const tag=getTypeTag(v);
+    html+='<div class="node-item" data-path="'+escHtml(curPath)+'">';
+    if(isObj){
+      html+='<span class="toggle" onclick="toggleNode(this)">▼</span>';
+      html+='<span class="key" onclick="copyPath(\''+escHtml(curPath)+'\')" title="点击复制路径">'+(isArr?k:'"'+escHtml(k)+'"')+'</span>: ';
+      html+='<span class="type-tag">'+tag+'</span>';
+      html+='<div class="node">'+buildTree(v,curPath)+'</div>';
+    }else{
+      html+='<span style="width:16px;display:inline-block"></span>';
+      html+='<span class="key" onclick="copyPath(\''+escHtml(curPath)+'\')" title="点击复制路径">'+(isArr?k:'"'+escHtml(k)+'"')+'</span>: ';
+      html+=renderValue(v);
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function renderTree(){
+  if(!jsonData)return;
+  const stats=countNodes(jsonData);
+  const t=getType(jsonData);
+  document.getElementById('stats').textContent='类型: '+(t==='array'?'数组['+jsonData.length+']':'对象{'+Object.keys(jsonData).length+'}')+'  |  总节点: '+stats.keys+'  |  最大深度: '+stats.depth;
+  document.getElementById('treeWrap').innerHTML=buildTree(jsonData);
+  document.getElementById('breadcrumb').textContent='';
+}
+
+function toggleNode(el){
+  const item=el.closest('.node-item');
+  item.classList.toggle('collapsed');
+  el.textContent=item.classList.contains('collapsed')?'▶':'▼';
+}
+
+function expandAll(){document.querySelectorAll('.node-item.collapsed').forEach(n=>{n.classList.remove('collapsed');n.querySelector('.toggle').textContent='▼';});}
+function collapseAll(){document.querySelectorAll('.node-item').forEach(n=>{if(n.querySelector('.toggle')){n.classList.add('collapsed');n.querySelector('.toggle').textContent='▶';}});}
+
+function copyPath(path){
+  navigator.clipboard.writeText(path).then(()=>{
+    document.getElementById('breadcrumb').textContent='路径: '+path;
+    showToast('已复制: '+path);
+  });
+}
+
+function formatInput(){
+  try{
+    const obj=JSON.parse(document.getElementById('input').value);
+    document.getElementById('input').value=JSON.stringify(obj,null,2);
+    showToast('已格式化');
+  }catch(e){showToast('JSON 格式错误');}
+}
+
+function clearAll(){
+  document.getElementById('input').value='';
+  document.getElementById('treeWrap').innerHTML='';
+  document.getElementById('stats').textContent='';
+  document.getElementById('breadcrumb').textContent='';
+  document.getElementById('searchInput').value='';
+  jsonData=null;
+}
+
+function searchTree(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.node-item').forEach(n=>{
+    n.classList.remove('hidden');
+    n.querySelectorAll('.highlight').forEach(h=>{
+      h.outerHTML=h.innerHTML;
+    });
+  });
+  if(!q)return;
+  document.querySelectorAll('.node-item').forEach(n=>{
+    const text=n.textContent.toLowerCase();
+    if(text.includes(q)){
+      // ensure parents are visible and expanded
+      let p=n.parentElement;
+      while(p){
+        if(p.classList){p.classList.remove('hidden');p.classList.remove('collapsed');
+          const tog=p.querySelector(':scope > .toggle');
+          if(tog)tog.textContent='▼';
+        }
+        p=p.parentElement;
+      }
+    }
+  });
+}
+
+function loadSample(n){
+  document.getElementById('input').value=JSON.stringify(SAMPLES[n],null,2);
+  parseJSON();
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+</script>
+</body>
+</html>

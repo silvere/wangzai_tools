@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式可视化调试器 🔍</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/regexper-static@1.0.0/regexper.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        accent: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            }
+            .match-highlight {
+                background: linear-gradient(120deg, #3b82f633 0%, #8b5cf633 100%);
+                border-radius: 4px;
+                padding: 2px 4px;
+                margin: 0 1px;
+                animation: fadeIn 0.3s ease;
+            }
+            .group-highlight {
+                background: linear-gradient(120deg, #10b98133 0%, #34d39933 100%);
+                border-radius: 4px;
+                padding: 2px 4px;
+                margin: 0 1px;
+            }
+            .error-highlight {
+                background: linear-gradient(120deg, #ef444433 0%, #f8717133 100%);
+                border-radius: 4px;
+                padding: 2px 4px;
+                margin: 0 1px;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(2px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .railroad path {
+                stroke-width: 2;
+                stroke: #3b82f6;
+            }
+            .railroad text {
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 13px;
+            }
+            .railroad rect {
+                fill: #eff6ff;
+                stroke: #3b82f6;
+                stroke-width: 2;
+                rx: 4;
+                ry: 4;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-6xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                        <i class="fa fa-search"></i>
+                        正则表达式可视化调试器
+                    </h1>
+                    <p class="mt-2 text-blue-100 opacity-90">实时可视化 · 智能匹配 · 语法参考 · 常用模板</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
+                        🚀 完全本地运行 · 保护隐私 · 零延迟
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-6xl px-4 py-8">
+        <!-- Toolbar -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl mb-8">
+            <div class="flex flex-wrap gap-3 items-center justify-between">
+                <div class="flex flex-wrap gap-3">
+                    <button id="clearBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                        <i class="fa fa-trash"></i>
+                        清空
+                    </button>
+                    <button id="copyRegexBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                        <i class="fa fa-copy"></i>
+                        复制正则
+                    </button>
+                    <button id="copyMatchesBtn" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2">
+                        <i class="fa fa-copy"></i>
+                        复制匹配结果
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <label class="flex items-center gap-2 text-gray-700 font-medium">
+                        <input type="checkbox" id="flagG" checked class="w-4 h-4 text-primary rounded focus:ring-primary">
+                        全局匹配 (g)
+                    </label>
+                    <label class="flex items-center gap-2 text-gray-700 font-medium">
+                        <input type="checkbox" id="flagI" class="w-4 h-4 text-primary rounded focus:ring-primary">
+                        忽略大小写 (i)
+                    </label>
+                    <label class="flex items-center gap-2 text-gray-700 font-medium">
+                        <input type="checkbox" id="flagM" class="w-4 h-4 text-primary rounded focus:ring-primary">
+                        多行模式 (m)
+                    </label>
+                    <label class="flex items-center gap-2 text-gray-700 font-medium">
+                        <input type="checkbox" id="flagS" class="w-4 h-4 text-primary rounded focus:ring-primary">
+                        点匹配换行 (s)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Regex Input -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-code text-primary"></i>
+                        正则表达式
+                    </h2>
+                    <span id="regexStatus" class="text-sm text-gray-500">准备就绪</span>
+                </div>
+                <div class="p-6">
+                    <input 
+                        type="text" 
+                        id="regexInput" 
+                        class="w-full border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-3 text-lg font-mono outline-none transition-all"
+                        placeholder="输入正则表达式，例如: [a-z]+@[a-z]+\.[a-z]+"
+                        value="([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})"
+                    >
+                    <div id="regexError" class="mt-2 text-sm text-danger hidden">
+                        <i class="fa fa-exclamation-circle mr-1"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Text Input -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-file-text-o text-primary"></i>
+                        测试文本
+                    </h2>
+                    <span id="matchCount" class="text-sm text-gray-500">0 个匹配</span>
+                </div>
+                <div class="p-6">
+                    <textarea 
+                        id="testInput" 
+                        class="w-full border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-3 text-base outline-none transition-all font-mono h-32 resize-none"
+                        placeholder="输入要测试的文本..."
+                    >联系我们：support@company.com, sales@example.org, admin@test.com.cn
+电话：13800138000, 13912345678
+网址：https://www.example.com, http://test.org
+日期：2026-03-12, 2026/03/12</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Matches -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-check-circle text-secondary"></i>
+                        匹配结果
+                    </h2>
+                    <button id="expandAllBtn" class="text-sm text-primary hover:text-primary/80">
+                        展开全部
+                    </button>
+                </div>
+                <div class="p-6 max-h-80 overflow-y-auto">
+                    <div id="matchesList" class="space-y-3">
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fa fa-info-circle text-xl mb-2 block"></i>
+                            输入正则表达式和测试文本查看匹配结果
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-sitemap text-accent"></i>
+                        铁路图可视化
+                    </h2>
+                    <button id="downloadSvgBtn" class="text-sm text-primary hover:text-primary/80">
+                        <i class="fa fa-download mr-1"></i>
+                        导出SVG
+                    </button>
+                </div>
+                <div class="p-6 max-h-80 overflow-auto">
+                    <div id="railroadContainer" class="min-h-[200px] flex items-center justify-center">
+                        <div class="text-center text-gray-400">
+                            <i class="fa fa-info-circle text-xl mb-2 block"></i>
+                            输入有效的正则表达式查看可视化
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Highlighted Text -->
+        <div class="bg-white rounded-2xl shadow-xl mb-8 overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-paint-brush text-accent"></i>
+                    高亮显示
+                </h2>
+                <div class="flex items-center gap-4 text-sm">
+                    <span class="flex items-center gap-1">
+                        <span class="w-3 h-3 rounded bg-primary/20 border border-primary"></span>
+                        匹配项
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <span class="w-3 h-3 rounded bg-secondary/20 border border-secondary"></span>
+                        捕获组
+                    </span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="highlightedText" class="font-mono text-sm leading-relaxed whitespace-pre-wrap">
+                    输入正则表达式和测试文本查看高亮结果
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="bg-white rounded-2xl shadow-xl mb-8 overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-book text-primary"></i>
+                    常用正则模板
+                </h2>
+                <input 
+                    type="text" 
+                    id="templateSearch" 
+                    class="border border-gray-300 rounded-lg px-3 py-1 text-sm outline-none focus:border-primary"
+                    placeholder="搜索模板..."
+                >
+            </div>
+            <div class="p-6">
+                <div id="templatesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Templates will be populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Cheat Sheet -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <i class="fa fa-list-ul text-primary"></i>
+                正则语法速查表
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">基础元字符</h3>
+                    <ul class="space-y-1 text-sm text-gray-600">
+                        <li><code>.</code> 匹配任意字符（除换行）</li>
+                        <li><code>^</code> 匹配字符串开头</li>
+                        <li><code>$</code> 匹配字符串结尾</li>
+                        <li><code>\d</code> 匹配数字</li>
+                        <li><code>\w</code> 匹配字母数字下划线</li>
+                        <li><code>\s</code> 匹配空白字符</li>
+                        <li><code>\b</code> 匹配单词边界</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">量词</h3>
+                    <ul class="space-y-1 text-sm text-gray-600">
+                        <li><code>*</code> 零次或多次</li>
+                        <li><code>+</code> 一次或多次</li>
+                        <li><code>?</code> 零次或一次</li>
+                        <li><code>{n}</code> 正好 n 次</li>
+                        <li><code>{n,}</code> 至少 n 次</li>
+                        <li><code>{n,m}</code> n 到 m 次</li>
+                        <li><code>*? / +? / ??</code> 非贪婪匹配</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">字符类</h3>
+                    <ul class="space-y-1 text-sm text-gray-600">
+                        <li><code>[abc]</code> 匹配 a/b/c 中的一个</li>
+                        <li><code>[^abc]</code> 匹配除 a/b/c 外的字符</li>
+                        <li><code>[a-z]</code> 匹配小写字母</li>
+                        <li><code>[A-Z]</code> 匹配大写字母</li>
+                        <li><code>[0-9]</code> 匹配数字</li>
+                        <li><code>[a-zA-Z0-9]</code> 匹配字母数字</li>
+                        <li><code>(...)</code> 捕获组</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">特殊构造</h3>
+                    <ul class="space-y-1 text-sm text-gray-600">
+                        <li><code>(?:...)</code> 非捕获组</li>
+                        <li><code>(?=...)</code> 正向肯定预查</li>
+                        <li><code>(?!...)</code> 正向否定预查</li>
+                        <li><code>(?<=...)</code> 反向肯定预查</li>
+                        <li><code>(?<!...)</code> 反向否定预查</li>
+                        <li><code>a|b</code> 匹配 a 或 b</li>
+                        <li><code>\1 \2 ...</code> 反向引用</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 px-4 mt-12">
+        <div class="container mx-auto max-w-6xl text-center">
+            <p class="text-gray-400">
+                🏗️ 由旺仔开发 | 正则表达式可视化调试器 | 完全本地运行，保护您的隐私
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                再也不用死记硬背正则语法，可视化调试让写正则变得简单
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 正则模板
+        const templates = [
+            {
+                name: "邮箱地址",
+                pattern: "([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+)\\.([a-zA-Z]{2,})",
+                description: "匹配标准邮箱地址"
+            },
+            {
+                name: "手机号码",
+                pattern: "1[3-9]\\d{9}",
+                description: "匹配中国大陆手机号"
+            },
+            {
+                name: "身份证号",
+                pattern: "\\d{17}([0-9]|X|x)",
+                description: "匹配18位身份证号"
+            },
+            {
+                name: "URL网址",
+                pattern: "https?://[\\w.-]+(?:\\.[\\w.-]+)+[\\w\\-._~:/?#[\\]@!$&'()*+,;=]*",
+                description: "匹配HTTP/HTTPS网址"
+            },
+            {
+                name: "IP地址",
+                pattern: "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",
+                description: "匹配IPv4地址"
+            },
+            {
+                name: "日期(YYYY-MM-DD)",
+                pattern: "\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])",
+                description: "匹配横杠分隔的日期"
+            },
+            {
+                name: "日期(YYYY/MM/DD)",
+                pattern: "\\d{4}/(?:0[1-9]|1[0-2])/(?:0[1-9]|[12][0-9]|3[01])",
+                description: "匹配斜杠分隔的日期"
+            },
+            {
+                name: "中文",
+                pattern: "[\\u4e00-\\u9fa5]+",
+                description: "匹配中文字符"
+            },
+            {
+                name: "HTML标签",
+                pattern: "<([a-z]+)([^<]+)*(?:>(.*)<\\/\\1>|\\s+\\/>)",
+                description: "匹配HTML标签"
+            },
+            {
+                name: "Hex颜色值",
+                pattern: "#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})",
+                description: "匹配Hex格式颜色值"
+            },
+            {
+                name: "QQ号码",
+                pattern: "[1-9]\\d{4,10}",
+                description: "匹配QQ号码"
+            },
+            {
+                name: "邮政编码",
+                pattern: "[1-9]\\d{5}",
+                description: "匹配中国邮政编码"
+            }
+        ];
+
+        // DOM 元素
+        const regexInput = document.getElementById('regexInput');
+        const testInput = document.getElementById('testInput');
+        const regexStatus = document.getElementById('regexStatus');
+        const regexError = document.getElementById('regexError');
+        const errorMessage = document.getElementById('errorMessage');
+        const matchCount = document.getElementById('matchCount');
+        const matchesList = document.getElementById('matchesList');
+        const highlightedText = document.getElementById('highlightedText');
+        const railroadContainer = document.getElementById('railroadContainer');
+        const templatesGrid = document.getElementById('templatesGrid');
+        const templateSearch = document.getElementById('templateSearch');
+        const flagG = document.getElementById('flagG');
+        const flagI = document.getElementById('flagI');
+        const flagM = document.getElementById('flagM');
+        const flagS = document.getElementById('flagS');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyRegexBtn = document.getElementById('copyRegexBtn');
+        const copyMatchesBtn = document.getElementById('copyMatchesBtn');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTemplates();
+            updateRegex();
+            
+            // 绑定事件
+            regexInput.addEventListener('input', updateRegex);
+            testInput.addEventListener('input', updateRegex);
+            flagG.addEventListener('change', updateRegex);
+            flagI.addEventListener('change', updateRegex);
+            flagM.addEventListener('change', updateRegex);
+            flagS.addEventListener('change', updateRegex);
+            templateSearch.addEventListener('input', renderTemplates);
+            
+            clearBtn.addEventListener('click', () => {
+                regexInput.value = '';
+                testInput.value = '';
+                updateRegex();
+            });
+            
+            copyRegexBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(regexInput.value);
+                showToast('正则表达式已复制');
+            });
+            
+            copyMatchesBtn.addEventListener('click', () => {
+                const matches = getAllMatches();
+                navigator.clipboard.writeText(matches.join('\n'));
+                showToast('匹配结果已复制');
+            });
+            
+            expandAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.match-details').forEach(el => {
+                    el.classList.remove('hidden');
+                });
+            });
+            
+            downloadSvgBtn.addEventListener('click', downloadSVG);
+        });
+
+        // 渲染模板
+        function renderTemplates() {
+            const search = templateSearch.value.toLowerCase();
+            const filtered = templates.filter(t => 
+                t.name.toLowerCase().includes(search) || 
+                t.description.toLowerCase().includes(search) ||
+                t.pattern.toLowerCase().includes(search)
+            );
+            
+            templatesGrid.innerHTML = filtered.map(t => `
+                <div class="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors cursor-pointer card-hover" onclick="useTemplate('${escapeQuotes(t.pattern)}')">
+                    <div class="font-semibold text-gray-800 mb-1">${t.name}</div>
+                    <div class="text-xs text-gray-500 mb-2">${t.description}</div>
+                    <div class="font-mono text-xs text-primary bg-white px-2 py-1 rounded border border-gray-200 truncate">
+                        ${t.pattern}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 使用模板
+        function useTemplate(pattern) {
+            regexInput.value = pattern;
+            updateRegex();
+            showToast('已加载正则模板');
+        }
+
+        // 转义引号
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // 更新正则处理
+        function updateRegex() {
+            const pattern = regexInput.value.trim();
+            const text = testInput.value;
+            
+            if (!pattern) {
+                clearResults();
+                regexStatus.textContent = '准备就绪';
+                return;
+            }
+
+            try {
+                // 构建标志
+                let flags = '';
+                if (flagG.checked) flags += 'g';
+                if (flagI.checked) flags += 'i';
+                if (flagM.checked) flags += 'm';
+                if (flagS.checked) flags += 's';
+                
+                const regex = new RegExp(pattern, flags);
+                
+                // 隐藏错误
+                regexError.classList.add('hidden');
+                regexStatus.innerHTML = '<i class="fa fa-check-circle text-secondary mr-1"></i> 正则有效';
+                
+                // 执行匹配
+                const matches = [...text.matchAll(regex)];
+                
+                // 更新计数
+                matchCount.textContent = `${matches.length} 个匹配`;
+                
+                // 更新匹配列表
+                renderMatches(matches);
+                
+                // 更新高亮文本
+                renderHighlightedText(text, matches);
+                
+                // 更新铁路图
+                renderRailroad(pattern);
+                
+            } catch (error) {
+                // 显示错误
+                regexError.classList.remove('hidden');
+                errorMessage.textContent = error.message;
+                regexStatus.innerHTML = '<i class="fa fa-exclamation-circle text-danger mr-1"></i> 正则无效';
+                clearResults();
+            }
+        }
+
+        // 清除结果
+        function clearResults() {
+            matchCount.textContent = '0 个匹配';
+            matchesList.innerHTML = `
+                <div class="text-center text-gray-400 py-8">
+                    <i class="fa fa-info-circle text-xl mb-2 block"></i>
+                    输入正则表达式和测试文本查看匹配结果
+                </div>
+            `;
+            highlightedText.textContent = '输入正则表达式和测试文本查看高亮结果';
+            railroadContainer.innerHTML = `
+                <div class="text-center text-gray-400">
+                    <i class="fa fa-info-circle text-xl mb-2 block"></i>
+                    输入有效的正则表达式查看可视化
+                </div>
+            `;
+        }
+
+        // 渲染匹配列表
+        function renderMatches(matches) {
+            if (matches.length === 0) {
+                matchesList.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fa fa-search text-xl mb-2 block"></i>
+                        没有找到匹配项
+                    </div>
+                `;
+                return;
+            }
+
+            matchesList.innerHTML = matches.map((match, index) => `
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between cursor-pointer" onclick="toggleDetails(${index})">
+                        <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
+                                ${index + 1}
+                            </span>
+                            <span class="font-mono font-semibold text-gray-800">${escapeHtml(match[0])}</span>
+                        </div>
+                        <i class="fa fa-chevron-down text-gray-400 transition-transform" id="toggleIcon-${index}"></i>
+                    </div>
+                    ${match.length > 1 ? `
+                    <div class="hidden p-4 border-t border-gray-200 match-details" id="details-${index}">
+                        <div class="text-sm text-gray-500 mb-2">捕获组:</div>
+                        <div class="space-y-2">
+                            ${match.slice(1).map((group, groupIndex) => `
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-xs font-bold">
+                                        ${groupIndex + 1}
+                                    </span>
+                                    <span class="font-mono text-gray-700">${group ? escapeHtml(group) : '<span class="text-gray-400">undefined</span>'}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-2">
+                            位置: ${match.index} - ${match.index + match[0].length}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // 切换详情显示
+        function toggleDetails(index) {
+            const details = document.getElementById(`details-${index}`);
+            const icon = document.getElementById(`toggleIcon-${index}`);
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                details.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        // 渲染高亮文本
+        function renderHighlightedText(text, matches) {
+            if (matches.length === 0) {
+                highlightedText.textContent = text;
+                return;
+            }
+
+            let result = '';
+            let lastIndex = 0;
+            
+            matches.forEach(match => {
+                // 添加匹配前的文本
+                result += escapeHtml(text.slice(lastIndex, match.index));
+                
+                // 添加匹配的文本
+                const matchText = escapeHtml(match[0]);
+                if (match.length > 1) {
+                    // 有捕获组，特殊高亮
+                    result += `<span class="group-highlight">${matchText}</span>`;
+                } else {
+                    result += `<span class="match-highlight">${matchText}</span>`;
+                }
+                
+                lastIndex = match.index + match[0].length;
+            });
+            
+            // 添加剩余文本
+            result += escapeHtml(text.slice(lastIndex));
+            
+            highlightedText.innerHTML = result;
+        }
+
+        // 渲染铁路图
+        function renderRailroad(pattern) {
+            try {
+                // 使用 regexper 生成铁路图
+                const parser = new regexper.Parser();
+                const parsed = parser.parse(pattern);
+                const renderer = new regexper.RailroadRenderer(parsed, {
+                    padding: 10
+                });
+                
+                railroadContainer.innerHTML = '';
+                railroadContainer.appendChild(renderer.render());
+                
+                // 添加类名以便样式控制
+                railroadContainer.querySelector('svg').classList.add('railroad');
+                
+            } catch (error) {
+                railroadContainer.innerHTML = `
+                    <div class="text-center text-gray-400">
+                        <i class="fa fa-exclamation-circle text-xl mb-2 block"></i>
+                        无法生成可视化
+                    </div>
+                `;
+            }
+        }
+
+        // 下载SVG
+        function downloadSVG() {
+            const svg = railroadContainer.querySelector('svg');
+            if (!svg) {
+                showToast('没有可导出的SVG');
+                return;
+            }
+            
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `regex_${new Date().getTime()}.svg`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+            showToast('SVG已导出');
+        }
+
+        // 获取所有匹配
+        function getAllMatches() {
+            const pattern = regexInput.value.trim();
+            const text = testInput.value;
+            if (!pattern) return [];
+            
+            try {
+                let flags = '';
+                if (flagG.checked) flags += 'g';
+                if (flagI.checked) flags += 'i';
+                if (flagM.checked) flags += 'm';
+                if (flagS.checked) flags += 's';
+                
+                const regex = new RegExp(pattern, flags);
+                return [...text.matchAll(regex)].map(m => m[0]);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Creator 公众号创作助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#3b82f6;--green:#22c55e;--orange:#f59e0b;--purple:#a78bfa;--red:#ef4444}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{padding:20px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.header h1{font-size:24px;font-weight:700;margin-bottom:8px}
+.header p{color:var(--text2);font-size:14px}
+.main{display:flex;height:calc(100vh - 90px)}
+.sidebar{width:280px;min-width:280px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:16px}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;gap:2px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab{padding:8px 16px;border-radius:6px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:14px;transition:all .15s}
+.tab:hover{color:var(--accent)}
+.tab.active{background:var(--accent);color:#fff}
+.tab-content{flex:1;overflow-y:auto;padding:24px;display:none}
+.tab-content.active{display:block}
+.section{margin-bottom:24px}
+.section-title{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2563eb}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px}
+.input-group input,.input-group textarea,.input-group select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;font-family:inherit}
+.input-group input:focus,.input-group textarea:focus,.input-group select:focus{outline:none;border-color:var(--accent)}
+.input-group textarea{resize:vertical;min-height:100px;font-family:'SF Mono',Monaco,Consolas,monospace;line-height:1.6}
+.topic-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;cursor:pointer;transition:all .15s}
+.topic-card:hover{border-color:var(--accent);background:var(--surface)}
+.topic-card .title{font-size:14px;font-weight:600;margin-bottom:4px}
+.topic-card .meta{font-size:12px;color:var(--text2)}
+.topic-card .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:4px;margin-top:4px}
+.topic-card .tag.ai{background:rgba(59,130,246,.2);color:#60a5fa}
+.topic-card .tag.tech{background:rgba(34,211,153,.2);color:#34d399}
+.topic-card .tag.career{background:rgba(251,191,36,.2);color:#fbbf24}
+.draft-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;cursor:pointer;transition:all .15s}
+.draft-item:hover{border-color:var(--accent)}
+.draft-item .title{font-size:14px;font-weight:600;margin-bottom:4px}
+.draft-item .time{font-size:11px;color:var(--text2)}
+.draft-item .actions{margin-top:8px;display:flex;gap:6px}
+.draft-item .actions button{padding:4px 10px;font-size:11px}
+.preview{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:20px;max-width:680px;margin:0 auto}
+.preview h1{font-size:24px;margin-bottom:16px;line-height:1.4}
+.preview h2{font-size:20px;margin:24px 0 12px;line-height:1.4}
+.preview h3{font-size:18px;margin:20px 0 10px;line-height:1.4}
+.preview p{margin-bottom:16px;line-height:1.8;font-size:15px}
+.preview ul,.preview ol{margin:12px 0 12px 24px;line-height:1.8}
+.preview code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:13px;font-family:'SF Mono',Monaco,Consolas,monospace}
+.preview blockquote{border-left:3px solid var(--accent);padding-left:16px;margin:16px 0;color:var(--text2);font-style:italic}
+.image-suggestions{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.image-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all .15s}
+.image-card:hover{border-color:var(--accent)}
+.image-card .icon{font-size:48px;margin-bottom:8px}
+.image-card .keyword{font-size:13px;font-weight:600}
+.image-card .desc{font-size:11px;color:var(--text2);margin-top:4px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:1000}
+.toast.show{opacity:1}
+.loading{text-align:center;padding:40px;color:var(--text2)}
+.loading .spinner{display:inline-block;width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty .icon{font-size:64px;margin-bottom:16px;opacity:.5}
+@media(max-width:768px){.main{flex-direction:column}.sidebar{width:100%;min-width:0;max-height:40vh;border-right:none;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>📝 Content Creator</h1>
+<p>公众号创作助手 — AI + 技术 + 职业发展</p>
+</div>
+<div class="main">
+<div class="sidebar">
+<div class="section">
+<div class="section-title">📚 草稿箱</div>
+<div id="draftList"></div>
+<button class="btn" onclick="newDraft()" style="width:100%;margin-top:8px">+ 新建文章</button>
+</div>
+</div>
+<div class="content">
+<div class="tabs">
+<button class="tab active" data-tab="inspiration" onclick="switchTab('inspiration')">💡 选题灵感</button>
+<button class="tab" data-tab="editor" onclick="switchTab('editor')">✍️ 编辑器</button>
+<button class="tab" data-tab="images" onclick="switchTab('images')">🖼️ 配图</button>
+<button class="tab" data-tab="preview" onclick="switchTab('preview')">👁️ 预览</button>
+</div>
+<div class="tab-content active" id="inspiration">
+<div class="section">
+<div class="section-title">热门话题</div>
+<div id="topicList"></div>
+</div>
+</div>
+<div class="tab-content" id="editor">
+<div class="section">
+<div class="input-group">
+<label>文章标题</label>
+<input type="text" id="articleTitle" placeholder="输入文章标题...">
+</div>
+<div class="input-group">
+<label>文章内容 (支持 Markdown)</label>
+<textarea id="articleContent" rows="20" placeholder="# 标题
+
+## 引言
+在这里写引言...
+
+## 正文
+在这里写正文...
+
+## 总结
+在这里写总结..."></textarea>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn primary" onclick="generateArticle()">🤖 AI 生成文章</button>
+<button class="btn" onclick="saveDraft()">💾 保存草稿</button>
+<button class="btn" onclick="updatePreview()">👁️ 预览</button>
+</div>
+</div>
+</div>
+<div class="tab-content" id="images">
+<div class="section">
+<div class="section-title">配图建议</div>
+<div id="imageSuggestions" class="image-suggestions"></div>
+</div>
+</div>
+<div class="tab-content" id="preview">
+<div class="preview" id="previewContent">
+<div class="empty">
+<div class="icon">👁️</div>
+<p>在编辑器中输入内容，点击「预览」查看效果</p>
+</div>
+</div>
+<div style="text-align:center;margin-top:20px">
+<button class="btn primary" onclick="copyFormatted()">📋 复制排版</button>
+</div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+let currentDraft=null;
+let drafts=[];
+
+// Load drafts from localStorage
+function loadDrafts(){
+  const saved=localStorage.getItem('contentCreatorDrafts');
+  drafts=saved?JSON.parse(saved):[];
+  renderDraftList();
+}
+
+function saveDrafts(){
+  localStorage.setItem('contentCreatorDrafts',JSON.stringify(drafts));
+}
+
+function renderDraftList(){
+  const list=document.getElementById('draftList');
+  if(!drafts.length){
+    list.innerHTML='<div class="empty" style="padding:20px"><div class="icon" style="font-size:32px">📄</div><p style="font-size:12px">暂无草稿</p></div>';
+    return;
+  }
+  list.innerHTML=drafts.map((d,i)=>`
+    <div class="draft-item" onclick="loadDraft(${i})">
+      <div class="title">${d.title||'无标题'}</div>
+      <div class="time">${new Date(d.updatedAt).toLocaleString('zh-CN')}</div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn" onclick="loadDraft(${i})">编辑</button>
+        <button class="btn" onclick="deleteDraft(${i})">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function newDraft(){
+  currentDraft={id:Date.now(),title:'',content:'',createdAt:Date.now(),updatedAt:Date.now()};
+  document.getElementById('articleTitle').value='';
+  document.getElementById('articleContent').value='';
+  switchTab('editor');
+  showToast('新建文章');
+}
+
+function loadDraft(index){
+  currentDraft=drafts[index];
+  document.getElementById('articleTitle').value=currentDraft.title;
+  document.getElementById('articleContent').value=currentDraft.content;
+  switchTab('editor');
+  showToast('已加载草稿');
+}
+
+function saveDraft(){
+  const title=document.getElementById('articleTitle').value.trim();
+  const content=document.getElementById('articleContent').value.trim();
+  if(!title&&!content){showToast('请输入内容');return}
+  
+  if(currentDraft){
+    currentDraft.title=title;
+    currentDraft.content=content;
+    currentDraft.updatedAt=Date.now();
+    const index=drafts.findIndex(d=>d.id===currentDraft.id);
+    if(index>=0)drafts[index]=currentDraft;
+    else drafts.unshift(currentDraft);
+  }else{
+    currentDraft={id:Date.now(),title,content,createdAt:Date.now(),updatedAt:Date.now()};
+    drafts.unshift(currentDraft);
+  }
+  saveDrafts();
+  renderDraftList();
+  showToast('✅ 已保存');
+}
+
+function deleteDraft(index){
+  if(!confirm('确定删除这篇草稿？'))return;
+  drafts.splice(index,1);
+  saveDrafts();
+  renderDraftList();
+  showToast('已删除');
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id===tab));
+  if(tab==='inspiration')loadTopics();
+  if(tab==='images')generateImageSuggestions();
+  if(tab==='preview')updatePreview();
+}
+
+// Topic inspiration
+const sampleTopics=[
+  {title:'Claude 3.5 Sonnet 新版本发布，性能提升显著',category:'ai',source:'HN',score:342},
+  {title:'如何从初级工程师成长为技术专家',category:'career',source:'热门',score:256},
+  {title:'Rust 在生产环境中的最佳实践',category:'tech',source:'GitHub',score:189},
+  {title:'大模型评测方法论：从 Benchmark 到实际应用',category:'ai',source:'ArXiv',score:167},
+  {title:'远程工作5年的经验总结',category:'career',source:'热门',score:145},
+  {title:'TypeScript 5.0 新特性详解',category:'tech',source:'GitHub',score:134},
+  {title:'AI Agent 的设计模式与实践',category:'ai',source:'ArXiv',score:128},
+  {title:'技术面试中的沟通技巧',category:'career',source:'热门',score:112},
+  {title:'WebAssembly 在前端的应用场景',category:'tech',source:'HN',score:98},
+  {title:'Prompt Engineering 实战指南',category:'ai',source:'热门',score:87}
+];
+
+function loadTopics(){
+  const list=document.getElementById('topicList');
+  list.innerHTML=sampleTopics.map(t=>`
+    <div class="topic-card" onclick="useTopic('${t.title}')">
+      <div class="title">${t.title}</div>
+      <div class="meta">${t.source} · ${t.score} 热度</div>
+      <span class="tag ${t.category}">${{ai:'AI',tech:'技术',career:'职业'}[t.category]}</span>
+    </div>
+  `).join('');
+}
+
+function useTopic(title){
+  document.getElementById('articleTitle').value=title;
+  switchTab('editor');
+  showToast('已填充标题，点击「AI 生成文章」开始创作');
+}
+
+// Article generation
+function generateArticle(){
+  const title=document.getElementById('articleTitle').value.trim();
+  if(!title){showToast('请先输入标题');return}
+  
+  const content=document.getElementById('articleContent');
+  const loading=`# ${title}
+
+> 正在生成文章内容...
+
+## 引言
+
+AI 正在生成引言部分...
+
+## 核心内容
+
+AI 正在生成核心内容...
+
+## 实践建议
+
+AI 正在生成实践建议...
+
+## 总结
+
+AI 正在生成总结...`;
+  
+  content.value=loading;
+  showToast('⏳ AI 生成中...');
+  
+  // Simulate AI generation
+  setTimeout(()=>{
+    const generated=`# ${title}
+
+## 引言
+
+在当今快速发展的技术领域，${title.includes('AI')?'人工智能':'技术创新'}正在深刻改变着我们的工作方式和思维模式。本文将深入探讨这一话题，为读者提供实用的见解和建议。
+
+## 核心观点
+
+### 1. 技术趋势分析
+
+当前行业正在经历重大变革。从技术栈的演进到开发模式的创新，每一个变化都值得我们深入思考。
+
+### 2. 实践经验分享
+
+基于实际项目经验，我们总结了以下几点关键要素：
+
+- **技术选型**：选择合适的技术栈至关重要
+- **架构设计**：良好的架构是项目成功的基础
+- **团队协作**：高效的协作能显著提升生产力
+
+### 3. 未来展望
+
+展望未来，我们可以预见以下几个发展方向：
+
+1. 技术的进一步成熟和普及
+2. 开发者生态的持续完善
+3. 新的应用场景不断涌现
+
+## 实践建议
+
+对于想要在这个领域深入发展的开发者，我建议：
+
+- 保持持续学习的态度
+- 多参与开源项目和社区讨论
+- 注重理论与实践的结合
+- 培养系统性思维能力
+
+## 总结
+
+${title}是一个值得深入研究的话题。通过本文的探讨，希望能为读者提供一些有价值的参考。技术的发展永无止境，让我们一起在这条道路上不断前行。
+
+---
+
+*本文由 Content Creator 辅助创作*`;
+    
+    content.value=generated;
+    showToast('✅ 文章生成完成');
+    saveDraft();
+  },2000);
+}
+
+// Image suggestions
+function generateImageSuggestions(){
+  const title=document.getElementById('articleTitle').value;
+  const content=document.getElementById('articleContent').value;
+  
+  const suggestions=[
+    {icon:'🤖',keyword:'AI 概念图',desc:'抽象的人工智能视觉'},
+    {icon:'💻',keyword:'代码编辑器',desc:'开发环境截图'},
+    {icon:'📊',keyword:'数据可视化',desc:'图表和统计数据'},
+    {icon:'🏗️',keyword:'架构图',desc:'系统架构示意图'},
+    {icon:'🚀',keyword:'技术趋势',desc:'未来科技感'},
+    {icon:'👥',keyword:'团队协作',desc:'团队工作场景'},
+    {icon:'📚',keyword:'学习成长',desc:'知识积累主题'},
+    {icon:'🎯',keyword:'目标达成',desc:'成功和进步'},
+  ];
+  
+  const list=document.getElementById('imageSuggestions');
+  list.innerHTML=suggestions.map(s=>`
+    <div class="image-card" onclick="copyImageKeyword('${s.keyword}')">
+      <div class="icon">${s.icon}</div>
+      <div class="keyword">${s.keyword}</div>
+      <div class="desc">${s.desc}</div>
+    </div>
+  `).join('');
+}
+
+function copyImageKeyword(keyword){
+  navigator.clipboard.writeText(keyword);
+  showToast(`✅ 已复制「${keyword}」`);
+}
+
+// Preview
+function updatePreview(){
+  const title=document.getElementById('articleTitle').value;
+  const content=document.getElementById('articleContent').value;
+  
+  if(!title&&!content){
+    document.getElementById('previewContent').innerHTML='<div class="empty"><div class="icon">👁️</div><p>在编辑器中输入内容，点击「预览」查看效果</p></div>';
+    return;
+  }
+  
+  const html=marked.parse(content||'');
+  document.getElementById('previewContent').innerHTML=html;
+}
+
+function copyFormatted(){
+  const content=document.getElementById('previewContent').innerHTML;
+  const blob=new Blob([content],{type:'text/html'});
+  const item=new ClipboardItem({'text/html':blob});
+  navigator.clipboard.write([item]).then(()=>{
+    showToast('✅ 已复制排版，可直接粘贴到公众号编辑器');
+  }).catch(()=>{
+    // Fallback: copy as text
+    const text=document.getElementById('articleContent').value;
+    navigator.clipboard.writeText(text);
+    showToast('✅ 已复制文本内容');
+  });
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Initialize
+loadDrafts();
+loadTopics();
+</script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据可视化器 | Data Visualizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0b1a;--card:#131328;--border:#252550;--text:#e0e0f0;--text2:#7878aa;--accent:#7c6aef;--accent2:#a78bfa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+.container{max-width:960px;margin:0 auto}
+h1{font-size:22px;text-align:center;margin-bottom:2px}
+.sub{text-align:center;color:var(--text2);font-size:12px;margin-bottom:16px}
+.row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.col-input{flex:1;min-width:280px}
+.col-chart{flex:1.4;min-width:340px}
+textarea{width:100%;height:200px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:'Courier New',monospace;outline:none;resize:vertical}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:#444}
+.toolbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+.toolbar label{font-size:11px;color:var(--text2)}
+.toolbar select,.toolbar button{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+.toolbar select:focus,.toolbar button:hover{border-color:var(--accent)}
+.toolbar button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;position:relative}
+canvas{width:100%;border-radius:8px;display:block}
+.presets{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.preset{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:11px}
+.preset:hover{border-color:var(--accent);color:var(--accent)}
+.export-btn{position:absolute;top:12px;right:12px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;font-size:11px;z-index:2}
+.export-btn:hover{border-color:var(--accent);color:var(--accent)}
+.info{font-size:11px;color:var(--text2);margin-top:6px}
+.footer{text-align:center;color:var(--text2);font-size:11px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>📈 数据可视化器</h1>
+<p class="sub">粘贴 CSV / JSON 数据，自动生成交互式图表 · Canvas 绘制 · 零依赖</p>
+
+<div class="presets">
+<button class="preset" onclick="loadPreset(0)">🏆 模型评测分数</button>
+<button class="preset" onclick="loadPreset(1)">💰 API 价格对比</button>
+<button class="preset" onclick="loadPreset(2)">📊 月度趋势</button>
+<button class="preset" onclick="loadPreset(3)">🎯 多维能力雷达</button>
+<button class="preset" onclick="loadPreset(4)">📉 训练损失曲线</button>
+</div>
+
+<div class="row">
+<div class="col-input">
+<textarea id="dataInput" placeholder="粘贴 CSV 或 JSON 数据...&#10;&#10;CSV 示例:&#10;Model,Score,Speed&#10;GPT-4o,88.5,45&#10;Claude-3.5,87.2,52&#10;&#10;JSON 示例:&#10;[{&quot;name&quot;:&quot;A&quot;,&quot;value&quot;:10},{&quot;name&quot;:&quot;B&quot;,&quot;value&quot;:20}]" oninput="render()"></textarea>
+<div class="info" id="dataInfo"></div>
+</div>
+<div class="col-chart">
+<div class="toolbar">
+<label>图表：</label>
+<button id="btn-bar" class="active" onclick="setType('bar')">柱状图</button>
+<button id="btn-line" onclick="setType('line')">折线图</button>
+<button id="btn-pie" onclick="setType('pie')">饼图</button>
+<button id="btn-scatter" onclick="setType('scatter')">散点图</button>
+<button id="btn-radar" onclick="setType('radar')">雷达图</button>
+<label style="margin-left:auto">Y轴：</label>
+<select id="colSelect" onchange="render()"></select>
+</div>
+<div class="chart-wrap">
+<button class="export-btn" onclick="exportPNG()">📥 导出 PNG</button>
+<canvas id="chart" width="600" height="400"></canvas>
+</div>
+</div>
+</div>
+</div>
+
+<div class="footer">📈 数据可视化器 · 为评测数据分析打造 · Canvas 绘制 · 零外部依赖</div>
+
+<script>
+const COLORS=['#7c6aef','#f472b6','#4ade80','#fb923c','#60a5fa','#facc15','#f87171','#34d399','#a78bfa','#38bdf8','#e879f9','#fbbf24'];
+const PRESETS=[
+`Model,MMLU,HumanEval,MATH,GPQA,IFEval
+GPT-4o,88.7,90.2,76.6,53.6,84.3
+Claude-3.5-Sonnet,88.3,92.0,78.3,59.4,88.0
+Gemini-1.5-Pro,85.9,84.1,67.7,46.2,81.1
+Llama-3.1-405B,87.3,89.0,73.8,50.7,80.4
+Qwen2-72B,84.2,86.4,69.6,42.4,77.6
+DeepSeek-V2.5,83.5,89.4,74.7,41.3,75.2
+Mistral-Large,84.0,82.3,63.5,43.8,78.9
+GLM-4,83.7,78.9,60.2,39.1,72.5`,
+`Model,Input($/M),Output($/M)
+GPT-4o,2.50,10.00
+Claude-3.5-Sonnet,3.00,15.00
+Gemini-1.5-Pro,1.25,5.00
+GPT-4o-mini,0.15,0.60
+Claude-3-Haiku,0.25,1.25
+DeepSeek-V2.5,0.14,0.28
+Llama-3.1-405B,3.00,3.00
+Mistral-Large,2.00,6.00`,
+`Month,Users,Revenue,Costs
+Jan,12400,48000,32000
+Feb,15600,56000,34000
+Mar,18900,67000,36000
+Apr,22100,78000,38000
+May,28500,95000,42000
+Jun,35200,118000,48000
+Jul,41800,142000,55000
+Aug,48600,168000,62000`,
+`Dimension,GPT-4o,Claude-3.5,Gemini-1.5
+Reasoning,92,90,85
+Coding,90,93,84
+Math,77,78,68
+Knowledge,89,88,86
+Instruction,84,88,81
+Safety,82,90,78`,
+`Step,Train_Loss,Val_Loss
+0,4.20,4.25
+100,3.85,3.92
+200,3.42,3.55
+300,2.98,3.18
+400,2.61,2.88
+500,2.30,2.65
+600,2.05,2.48
+700,1.84,2.38
+800,1.68,2.32
+900,1.55,2.29
+1000,1.44,2.28`
+];
+
+let chartType='bar';
+let parsedData=null;
+
+function parseData(text){
+text=text.trim();
+if(!text)return null;
+try{
+// Try JSON
+if(text[0]==='['||text[0]==='{'){
+let arr=JSON.parse(text);
+if(!Array.isArray(arr))arr=[arr];
+if(!arr.length)return null;
+const keys=Object.keys(arr[0]);
+const labels=keys[0];
+const cols=keys.slice(1);
+return{labels:arr.map(r=>String(r[labels])),columns:cols,data:cols.map(c=>arr.map(r=>parseFloat(r[c])||0))};
+}
+}catch(e){}
+// Try CSV
+const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+if(lines.length<2)return null;
+const sep=lines[0].includes('\t')?'\t':',';
+const header=lines[0].split(sep).map(s=>s.trim());
+const rows=lines.slice(1).map(l=>l.split(sep).map(s=>s.trim()));
+const labels=rows.map(r=>r[0]);
+const cols=header.slice(1);
+const data=cols.map((_,ci)=>rows.map(r=>parseFloat(r[ci+1])||0));
+return{labels,columns:cols,data};
+}
+
+function setType(t){
+chartType=t;
+document.querySelectorAll('.toolbar button').forEach(b=>b.classList.remove('active'));
+const btn=document.getElementById('btn-'+t);
+if(btn)btn.classList.add('active');
+render();
+}
+
+function loadPreset(i){
+document.getElementById('dataInput').value=PRESETS[i];
+if(i===3)chartType='radar';
+else if(i===4)chartType='line';
+else if(i===1)chartType='bar';
+else chartType='bar';
+document.querySelectorAll('.toolbar button').forEach(b=>b.classList.remove('active'));
+const btn=document.getElementById('btn-'+chartType);
+if(btn)btn.classList.add('active');
+render();
+}
+
+function render(){
+const text=document.getElementById('dataInput').value;
+parsedData=parseData(text);
+const sel=document.getElementById('colSelect');
+const info=document.getElementById('dataInfo');
+if(!parsedData){
+info.textContent=text.trim()?'⚠️ 无法解析数据，请检查格式':'';
+sel.innerHTML='';
+clearCanvas();return;
+}
+info.textContent=`✅ ${parsedData.labels.length} 行 × ${parsedData.columns.length} 列数据`;
+const prev=sel.value;
+sel.innerHTML='<option value="__all__">全部列</option>'+parsedData.columns.map((c,i)=>`<option value="${i}">${c}</option>`).join('');
+if(prev&&sel.querySelector(`option[value="${prev}"]`))sel.value=prev;
+drawChart();
+}
+
+function clearCanvas(){
+const c=document.getElementById('chart');
+const ctx=c.getContext('2d');
+ctx.clearRect(0,0,c.width,c.height);
+}
+
+function drawChart(){
+if(!parsedData)return;
+const c=document.getElementById('chart');
+const dpr=window.devicePixelRatio||1;
+c.width=600*dpr;c.height=400*dpr;
+c.style.width='600px';c.style.height='400px';
+const ctx=c.getContext('2d');
+ctx.scale(dpr,dpr);
+ctx.clearRect(0,0,600,400);
+ctx.fillStyle='#131328';ctx.fillRect(0,0,600,400);
+
+const selVal=document.getElementById('colSelect').value;
+let cols,colIdx;
+if(selVal==='__all__'){cols=parsedData.columns;colIdx=cols.map((_,i)=>i)}
+else{colIdx=[parseInt(selVal)];cols=[parsedData.columns[colIdx[0]]]}
+
+const labels=parsedData.labels;
+const datasets=colIdx.map(i=>parsedData.data[i]);
+
+if(chartType==='bar')drawBar(ctx,labels,cols,datasets);
+else if(chartType==='line')drawLine(ctx,labels,cols,datasets);
+else if(chartType==='pie')drawPie(ctx,labels,cols,datasets);
+else if(chartType==='scatter')drawScatter(ctx,labels,cols,datasets);
+else if(chartType==='radar')drawRadar(ctx,labels,cols,datasets);
+}
+
+function drawBar(ctx,labels,cols,datasets){
+const W=600,H=400,pad={t:30,r:20,b:60,l:60};
+const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+const allVals=datasets.flat();
+const maxV=Math.max(...allVals)*1.15||1;
+const n=labels.length,m=datasets.length;
+const groupW=cw/n;
+const barW=Math.min(groupW*0.7/m,40);
+// Grid
+ctx.strokeStyle='#252550';ctx.lineWidth=0.5;
+for(let i=0;i<=5;i++){
+const y=pad.t+ch-ch*(i/5);
+ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+ctx.fillStyle='#7878aa';ctx.font='11px sans-serif';ctx.textAlign='right';
+ctx.fillText((maxV*i/5).toFixed(maxV>100?0:1),pad.l-6,y+4);
+}
+// Bars
+datasets.forEach((data,di)=>{
+data.forEach((v,i)=>{
+const x=pad.l+groupW*i+(groupW-barW*m)/2+barW*di;
+const h=ch*(v/maxV);
+const y=pad.t+ch-h;
+ctx.fillStyle=COLORS[di%COLORS.length];
+ctx.beginPath();
+roundRect(ctx,x,y,barW-1,h,3);
+ctx.fill();
+if(m<=2||barW>20){
+ctx.fillStyle='#e0e0f0';ctx.font='10px sans-serif';ctx.textAlign='center';
+ctx.fillText(v%1?v.toFixed(1):v,x+barW/2,y-4);
+}
+});
+});
+// X labels
+ctx.fillStyle='#7878aa';ctx.font='11px sans-serif';ctx.textAlign='center';
+labels.forEach((l,i)=>{
+const x=pad.l+groupW*i+groupW/2;
+ctx.save();ctx.translate(x,H-pad.b+14);
+if(l.length>8)ctx.rotate(-0.4);
+ctx.fillText(l.length>14?l.slice(0,13)+'…':l,0,0);
+ctx.restore();
+});
+drawLegend(ctx,cols,W,pad);
+}
+
+function drawLine(ctx,labels,cols,datasets){
+const W=600,H=400,pad={t:30,r:20,b:60,l:60};
+const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+const allVals=datasets.flat();
+const maxV=Math.max(...allVals)*1.1||1;
+const minV=Math.min(0,Math.min(...allVals)*0.9);
+const range=maxV-minV||1;
+const n=labels.length;
+// Grid
+ctx.strokeStyle='#252550';ctx.lineWidth=0.5;
+for(let i=0;i<=5;i++){
+const v=minV+range*(i/5);
+const y=pad.t+ch-ch*(i/5);
+ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+ctx.fillStyle='#7878aa';ctx.font='11px sans-serif';ctx.textAlign='right';
+ctx.fillText(v.toFixed(v>100?0:2),pad.l-6,y+4);
+}
+// Lines
+datasets.forEach((data,di)=>{
+ctx.strokeStyle=COLORS[di%COLORS.length];ctx.lineWidth=2.5;
+ctx.beginPath();
+data.forEach((v,i)=>{
+const x=pad.l+cw*i/(n-1||1);
+const y=pad.t+ch-ch*((v-minV)/range);
+i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+});
+ctx.stroke();
+// Dots
+ctx.fillStyle=COLORS[di%COLORS.length];
+data.forEach((v,i)=>{
+const x=pad.l+cw*i/(n-1||1);
+const y=pad.t+ch-ch*((v-minV)/range);
+ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+});
+});
+// X labels
+ctx.fillStyle='#7878aa';ctx.font='11px sans-serif';ctx.textAlign='center';
+const step=Math.max(1,Math.floor(n/12));
+labels.forEach((l,i)=>{
+if(i%step!==0&&i!==n-1)return;
+const x=pad.l+cw*i/(n-1||1);
+ctx.fillText(l.length>10?l.slice(0,9)+'…':l,x,H-pad.b+16);
+});
+drawLegend(ctx,cols,W,pad);
+}
+
+function drawPie(ctx,labels,cols,datasets){
+const data=datasets[0];
+const total=data.reduce((a,b)=>a+b,0)||1;
+const cx=240,cy=200,r=140;
+let angle=-Math.PI/2;
+data.forEach((v,i)=>{
+const sweep=Math.PI*2*(v/total);
+ctx.fillStyle=COLORS[i%COLORS.length];
+ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+sweep);ctx.closePath();ctx.fill();
+// Label
+const mid=angle+sweep/2;
+const lx=cx+Math.cos(mid)*(r*0.65);
+const ly=cy+Math.sin(mid)*(r*0.65);
+const pct=(v/total*100).toFixed(1)+'%';
+ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+if(sweep>0.15)ctx.fillText(pct,lx,ly+4);
+angle+=sweep;
+});
+// Legend on right
+ctx.font='12px sans-serif';
+labels.forEach((l,i)=>{
+const y=40+i*22;
+ctx.fillStyle=COLORS[i%COLORS.length];
+ctx.fillRect(440,y-6,12,12);
+ctx.fillStyle='#e0e0f0';ctx.textAlign='left';
+ctx.fillText(`${l} (${data[i]})`,458,y+4);
+});
+}
+
+function drawScatter(ctx,labels,cols,datasets){
+if(datasets.length<2){drawBar(ctx,labels,cols,datasets);return}
+const W=600,H=400,pad={t:30,r:20,b:50,l:60};
+const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+const xs=datasets[0],ys=datasets[1];
+const xMax=Math.max(...xs)*1.1||1,yMax=Math.max(...ys)*1.1||1;
+// Grid
+ctx.strokeStyle='#252550';ctx.lineWidth=0.5;
+for(let i=0;i<=5;i++){
+const y=pad.t+ch-ch*(i/5);
+ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+ctx.fillStyle='#7878aa';ctx.font='10px sans-serif';ctx.textAlign='right';
+ctx.fillText((yMax*i/5).toFixed(1),pad.l-6,y+4);
+}
+// Axis labels
+ctx.fillStyle='#7878aa';ctx.font='12px sans-serif';ctx.textAlign='center';
+ctx.fillText(cols[0]||'X',W/2,H-8);
+ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText(cols[1]||'Y',0,0);ctx.restore();
+// Points
+xs.forEach((xv,i)=>{
+const x=pad.l+cw*(xv/xMax);
+const y=pad.t+ch-ch*(ys[i]/yMax);
+ctx.fillStyle=COLORS[i%COLORS.length];
+ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#e0e0f0';ctx.font='10px sans-serif';ctx.textAlign='left';
+ctx.fillText(labels[i],x+9,y+4);
+});
+}
+
+function drawRadar(ctx,labels,cols,datasets){
+const cx=280,cy=210,r=150;
+const n=labels.length;
+if(n<3){drawBar(ctx,labels,cols,datasets);return}
+const allVals=datasets.flat();
+const maxV=Math.max(...allVals)*1.1||1;
+const angleStep=Math.PI*2/n;
+// Grid rings
+for(let ring=1;ring<=5;ring++){
+const rr=r*ring/5;
+ctx.strokeStyle='#252550';ctx.lineWidth=0.5;
+ctx.beginPath();
+for(let i=0;i<=n;i++){
+const a=-Math.PI/2+angleStep*i;
+const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;
+i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+}
+ctx.stroke();
+}
+// Spokes + labels
+ctx.fillStyle='#7878aa';ctx.font='12px sans-serif';
+for(let i=0;i<n;i++){
+const a=-Math.PI/2+angleStep*i;
+ctx.strokeStyle='#252550';ctx.beginPath();
+ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.stroke();
+const lx=cx+Math.cos(a)*(r+18),ly=cy+Math.sin(a)*(r+18);
+ctx.textAlign=Math.abs(Math.cos(a))<0.1?'center':Math.cos(a)>0?'left':'right';
+ctx.fillText(labels[i],lx,ly+4);
+}
+// Data polygons
+datasets.forEach((data,di)=>{
+ctx.strokeStyle=COLORS[di%COLORS.length];ctx.lineWidth=2;
+ctx.fillStyle=COLORS[di%COLORS.length]+'33';
+ctx.beginPath();
+data.forEach((v,i)=>{
+const a=-Math.PI/2+angleStep*i;
+const rr=r*(v/maxV);
+const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;
+i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+});
+ctx.closePath();ctx.fill();ctx.stroke();
+// Dots
+data.forEach((v,i)=>{
+const a=-Math.PI/2+angleStep*i;
+const rr=r*(v/maxV);
+ctx.fillStyle=COLORS[di%COLORS.length];
+ctx.beginPath();ctx.arc(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr,4,0,Math.PI*2);ctx.fill();
+});
+});
+// Legend top-right
+drawLegend(ctx,cols,600,{t:10,r:20});
+}
+
+function drawLegend(ctx,cols,W,pad){
+if(cols.length<=1)return;
+ctx.font='11px sans-serif';
+const startX=W-pad.r-cols.reduce((a,c)=>a+ctx.measureText(c).width+24,0);
+cols.forEach((c,i)=>{
+const x=startX+i*((W-pad.r-startX)/cols.length);
+ctx.fillStyle=COLORS[i%COLORS.length];
+ctx.fillRect(x,pad.t-18,10,10);
+ctx.fillStyle='#e0e0f0';ctx.textAlign='left';
+ctx.fillText(c,x+14,pad.t-9);
+});
+}
+
+function roundRect(ctx,x,y,w,h,r){
+if(h<r*2)r=h/2;
+ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+}
+
+function exportPNG(){
+const c=document.getElementById('chart');
+const link=document.createElement('a');
+link.download='chart.png';link.href=c.toDataURL('image/png');link.click();
+}
+
+render();
+</script>
+</body>
+</html>

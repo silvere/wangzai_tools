@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mock Data Generator 假数据生成器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#3b82f6;--accent2:#8b5cf6;--green:#22c55e;--orange:#f59e0b}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+.header h1 span{font-size:24px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2563eb}
+.main{display:flex;height:calc(100vh - 60px)}
+.sidebar{width:320px;min-width:320px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:16px}
+.output-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.section{margin-bottom:16px}
+.section-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.field-list{display:flex;flex-direction:column;gap:6px}
+.field-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all .15s}
+.field-item:hover{border-color:var(--accent)}
+.field-item.selected{border-color:var(--accent);background:rgba(59,130,246,.1)}
+.field-item input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.field-item label{cursor:pointer;flex:1;font-size:13px}
+.field-item .field-icon{font-size:16px;width:24px;text-align:center}
+.field-item .field-example{font-size:11px;color:var(--text2);margin-top:2px}
+.config-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.config-row label{font-size:13px;color:var(--text2);min-width:60px}
+.config-row input,.config-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;flex:1}
+.config-row input:focus,.config-row select:focus{outline:none;border-color:var(--accent)}
+.output-toolbar{padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.format-tabs{display:flex;gap:2px;background:var(--surface2);border-radius:6px;padding:2px}
+.format-tab{padding:4px 12px;border-radius:4px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;transition:all .15s}
+.format-tab.active{background:var(--accent);color:#fff}
+.output-stats{margin-left:auto;font-size:12px;color:var(--text2)}
+.output-box{flex:1;overflow:auto;padding:16px}
+.output-box pre{font-family:'SF Mono',Monaco,'Cascadia Code',Consolas,monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-all;color:var(--text)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+.preset-btns{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.preset-btn{padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;transition:all .15s}
+.preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:768px){.main{flex-direction:column}.sidebar{width:100%;min-width:0;max-height:50vh}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1><span>🎲</span> Mock Data 假数据生成器</h1>
+<div class="controls">
+<button class="btn primary" onclick="generate()">⚡ 生成</button>
+<button class="btn" onclick="copyOutput()">📋 复制</button>
+<button class="btn" onclick="downloadOutput()">💾 下载</button>
+</div>
+</div>
+<div class="main">
+<div class="sidebar">
+<div class="section">
+<div class="section-title">⚙️ 配置</div>
+<div class="config-row"><label>数量</label><input type="number" id="count" value="10" min="1" max="1000"></div>
+<div class="config-row"><label>语言</label><select id="lang"><option value="zh">中文</option><option value="en">English</option><option value="mix">混合</option></select></div>
+</div>
+<div class="section">
+<div class="section-title">🏷️ 预设</div>
+<div class="preset-btns">
+<button class="preset-btn" onclick="preset('user')">👤 用户</button>
+<button class="preset-btn" onclick="preset('product')">📦 商品</button>
+<button class="preset-btn" onclick="preset('order')">🧾 订单</button>
+<button class="preset-btn" onclick="preset('article')">📝 文章</button>
+<button class="preset-btn" onclick="preset('log')">📊 日志</button>
+<button class="preset-btn" onclick="preset('llm')">🤖 LLM评测</button>
+</div>
+</div>
+<div class="section">
+<div class="section-title">📋 字段选择</div>
+<div class="field-list" id="fieldList"></div>
+</div>
+</div>
+<div class="output-area">
+<div class="output-toolbar">
+<div class="format-tabs">
+<button class="format-tab active" data-fmt="json" onclick="setFormat('json')">JSON</button>
+<button class="format-tab" data-fmt="csv" onclick="setFormat('csv')">CSV</button>
+<button class="format-tab" data-fmt="sql" onclick="setFormat('sql')">SQL INSERT</button>
+<button class="format-tab" data-fmt="tsv" onclick="setFormat('tsv')">TSV</button>
+<button class="format-tab" data-fmt="jsonl" onclick="setFormat('jsonl')">JSONL</button>
+</div>
+<div class="output-stats" id="outputStats"></div>
+</div>
+<div class="output-box"><pre id="output">点击「⚡ 生成」开始，或选择一个预设快速开始</pre></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const FIELDS=[
+{id:'id',icon:'🔑',name:'ID',example:'1, 2, 3...',gen:(_,i)=>i+1},
+{id:'uuid',icon:'🆔',name:'UUID',example:'550e8400-e29b-41d4-...',gen:()=>crypto.randomUUID()},
+{id:'name',icon:'👤',name:'姓名',example:'张三 / John Smith',gen:(l)=>l==='en'?enName():l==='zh'?zhName():Math.random()>.5?zhName():enName()},
+{id:'email',icon:'📧',name:'邮箱',example:'user@example.com',gen:(l)=>{const d=['gmail.com','outlook.com','qq.com','163.com','company.io'];return rStr(6)+'@'+pick(d)}},
+{id:'phone',icon:'📱',name:'手机号',example:'138xxxx1234',gen:(l)=>l==='en'?'+1-'+rDigits(3)+'-'+rDigits(3)+'-'+rDigits(4):'1'+pick(['3','5','7','8','9'])+rDigits(9)},
+{id:'age',icon:'🎂',name:'年龄',example:'18-65',gen:()=>rInt(18,65)},
+{id:'gender',icon:'⚧',name:'性别',example:'男/女',gen:(l)=>l==='en'?pick(['Male','Female']):pick(['男','女'])},
+{id:'avatar',icon:'🖼️',name:'头像URL',example:'https://i.pravatar.cc/150?u=...',gen:()=>'https://i.pravatar.cc/150?u='+rInt(1,9999)},
+{id:'address',icon:'🏠',name:'地址',example:'上海市浦东新区...',gen:(l)=>l==='en'?enAddr():zhAddr()},
+{id:'city',icon:'🏙️',name:'城市',example:'上海 / New York',gen:(l)=>l==='en'?pick(['New York','London','Tokyo','Paris','Berlin','Sydney','Toronto']):pick(['北京','上海','广州','深圳','杭州','成都','武汉','南京'])},
+{id:'company',icon:'🏢',name:'公司',example:'科技有限公司',gen:(l)=>l==='en'?pick(['Acme','Globex','Initech','Umbrella','Stark','Wayne'])+' '+pick(['Inc','Corp','Ltd','Co']):pick(['星辰','云帆','智远','博创','鼎新','华盛'])+pick(['科技','网络','信息','数据','智能'])+'有限公司'},
+{id:'title',icon:'💼',name:'职位',example:'工程师/经理',gen:(l)=>l==='en'?pick(['Software Engineer','Product Manager','Data Scientist','Designer','DevOps Engineer','CTO','Intern']):pick(['软件工程师','产品经理','数据分析师','前端开发','后端开发','算法工程师','测试工程师','实习生'])},
+{id:'ip',icon:'🌐',name:'IP地址',example:'192.168.1.1',gen:()=>rInt(1,255)+'.'+rInt(0,255)+'.'+rInt(0,255)+'.'+rInt(1,254)},
+{id:'url',icon:'🔗',name:'URL',example:'https://example.com/...',gen:()=>'https://'+pick(['example','demo','test','api','app'])+'.'+pick(['com','io','dev','net'])+'/'+rStr(8)},
+{id:'date',icon:'📅',name:'日期',example:'2024-01-15',gen:()=>{const d=new Date(Date.now()-rInt(0,365*2)*864e5);return d.toISOString().slice(0,10)}},
+{id:'datetime',icon:'🕐',name:'日期时间',example:'2024-01-15T08:30:00Z',gen:()=>{const d=new Date(Date.now()-rInt(0,365*2*864e5));return d.toISOString().replace(/\.\d+/,'')}},
+{id:'timestamp',icon:'⏱️',name:'时间戳',example:'1705276800',gen:()=>Math.floor(Date.now()/1000)-rInt(0,365*2*86400)},
+{id:'bool',icon:'✅',name:'布尔值',example:'true / false',gen:()=>Math.random()>.5},
+{id:'price',icon:'💰',name:'价格',example:'99.99',gen:()=>+(rInt(1,9999)+Math.random()).toFixed(2)},
+{id:'amount',icon:'🔢',name:'数量',example:'1-100',gen:()=>rInt(1,100)},
+{id:'score',icon:'⭐',name:'评分',example:'1.0-5.0',gen:()=>+(1+Math.random()*4).toFixed(1)},
+{id:'color',icon:'🎨',name:'颜色HEX',example:'#3b82f6',gen:()=>'#'+rDigits(6,'0123456789abcdef')},
+{id:'text',icon:'📝',name:'短文本',example:'一段随机文字...',gen:(l)=>l==='en'?enText():zhText()},
+{id:'status',icon:'🏷️',name:'状态',example:'active/pending/...',gen:(l)=>l==='en'?pick(['active','inactive','pending','completed','cancelled']):pick(['活跃','未激活','待处理','已完成','已取消'])},
+{id:'tag',icon:'🔖',name:'标签',example:'["AI","Python"]',gen:(l)=>{const t=l==='en'?['AI','ML','Python','Web','API','Cloud','Data','Security']:['人工智能','机器学习','Python','前端','后端','云计算','大数据','安全'];return [pick(t),pick(t)]}},
+{id:'model',icon:'🤖',name:'模型名',example:'gpt-4o / claude-3.5',gen:()=>pick(['gpt-4o','gpt-4o-mini','claude-3.5-sonnet','claude-3-opus','gemini-1.5-pro','gemini-1.5-flash','llama-3.1-70b','qwen-2.5-72b','deepseek-v3','glm-4'])},
+{id:'metric',icon:'📊',name:'评测分数',example:'0.85',gen:()=>+(0.3+Math.random()*0.7).toFixed(4)},
+{id:'latency',icon:'⚡',name:'延迟(ms)',example:'120',gen:()=>rInt(50,3000)},
+{id:'tokens',icon:'📏',name:'Token数',example:'1234',gen:()=>rInt(10,4096)},
+];
+
+const PRESETS={
+user:['id','name','email','phone','age','gender','city','company','title','avatar'],
+product:['id','uuid','text','price','amount','score','status','tag','color','url'],
+order:['id','uuid','name','email','price','amount','status','date','address','phone'],
+article:['id','text','name','date','tag','score','status','url'],
+log:['id','datetime','ip','url','status','latency','text'],
+llm:['id','model','text','metric','tokens','latency','score','status','timestamp']
+};
+
+let selectedFields=new Set(['id','name','email','phone','city']);
+let currentFormat='json';
+let lastData=null;
+
+function rInt(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function rStr(n){const c='abcdefghijklmnopqrstuvwxyz';let s='';for(let i=0;i<n;i++)s+=c[rInt(0,25)];return s}
+function rDigits(n,c='0123456789'){let s='';for(let i=0;i<n;i++)s+=c[rInt(0,c.length-1)];return s}
+function pick(a){return a[rInt(0,a.length-1)]}
+
+const ZH_LAST=['张','李','王','刘','陈','杨','赵','黄','周','吴','徐','孙','马','朱','胡','郭','林','何','高','罗'];
+const ZH_FIRST=['伟','芳','娜','敏','静','丽','强','磊','洋','勇','艳','杰','军','秀英','明','超','秀兰','霞','平','刚','桂英'];
+function zhName(){return pick(ZH_LAST)+pick(ZH_FIRST)+(Math.random()>.5?pick(ZH_FIRST):'')}
+function enName(){const f=['James','Mary','John','Emma','Robert','Olivia','Michael','Ava','William','Sophia','David','Isabella','Richard','Mia','Joseph','Charlotte'];const l=['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Wilson','Moore'];return pick(f)+' '+pick(l)}
+function zhAddr(){return pick(['北京','上海','广州','深圳','杭州'])+'市'+pick(['朝阳','浦东','天河','南山','西湖'])+'区'+pick(['中山','人民','建设','解放','和平'])+'路'+rInt(1,999)+'号'}
+function enAddr(){return rInt(1,9999)+' '+pick(['Main','Oak','Elm','Park','Cedar','Maple'])+' '+pick(['St','Ave','Blvd','Dr','Ln'])+', '+pick(['New York','LA','Chicago','Houston','Phoenix'])}
+function zhText(){const s=['这是一段测试文本','人工智能正在改变世界','大模型评测是关键环节','数据质量决定模型效果','今天天气不错适合写代码','用户体验是产品的核心','持续学习是进步的关键','创新驱动发展','技术改变生活','简洁是终极的复杂'];return pick(s)}
+function enText(){const s=['The quick brown fox jumps over the lazy dog','AI is transforming every industry','Testing is essential for quality','Data drives better decisions','Innovation requires courage','Simplicity is the ultimate sophistication','Code is poetry','Ship fast and iterate','Build something people want','The best way to predict the future is to create it'];return pick(s)}
+
+function initFields(){
+const el=document.getElementById('fieldList');
+el.innerHTML=FIELDS.map(f=>`
+<div class="field-item ${selectedFields.has(f.id)?'selected':''}" onclick="toggleField('${f.id}',this)">
+<input type="checkbox" ${selectedFields.has(f.id)?'checked':''} onclick="event.stopPropagation();toggleField('${f.id}',this.closest('.field-item'))">
+<div class="field-icon">${f.icon}</div>
+<div><label>${f.name}</label><div class="field-example">${f.example}</div></div>
+</div>`).join('');
+}
+
+function toggleField(id,el){
+const cb=el.querySelector('input');
+if(selectedFields.has(id)){selectedFields.delete(id);el.classList.remove('selected');cb.checked=false}
+else{selectedFields.add(id);el.classList.add('selected');cb.checked=true}
+}
+
+function preset(name){
+selectedFields=new Set(PRESETS[name]);
+initFields();
+generate();
+}
+
+function setFormat(fmt){
+currentFormat=fmt;
+document.querySelectorAll('.format-tab').forEach(t=>t.classList.toggle('active',t.dataset.fmt===fmt));
+if(lastData)renderOutput(lastData);
+}
+
+function generate(){
+const count=Math.min(parseInt(document.getElementById('count').value)||10,1000);
+const lang=document.getElementById('lang').value;
+const fields=FIELDS.filter(f=>selectedFields.has(f.id));
+if(!fields.length){showToast('请至少选择一个字段');return}
+const data=[];
+for(let i=0;i<count;i++){
+const row={};
+fields.forEach(f=>{row[f.id]=f.gen(lang,i)});
+data.push(row);
+}
+lastData=data;
+renderOutput(data);
+}
+
+function renderOutput(data){
+const el=document.getElementById('output');
+const stats=document.getElementById('outputStats');
+let text='';
+const fields=FIELDS.filter(f=>selectedFields.has(f.id));
+const keys=fields.map(f=>f.id);
+
+if(currentFormat==='json'){
+text=JSON.stringify(data,null,2);
+}else if(currentFormat==='jsonl'){
+text=data.map(r=>JSON.stringify(r)).join('\n');
+}else if(currentFormat==='csv'){
+text=keys.join(',')+'\n'+data.map(r=>keys.map(k=>{const v=r[k];return typeof v==='string'&&(v.includes(',')||v.includes('"'))?'"'+v.replace(/"/g,'""')+'"':Array.isArray(v)?'"'+JSON.stringify(v)+'"':v}).join(',')).join('\n');
+}else if(currentFormat==='tsv'){
+text=keys.join('\t')+'\n'+data.map(r=>keys.map(k=>{const v=r[k];return Array.isArray(v)?JSON.stringify(v):v}).join('\t')).join('\n');
+}else if(currentFormat==='sql'){
+const tbl='mock_data';
+text=data.map(r=>{
+const vals=keys.map(k=>{const v=r[k];if(typeof v==='string')return "'"+v.replace(/'/g,"''")+"'";if(typeof v==='boolean')return v?1:0;if(Array.isArray(v))return "'"+JSON.stringify(v).replace(/'/g,"''")+"'";return v});
+return `INSERT INTO ${tbl} (${keys.join(', ')}) VALUES (${vals.join(', ')});`;
+}).join('\n');
+}
+el.textContent=text;
+stats.textContent=`${data.length} 条记录 · ${keys.length} 个字段 · ${text.length.toLocaleString()} 字符`;
+}
+
+function copyOutput(){
+const el=document.getElementById('output');
+if(!el.textContent||el.textContent.startsWith('点击')){showToast('请先生成数据');return}
+navigator.clipboard.writeText(el.textContent).then(()=>showToast('✅ 已复制'));
+}
+
+function downloadOutput(){
+const el=document.getElementById('output');
+if(!el.textContent||el.textContent.startsWith('点击'))return;
+const ext={json:'.json',csv:'.csv',tsv:'.tsv',sql:'.sql',jsonl:'.jsonl'}[currentFormat];
+const blob=new Blob([el.textContent],{type:'text/plain'});
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mock_data'+ext;a.click();
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+
+initFields();
+</script>
+</body>
+</html>

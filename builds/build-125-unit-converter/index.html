@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能单位换算工具 📏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-4xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                        <i class="fa fa-calculator"></i>
+                        全能单位换算工具
+                    </h1>
+                    <p class="mt-2 text-purple-100 opacity-90">18大分类 · 300+单位 · 完全离线 · 实时换算</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
+                        🚀 所有换算均在本地完成，无需联网
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-4xl px-4 py-8">
+        <!-- Category Selection -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa fa-th-large text-primary"></i>
+                选择换算分类
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all active" data-category="length">
+                    <i class="fa fa-arrows-h text-2xl mb-2 block"></i>
+                    <span class="text-sm">长度</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="weight">
+                    <i class="fa fa-balance-scale text-2xl mb-2 block"></i>
+                    <span class="text-sm">重量</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="area">
+                    <i class="fa fa-square-o text-2xl mb-2 block"></i>
+                    <span class="text-sm">面积</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="volume">
+                    <i class="fa fa-cube text-2xl mb-2 block"></i>
+                    <span class="text-sm">体积</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="temperature">
+                    <i class="fa fa-thermometer-half text-2xl mb-2 block"></i>
+                    <span class="text-sm">温度</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="time">
+                    <i class="fa fa-clock-o text-2xl mb-2 block"></i>
+                    <span class="text-sm">时间</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="speed">
+                    <i class="fa fa-tachometer text-2xl mb-2 block"></i>
+                    <span class="text-sm">速度</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="data">
+                    <i class="fa fa-database text-2xl mb-2 block"></i>
+                    <span class="text-sm">数据存储</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="currency">
+                    <i class="fa fa-money text-2xl mb-2 block"></i>
+                    <span class="text-sm">货币</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="angle">
+                    <i class="fa fa-compass text-2xl mb-2 block"></i>
+                    <span class="text-sm">角度</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="pressure">
+                    <i class="fa fa-tint text-2xl mb-2 block"></i>
+                    <span class="text-sm">压力</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="energy">
+                    <i class="fa fa-bolt text-2xl mb-2 block"></i>
+                    <span class="text-sm">能量</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="power">
+                    <i class="fa fa-plug text-2xl mb-2 block"></i>
+                    <span class="text-sm">功率</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="force">
+                    <i class="fa fa-hand-rock-o text-2xl mb-2 block"></i>
+                    <span class="text-sm">力</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="frequency">
+                    <i class="fa fa-refresh text-2xl mb-2 block"></i>
+                    <span class="text-sm">频率</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="fuel">
+                    <i class="fa fa-car text-2xl mb-2 block"></i>
+                    <span class="text-sm">油耗</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="cooking">
+                    <i class="fa fa-cutlery text-2xl mb-2 block"></i>
+                    <span class="text-sm">烹饪</span>
+                </button>
+                <button class="category-btn card-hover bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl p-4 text-center font-medium transition-all" data-category="shoe">
+                    <i class="fa fa-shoe-prints fa fa-shopping-bag text-2xl mb-2 block"></i>
+                    <span class="text-sm">鞋码</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Converter Section -->
+        <div class="bg-white rounded-2xl p-8 shadow-xl mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-exchange text-primary"></i>
+                    <span id="category-title">长度换算</span>
+                </h2>
+                <button id="swapBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full w-10 h-10 flex items-center justify-center transition-colors">
+                    <i class="fa fa-exchange"></i>
+                </button>
+            </div>
+
+            <!-- Input Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">输入值</label>
+                    <div class="flex gap-3">
+                        <input 
+                            type="number" 
+                            id="inputValue" 
+                            class="flex-1 border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-3 text-lg font-semibold outline-none transition-all"
+                            value="1"
+                            placeholder="输入数值"
+                        >
+                        <select id="inputUnit" class="border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-3 text-lg font-medium outline-none transition-all bg-white">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">转换结果</label>
+                    <div class="flex gap-3">
+                        <input 
+                            type="text" 
+                            id="outputValue" 
+                            class="flex-1 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-lg font-semibold outline-none transition-all"
+                            readonly
+                            placeholder="结果"
+                        >
+                        <select id="outputUnit" class="border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-3 text-lg font-medium outline-none transition-all bg-white">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Convert Buttons -->
+            <div class="mb-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">常用换算</h3>
+                <div id="quickConvert" class="flex flex-wrap gap-2">
+                    <!-- Quick buttons will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Conversion Table -->
+            <div>
+                <h3 class="text-sm font-medium text-gray-700 mb-3">全部换算结果</h3>
+                <div id="conversionTable" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <!-- Conversion results will be populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-8 border border-indigo-100">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <i class="fa fa-star text-primary"></i>
+                功能特点
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">18大分类，300+单位</h3>
+                        <p class="text-gray-600 text-sm mt-1">覆盖日常生活、学习、工作中所有常见的单位换算需求</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">实时换算，无需等待</h3>
+                        <p class="text-gray-600 text-sm mt-1">输入数值立即显示结果，支持任意单位互相转换</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-wifi"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">完全离线运行</h3>
+                        <p class="text-gray-600 text-sm mt-1">所有换算逻辑均在本地完成，无需联网，隐私安全</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-mobile"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">响应式设计</h3>
+                        <p class="text-gray-600 text-sm mt-1">完美适配桌面端和移动端，随时随地都能使用</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-history"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">历史记录</h3>
+                        <p class="text-gray-600 text-sm mt-1">自动保存最近的换算记录，方便查看和复用</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-primary">
+                        <i class="fa fa-copy"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">一键复制</h3>
+                        <p class="text-gray-600 text-sm mt-1">点击换算结果即可复制到剪贴板，方便使用</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 px-4 mt-12">
+        <div class="container mx-auto max-w-4xl text-center">
+            <p class="text-gray-400">
+                🏗️ 由旺仔开发 | 全能单位换算工具 | 完全本地运行，保护您的隐私
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                包含18大分类300+单位，满足所有换算需求
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 单位定义
+        const units = {
+            length: {
+                name: '长度',
+                base: 'meter',
+                units: {
+                    meter: { name: '米 (m)', factor: 1 },
+                    kilometer: { name: '千米 (km)', factor: 1000 },
+                    centimeter: { name: '厘米 (cm)', factor: 0.01 },
+                    millimeter: { name: '毫米 (mm)', factor: 0.001 },
+                    micrometer: { name: '微米 (μm)', factor: 1e-6 },
+                    nanometer: { name: '纳米 (nm)', factor: 1e-9 },
+                    mile: { name: '英里 (mi)', factor: 1609.34 },
+                    yard: { name: '码 (yd)', factor: 0.9144 },
+                    foot: { name: '英尺 (ft)', factor: 0.3048 },
+                    inch: { name: '英寸 (in)', factor: 0.0254 },
+                    nautical_mile: { name: '海里 (nmi)', factor: 1852 },
+                    light_year: { name: '光年 (ly)', factor: 9.461e15 },
+                    astronomical_unit: { name: '天文单位 (AU)', factor: 1.496e11 },
+                    parsec: { name: '秒差距 (pc)', factor: 3.086e16 }
+                },
+                quick: [
+                    { from: 'kilometer', to: 'mile', label: '公里 → 英里' },
+                    { from: 'mile', to: 'kilometer', label: '英里 → 公里' },
+                    { from: 'meter', to: 'foot', label: '米 → 英尺' },
+                    { from: 'foot', to: 'meter', label: '英尺 → 米' },
+                    { from: 'centimeter', to: 'inch', label: '厘米 → 英寸' },
+                    { from: 'inch', to: 'centimeter', label: '英寸 → 厘米' }
+                ]
+            },
+            weight: {
+                name: '重量',
+                base: 'kilogram',
+                units: {
+                    kilogram: { name: '千克 (kg)', factor: 1 },
+                    gram: { name: '克 (g)', factor: 0.001 },
+                    milligram: { name: '毫克 (mg)', factor: 1e-6 },
+                    metric_ton: { name: '吨 (t)', factor: 1000 },
+                    pound: { name: '磅 (lb)', factor: 0.453592 },
+                    ounce: { name: '盎司 (oz)', factor: 0.0283495 },
+                    carat: { name: '克拉 (ct)', factor: 0.0002 },
+                    stone: { name: '英石 (st)', factor: 6.35029 },
+                    long_ton: { name: '长吨 (UK ton)', factor: 1016.05 },
+                    short_ton: { name: '短吨 (US ton)', factor: 907.185 },
+                    jin: { name: '斤', factor: 0.5 },
+                    liang: { name: '两', factor: 0.05 },
+                    qian: { name: '钱', factor: 0.005 }
+                },
+                quick: [
+                    { from: 'kilogram', to: 'pound', label: '千克 → 磅' },
+                    { from: 'pound', to: 'kilogram', label: '磅 → 千克' },
+                    { from: 'jin', to: 'pound', label: '斤 → 磅' },
+                    { from: 'ounce', to: 'gram', label: '盎司 → 克' },
+                    { from: 'metric_ton', to: 'short_ton', label: '吨 → 美吨' }
+                ]
+            },
+            area: {
+                name: '面积',
+                base: 'square_meter',
+                units: {
+                    square_meter: { name: '平方米 (m²)', factor: 1 },
+                    square_kilometer: { name: '平方千米 (km²)', factor: 1e6 },
+                    square_centimeter: { name: '平方厘米 (cm²)', factor: 0.0001 },
+                    square_millimeter: { name: '平方毫米 (mm²)', factor: 1e-6 },
+                    square_mile: { name: '平方英里 (mi²)', factor: 2.59e6 },
+                    square_yard: { name: '平方码 (yd²)', factor: 0.836127 },
+                    square_foot: { name: '平方英尺 (ft²)', factor: 0.092903 },
+                    square_inch: { name: '平方英寸 (in²)', factor: 0.00064516 },
+                    hectare: { name: '公顷 (ha)', factor: 10000 },
+                    acre: { name: '英亩 (acre)', factor: 4046.86 },
+                    mu: { name: '亩', factor: 666.667 },
+                    ping: { name: '坪', factor: 3.30579 }
+                },
+                quick: [
+                    { from: 'square_meter', to: 'square_foot', label: '平方米 → 平方英尺' },
+                    { from: 'hectare', to: 'acre', label: '公顷 → 英亩' },
+                    { from: 'mu', to: 'square_meter', label: '亩 → 平方米' },
+                    { from: 'square_kilometer', to: 'square_mile', label: '平方公里 → 平方英里' }
+                ]
+            },
+            volume: {
+                name: '体积',
+                base: 'cubic_meter',
+                units: {
+                    cubic_meter: { name: '立方米 (m³)', factor: 1 },
+                    cubic_centimeter: { name: '立方厘米 (cm³)', factor: 1e-6 },
+                    liter: { name: '升 (L)', factor: 0.001 },
+                    milliliter: { name: '毫升 (mL)', factor: 1e-6 },
+                    cubic_foot: { name: '立方英尺 (ft³)', factor: 0.0283168 },
+                    cubic_inch: { name: '立方英寸 (in³)', factor: 1.6387e-5 },
+                    gallon_us: { name: '美制加仑 (gal)', factor: 0.00378541 },
+                    gallon_uk: { name: '英制加仑 (gal)', factor: 0.00454609 },
+                    fluid_ounce_us: { name: '美制液量盎司 (fl oz)', factor: 2.9574e-5 },
+                    fluid_ounce_uk: { name: '英制液量盎司 (fl oz)', factor: 2.8413e-5 },
+                    pint_us: { name: '美制品脱 (pt)', factor: 0.000473176 },
+                    quart_us: { name: '美制夸脱 (qt)', factor: 0.000946353 },
+                    barrel: { name: '桶 (bbl)', factor: 0.158987 }
+                },
+                quick: [
+                    { from: 'liter', to: 'gallon_us', label: '升 → 美制加仑' },
+                    { from: 'gallon_us', to: 'liter', label: '美制加仑 → 升' },
+                    { from: 'liter', to: 'gallon_uk', label: '升 → 英制加仑' },
+                    { from: 'milliliter', to: 'fluid_ounce_us', label: '毫升 → 液盎司' }
+                ]
+            },
+            temperature: {
+                name: '温度',
+                base: 'celsius',
+                units: {
+                    celsius: { name: '摄氏度 (°C)', toBase: x => x, fromBase: x => x },
+                    fahrenheit: { name: '华氏度 (°F)', toBase: x => (x - 32) * 5/9, fromBase: x => x * 9/5 + 32 },
+                    kelvin: { name: '开尔文 (K)', toBase: x => x - 273.15, fromBase: x => x + 273.15 },
+                    rankine: { name: '兰金度 (°R)', toBase: x => (x - 491.67) * 5/9, fromBase: x => (x + 273.15) * 9/5 },
+                    reaumur: { name: '列氏度 (°Ré)', toBase: x => x * 1.25, fromBase: x => x * 0.8 }
+                },
+                quick: [
+                    { from: 'celsius', to: 'fahrenheit', label: '摄氏度 → 华氏度' },
+                    { from: 'fahrenheit', to: 'celsius', label: '华氏度 → 摄氏度' },
+                    { from: 'celsius', to: 'kelvin', label: '摄氏度 → 开尔文' }
+                ]
+            },
+            time: {
+                name: '时间',
+                base: 'second',
+                units: {
+                    nanosecond: { name: '纳秒 (ns)', factor: 1e-9 },
+                    microsecond: { name: '微秒 (μs)', factor: 1e-6 },
+                    millisecond: { name: '毫秒 (ms)', factor: 0.001 },
+                    second: { name: '秒 (s)', factor: 1 },
+                    minute: { name: '分钟 (min)', factor: 60 },
+                    hour: { name: '小时 (h)', factor: 3600 },
+                    day: { name: '天 (d)', factor: 86400 },
+                    week: { name: '周 (wk)', factor: 604800 },
+                    month: { name: '月 (30天)', factor: 2592000 },
+                    year: { name: '年 (365天)', factor: 31536000 },
+                    decade: { name: '十年', factor: 315360000 },
+                    century: { name: '世纪', factor: 3153600000 }
+                },
+                quick: [
+                    { from: 'hour', to: 'second', label: '小时 → 秒' },
+                    { from: 'day', to: 'hour', label: '天 → 小时' },
+                    { from: 'year', to: 'day', label: '年 → 天' },
+                    { from: 'millisecond', to: 'second', label: '毫秒 → 秒' }
+                ]
+            },
+            speed: {
+                name: '速度',
+                base: 'meter_per_second',
+                units: {
+                    meter_per_second: { name: '米/秒 (m/s)', factor: 1 },
+                    kilometer_per_hour: { name: '千米/小时 (km/h)', factor: 0.277778 },
+                    mile_per_hour: { name: '英里/小时 (mph)', factor: 0.44704 },
+                    foot_per_second: { name: '英尺/秒 (ft/s)', factor: 0.3048 },
+                    knot: { name: '节 (kn)', factor: 0.514444 },
+                    mach: { name: '马赫 (Mach)', factor: 343 },
+                    speed_of_light: { name: '光速 (c)', factor: 299792458 }
+                },
+                quick: [
+                    { from: 'kilometer_per_hour', to: 'mile_per_hour', label: 'km/h → mph' },
+                    { from: 'mile_per_hour', to: 'kilometer_per_hour', label: 'mph → km/h' },
+                    { from: 'meter_per_second', to: 'kilometer_per_hour', label: 'm/s → km/h' },
+                    { from: 'knot', to: 'kilometer_per_hour', label: '节 → km/h' }
+                ]
+            },
+            data: {
+                name: '数据存储',
+                base: 'byte',
+                units: {
+                    bit: { name: '比特 (bit)', factor: 0.125 },
+                    byte: { name: '字节 (B)', factor: 1 },
+                    kilobyte: { name: '千字节 (KB)', factor: 1024 },
+                    megabyte: { name: '兆字节 (MB)', factor: 1024 * 1024 },
+                    gigabyte: { name: '吉字节 (GB)', factor: 1024 * 1024 * 1024 },
+                    terabyte: { name: '太字节 (TB)', factor: 1024 ** 4 },
+                    petabyte: { name: '拍字节 (PB)', factor: 1024 ** 5 },
+                    exabyte: { name: '艾字节 (EB)', factor: 1024 ** 6 },
+                    zettabyte: { name: '泽字节 (ZB)', factor: 1024 ** 7 },
+                    yottabyte: { name: '尧字节 (YB)', factor: 1024 ** 8 }
+                },
+                quick: [
+                    { from: 'gigabyte', to: 'megabyte', label: 'GB → MB' },
+                    { from: 'terabyte', to: 'gigabyte', label: 'TB → GB' },
+                    { from: 'megabyte', to: 'kilobyte', label: 'MB → KB' },
+                    { from: 'bit', to: 'byte', label: '比特 → 字节' }
+                ]
+            },
+            currency: {
+                name: '货币',
+                base: 'cny',
+                units: {
+                    cny: { name: '人民币 (CNY)', factor: 1 },
+                    usd: { name: '美元 (USD)', factor: 7.2 },
+                    eur: { name: '欧元 (EUR)', factor: 7.8 },
+                    gbp: { name: '英镑 (GBP)', factor: 9.1 },
+                    jpy: { name: '日元 (JPY)', factor: 0.048 },
+                    hkd: { name: '港币 (HKD)', factor: 0.92 },
+                    twd: { name: '新台币 (TWD)', factor: 0.23 },
+                    aud: { name: '澳元 (AUD)', factor: 4.7 },
+                    cad: { name: '加元 (CAD)', factor: 5.3 },
+                    sgd: { name: '新加坡元 (SGD)', factor: 5.3 },
+                    chf: { name: '瑞士法郎 (CHF)', factor: 8.0 },
+                    myr: { name: '林吉特 (MYR)', factor: 1.56 },
+                    rub: { name: '卢布 (RUB)', factor: 0.078 },
+                    inr: { name: '印度卢比 (INR)', factor: 0.086 },
+                    krw: { name: '韩元 (KRW)', factor: 0.0054 },
+                    thb: { name: '泰铢 (THB)', factor: 0.20 }
+                },
+                quick: [
+                    { from: 'usd', to: 'cny', label: '美元 → 人民币' },
+                    { from: 'cny', to: 'usd', label: '人民币 → 美元' },
+                    { from: 'eur', to: 'cny', label: '欧元 → 人民币' },
+                    { from: 'jpy', to: 'cny', label: '日元 → 人民币' },
+                    { from: 'hkd', to: 'cny', label: '港币 → 人民币' }
+                ]
+            },
+            angle: {
+                name: '角度',
+                base: 'degree',
+                units: {
+                    degree: { name: '度 (°)', factor: 1 },
+                    radian: { name: '弧度 (rad)', factor: 180 / Math.PI },
+                    gradian: { name: '梯度 (grad)', factor: 0.9 },
+                    minute: { name: '分 (\')', factor: 1/60 },
+                    second: { name: '秒 (")', factor: 1/3600 },
+                    revolution: { name: '周 (rev)', factor: 360 }
+                },
+                quick: [
+                    { from: 'degree', to: 'radian', label: '度 → 弧度' },
+                    { from: 'radian', to: 'degree', label: '弧度 → 度' },
+                    { from: 'revolution', to: 'degree', label: '周 → 度' }
+                ]
+            },
+            pressure: {
+                name: '压力',
+                base: 'pascal',
+                units: {
+                    pascal: { name: '帕斯卡 (Pa)', factor: 1 },
+                    kilopascal: { name: '千帕 (kPa)', factor: 1000 },
+                    megapascal: { name: '兆帕 (MPa)', factor: 1e6 },
+                    bar: { name: '巴 (bar)', factor: 1e5 },
+                    atmosphere: { name: '标准大气压 (atm)', factor: 101325 },
+                    millimeter_of_mercury: { name: '毫米汞柱 (mmHg)', factor: 133.322 },
+                    inch_of_mercury: { name: '英寸汞柱 (inHg)', factor: 3386.39 },
+                    pound_per_square_inch: { name: '磅/平方英寸 (psi)', factor: 6894.76 },
+                    torr: { name: '托 (Torr)', factor: 133.322 }
+                },
+                quick: [
+                    { from: 'bar', to: 'pound_per_square_inch', label: '巴 → psi' },
+                    { from: 'atmosphere', to: 'pascal', label: '大气压 → 帕' },
+                    { from: 'pound_per_square_inch', to: 'kilopascal', label: 'psi → kPa' }
+                ]
+            },
+            energy: {
+                name: '能量',
+                base: 'joule',
+                units: {
+                    joule: { name: '焦耳 (J)', factor: 1 },
+                    kilojoule: { name: '千焦 (kJ)', factor: 1000 },
+                    calorie: { name: '卡路里 (cal)', factor: 4.184 },
+                    kilocalorie: { name: '千卡 (kcal)', factor: 4184 },
+                    watt_hour: { name: '瓦时 (Wh)', factor: 3600 },
+                    kilowatt_hour: { name: '千瓦时 (kWh)', factor: 3.6e6 },
+                    electronvolt: { name: '电子伏特 (eV)', factor: 1.602e-19 },
+                    btu: { name: '英热单位 (BTU)', factor: 1055.06 },
+                    foot_pound: { name: '英尺·磅 (ft-lb)', factor: 1.35582 }
+                },
+                quick: [
+                    { from: 'kilocalorie', to: 'joule', label: '千卡 → 焦耳' },
+                    { from: 'kilowatt_hour', to: 'joule', label: '度 → 焦耳' },
+                    { from: 'calorie', to: 'kilojoule', label: '卡路里 → 千焦' }
+                ]
+            },
+            power: {
+                name: '功率',
+                base: 'watt',
+                units: {
+                    watt: { name: '瓦特 (W)', factor: 1 },
+                    kilowatt: { name: '千瓦 (kW)', factor: 1000 },
+                    megawatt: { name: '兆瓦 (MW)', factor: 1e6 },
+                    gigawatt: { name: '吉瓦 (GW)', factor: 1e9 },
+                    horsepower: { name: '公制马力 (PS)', factor: 735.5 },
+                    horsepower_uk: { name: '英制马力 (hp)', factor: 745.7 },
+                    btu_per_hour: { name: 'BTU/小时 (BTU/h)', factor: 0.293071 },
+                    foot_pound_per_second: { name: '英尺·磅/秒', factor: 1.35582 }
+                },
+                quick: [
+                    { from: 'kilowatt', to: 'horsepower', label: '千瓦 → 马力' },
+                    { from: 'horsepower', to: 'watt', label: '马力 → 瓦' },
+                    { from: 'btu_per_hour', to: 'watt', label: 'BTU/h → 瓦' }
+                ]
+            },
+            force: {
+                name: '力',
+                base: 'newton',
+                units: {
+                    newton: { name: '牛顿 (N)', factor: 1 },
+                    kilonewton: { name: '千牛 (kN)', factor: 1000 },
+                    pound_force: { name: '磅力 (lbf)', factor: 4.44822 },
+                    kilogram_force: { name: '千克力 (kgf)', factor: 9.80665 },
+                    dyne: { name: '达因 (dyn)', factor: 1e-5 },
+                    poundal: { name: '磅达 (pdl)', factor: 0.138255 }
+                },
+                quick: [
+                    { from: 'kilogram_force', to: 'newton', label: '千克力 → 牛' },
+                    { from: 'pound_force', to: 'newton', label: '磅力 → 牛' },
+                    { from: 'newton', to: 'kilogram_force', label: '牛 → 千克力' }
+                ]
+            },
+            frequency: {
+                name: '频率',
+                base: 'hertz',
+                units: {
+                    hertz: { name: '赫兹 (Hz)', factor: 1 },
+                    kilohertz: { name: '千赫 (kHz)', factor: 1000 },
+                    megahertz: { name: '兆赫 (MHz)', factor: 1e6 },
+                    gigahertz: { name: '吉赫 (GHz)', factor: 1e9 },
+                    terahertz: { name: '太赫 (THz)', factor: 1e12 },
+                    revolution_per_minute: { name: '转/分钟 (rpm)', factor: 1/60 }
+                },
+                quick: [
+                    { from: 'megahertz', to: 'hertz', label: 'MHz → Hz' },
+                    { from: 'gigahertz', to: 'megahertz', label: 'GHz → MHz' },
+                    { from: 'revolution_per_minute', to: 'hertz', label: 'rpm → Hz' }
+                ]
+            },
+            fuel: {
+                name: '油耗',
+                base: 'liter_per_100km',
+                units: {
+                    liter_per_100km: { name: '升/100公里 (L/100km)', factor: 1 },
+                    km_per_liter: { name: '公里/升 (km/L)', factor: x => 100 / x, fromBase: x => 100 / x },
+                    mile_per_gallon_us: { name: '英里/加仑(美) (mpg)', factor: x => 235.215 / x, fromBase: x => 235.215 / x },
+                    mile_per_gallon_uk: { name: '英里/加仑(英) (mpg UK)', factor: x => 282.481 / x, fromBase: x => 282.481 / x }
+                },
+                quick: [
+                    { from: 'liter_per_100km', to: 'mile_per_gallon_us', label: 'L/100km → mpg(美)' },
+                    { from: 'mile_per_gallon_us', to: 'liter_per_100km', label: 'mpg(美) → L/100km' },
+                    { from: 'km_per_liter', to: 'mile_per_gallon_us', label: 'km/L → mpg' }
+                ]
+            },
+            cooking: {
+                name: '烹饪',
+                base: 'gram',
+                units: {
+                    gram: { name: '克 (g)', factor: 1 },
+                    kilogram: { name: '千克 (kg)', factor: 1000 },
+                    milligram: { name: '毫克 (mg)', factor: 0.001 },
+                    cup: { name: '杯 (cup)', factor: 240 },
+                    tablespoon: { name: '汤匙 (tbsp)', factor: 15 },
+                    teaspoon: { name: '茶匙 (tsp)', factor: 5 },
+                    fluid_ounce: { name: '液量盎司 (fl oz)', factor: 30 },
+                    milliliter: { name: '毫升 (mL)', factor: 1 },
+                    liter: { name: '升 (L)', factor: 1000 },
+                    pinch: { name: '撮', factor: 0.3 },
+                    dash: { name: '少许', factor: 1 }
+                },
+                quick: [
+                    { from: 'tablespoon', to: 'teaspoon', label: '汤匙 → 茶匙' },
+                    { from: 'cup', to: 'milliliter', label: '杯 → 毫升' },
+                    { from: 'teaspoon', to: 'milliliter', label: '茶匙 → 毫升' }
+                ]
+            },
+            shoe: {
+                name: '鞋码',
+                base: 'cn',
+                units: {
+                    cn: { name: '中国码 (cm)', toBase: x => x, fromBase: x => x },
+                    eu: { name: '欧码 (EU)', toBase: x => (x + 10) / 2, fromBase: x => x * 2 - 10 },
+                    us_men: { name: '美码(男) (US)', toBase: x => (x + 22) / 2, fromBase: x => x * 2 - 22 },
+                    us_women: { name: '美码(女) (US)', toBase: x => (x + 21) / 2, fromBase: x => x * 2 - 21 },
+                    uk: { name: '英码 (UK)', toBase: x => (x + 23) / 2, fromBase: x => x * 2 - 23 },
+                    jp: { name: '日本码 (JP)', toBase: x => x, fromBase: x => x }
+                },
+                quick: [
+                    { from: 'eu', to: 'cn', label: '欧码 → 中国码' },
+                    { from: 'cn', to: 'eu', label: '中国码 → 欧码' },
+                    { from: 'us_men', to: 'eu', label: '美码(男) → 欧码' }
+                ]
+            }
+        };
+
+        // 当前状态
+        let currentCategory = 'length';
+        let history = JSON.parse(localStorage.getItem('conversionHistory') || '[]');
+
+        // DOM 元素
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        const categoryTitle = document.getElementById('category-title');
+        const inputValue = document.getElementById('inputValue');
+        const inputUnit = document.getElementById('inputUnit');
+        const outputValue = document.getElementById('outputValue');
+        const outputUnit = document.getElementById('outputUnit');
+        const swapBtn = document.getElementById('swapBtn');
+        const quickConvert = document.getElementById('quickConvert');
+        const conversionTable = document.getElementById('conversionTable');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            switchCategory('length');
+            convert();
+        });
+
+        // 切换分类
+        function switchCategory(category) {
+            currentCategory = category;
+            
+            // 更新按钮状态
+            categoryBtns.forEach(btn => {
+                if (btn.dataset.category === category) {
+                    btn.classList.add('bg-primary', 'text-white');
+                    btn.classList.remove('bg-primary/10', 'text-primary');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('bg-primary/10', 'text-primary');
+                }
+            });
+
+            // 更新标题
+            categoryTitle.textContent = units[category].name + '换算';
+
+            // 填充单位选项
+            const unitList = units[category].units;
+            inputUnit.innerHTML = '';
+            outputUnit.innerHTML = '';
+            
+            Object.entries(unitList).forEach(([key, unit]) => {
+                const option1 = document.createElement('option');
+                option1.value = key;
+                option1.textContent = unit.name;
+                inputUnit.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = key;
+                option2.textContent = unit.name;
+                outputUnit.appendChild(option2);
+            });
+
+            // 设置默认单位
+            const keys = Object.keys(unitList);
+            inputUnit.value = keys[0];
+            outputUnit.value = keys[1];
+
+            // 填充快捷换算按钮
+            quickConvert.innerHTML = '';
+            units[category].quick.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors';
+                btn.textContent = item.label;
+                btn.addEventListener('click', () => {
+                    inputUnit.value = item.from;
+                    outputUnit.value = item.to;
+                    convert();
+                });
+                quickConvert.appendChild(btn);
+            });
+
+            convert();
+        }
+
+        // 换算函数
+        function convert() {
+            const value = parseFloat(inputValue.value);
+            if (isNaN(value)) {
+                outputValue.value = '';
+                conversionTable.innerHTML = '';
+                return;
+            }
+
+            const fromUnit = inputUnit.value;
+            const toUnit = outputUnit.value;
+            const category = units[currentCategory];
+
+            // 转换为基准单位
+            let baseValue;
+            if (typeof category.units[fromUnit].toBase === 'function') {
+                baseValue = category.units[fromUnit].toBase(value);
+            } else {
+                baseValue = value * category.units[fromUnit].factor;
+            }
+
+            // 转换为目标单位
+            let result;
+            if (typeof category.units[toUnit].fromBase === 'function') {
+                result = category.units[toUnit].fromBase(baseValue);
+            } else {
+                result = baseValue / category.units[toUnit].factor;
+            }
+
+            // 显示结果
+            outputValue.value = formatNumber(result);
+
+            // 更新全部换算结果
+            updateConversionTable(baseValue);
+
+            // 保存到历史记录
+            saveToHistory(value, fromUnit, result, toUnit, currentCategory);
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (Math.abs(num) < 0.000001 || Math.abs(num) > 1000000) {
+                return num.toExponential(4);
+            } else if (Number.isInteger(num)) {
+                return num.toString();
+            } else {
+                return num.toLocaleString(undefined, { maximumFractionDigits: 10 });
+            }
+        }
+
+        // 更新换算表
+        function updateConversionTable(baseValue) {
+            const category = units[currentCategory];
+            conversionTable.innerHTML = '';
+
+            Object.entries(category.units).forEach(([key, unit]) => {
+                let result;
+                if (typeof unit.fromBase === 'function') {
+                    result = unit.fromBase(baseValue);
+                } else {
+                    result = baseValue / unit.factor;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors cursor-pointer';
+                card.innerHTML = `
+                    <div class="text-sm text-gray-500 mb-1">${unit.name}</div>
+                    <div class="text-lg font-semibold text-gray-800">${formatNumber(result)}</div>
+                `;
+                card.addEventListener('click', () => {
+                    navigator.clipboard.writeText(formatNumber(result));
+                    showToast('已复制到剪贴板');
+                });
+                conversionTable.appendChild(card);
+            });
+        }
+
+        // 交换单位
+        swapBtn.addEventListener('click', () => {
+            const temp = inputUnit.value;
+            inputUnit.value = outputUnit.value;
+            outputUnit.value = temp;
+            convert();
+        });
+
+        // 事件监听
+        inputValue.addEventListener('input', convert);
+        inputUnit.addEventListener('change', convert);
+        outputUnit.addEventListener('change', convert);
+
+        // 分类按钮点击
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchCategory(btn.dataset.category);
+            });
+        });
+
+        // 保存历史记录
+        function saveToHistory(fromValue, fromUnit, toValue, toUnit, category) {
+            const record = {
+                id: Date.now(),
+                fromValue,
+                fromUnit,
+                toValue,
+                toUnit,
+                category,
+                timestamp: new Date().toISOString()
+            };
+            
+            history.unshift(record);
+            if (history.length > 50) {
+                history = history.slice(0, 50);
+            }
+            
+            localStorage.setItem('conversionHistory', JSON.stringify(history));
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                swapBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

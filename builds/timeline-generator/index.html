@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间线生成器 ⏱️</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .input-group input:focus, .input-group textarea:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .events-list {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .event-item {
+            background: #f9f9f9;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            border-left: 4px solid #667eea;
+        }
+        
+        .event-info {
+            flex: 1;
+        }
+        
+        .event-date {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .event-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .event-desc {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+        
+        .timeline-container {
+            grid-column: 1 / -1;
+            min-height: 400px;
+            position: relative;
+        }
+        
+        .timeline {
+            position: relative;
+            padding: 40px 0;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+            transform: translateX(-50%);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 50px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .timeline-item.left {
+            flex-direction: row;
+        }
+        
+        .timeline-item.right {
+            flex-direction: row-reverse;
+        }
+        
+        .timeline-content {
+            width: 45%;
+            padding: 25px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+            position: relative;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.25);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+        
+        .timeline-item.left .timeline-content {
+            margin-right: auto;
+            text-align: right;
+        }
+        
+        .timeline-item.right .timeline-content {
+            margin-left: auto;
+            text-align: left;
+        }
+        
+        .timeline-item.left .timeline-content::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 12px 0 12px 20px;
+            border-color: transparent transparent transparent rgba(102, 126, 234, 0.1);
+        }
+        
+        .timeline-item.right .timeline-content::after {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 12px 20px 12px 0;
+            border-color: transparent rgba(102, 126, 234, 0.1) transparent transparent;
+        }
+        
+        .timeline-date {
+            font-size: 0.85em;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: inline-block;
+            padding: 6px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            letter-spacing: 0.5px;
+        }
+        
+        .timeline-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        
+        .timeline-desc {
+            color: #555;
+            line-height: 1.8;
+            font-size: 0.95em;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 5px solid white;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 4px 12px rgba(102, 126, 234, 0.4);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.6);
+            }
+        }
+        
+        .templates {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .template-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .template-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .timeline-item {
+                flex-direction: column !important;
+            }
+            
+            .timeline-content {
+                width: 90% !important;
+                text-align: left !important;
+            }
+            
+            .timeline-line {
+                left: 20px;
+            }
+            
+            .timeline-dot {
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏱️ 时间线生成器</h1>
+            <p>可视化你的项目、历史或人生轨迹</p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="card">
+                <h2>添加事件</h2>
+                <div class="templates">
+                    <button class="template-btn" onclick="loadTemplate('project')">项目里程碑</button>
+                    <button class="template-btn" onclick="loadTemplate('history')">历史事件</button>
+                    <button class="template-btn" onclick="loadTemplate('career')">职业发展</button>
+                </div>
+                <div class="input-group">
+                    <label>日期</label>
+                    <input type="date" id="eventDate">
+                </div>
+                <div class="input-group">
+                    <label>标题</label>
+                    <input type="text" id="eventTitle" placeholder="例如：项目启动">
+                </div>
+                <div class="input-group">
+                    <label>描述（可选）</label>
+                    <textarea id="eventDesc" placeholder="详细描述这个事件..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-primary" onclick="addEvent()">➕ 添加事件</button>
+                    <button class="btn-secondary" onclick="clearInputs()">清空</button>
+                </div>
+                
+                <h2 style="margin-top: 30px;">已添加事件</h2>
+                <div class="events-list" id="eventsList">
+                    <div class="empty-state">
+                        <p>暂无事件，请添加</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>预览与导出</h2>
+                <div class="btn-group">
+                    <button class="btn-primary" onclick="exportImage()">📸 导出图片</button>
+                    <button class="btn-primary" onclick="exportJSON()">💾 导出 JSON</button>
+                    <button class="btn-secondary" onclick="clearAll()">🗑️ 清空全部</button>
+                </div>
+            </div>
+            
+            <div class="card timeline-container">
+                <h2>时间线</h2>
+                <div class="timeline" id="timeline">
+                    <div class="empty-state">
+                        <p>添加至少 2 个事件后，将自动生成时间线</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        let events = [];
+        
+        const templates = {
+            project: [
+                { date: '2024-01-01', title: '项目启动', desc: '完成需求分析和技术选型' },
+                { date: '2024-03-15', title: 'MVP 完成', desc: '核心功能开发完成，开始内测' },
+                { date: '2024-06-01', title: '正式上线', desc: '产品正式发布，开始推广' },
+                { date: '2024-09-01', title: '用户破万', desc: '达成第一个里程碑' }
+            ],
+            history: [
+                { date: '1969-07-20', title: '人类登月', desc: '阿波罗11号成功登陆月球' },
+                { date: '1989-11-09', title: '柏林墙倒塌', desc: '冷战结束的标志性事件' },
+                { date: '2007-01-09', title: 'iPhone 发布', desc: '乔布斯发布第一代 iPhone' },
+                { date: '2022-11-30', title: 'ChatGPT 发布', desc: 'OpenAI 发布 ChatGPT，AI 时代开启' }
+            ],
+            career: [
+                { date: '2018-07-01', title: '大学毕业', desc: '获得计算机科学学士学位' },
+                { date: '2018-09-01', title: '加入创业公司', desc: '担任初级工程师' },
+                { date: '2020-03-01', title: '晋升高级工程师', desc: '负责核心模块开发' },
+                { date: '2022-06-01', title: '技术负责人', desc: '带领 10 人团队' }
+            ]
+        };
+        
+        function loadTemplate(type) {
+            events = templates[type].map(e => ({...e}));
+            renderEvents();
+            renderTimeline();
+        }
+        
+        function addEvent() {
+            const date = document.getElementById('eventDate').value;
+            const title = document.getElementById('eventTitle').value.trim();
+            const desc = document.getElementById('eventDesc').value.trim();
+            
+            if (!date || !title) {
+                alert('请填写日期和标题！');
+                return;
+            }
+            
+            events.push({ date, title, desc });
+            events.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            renderEvents();
+            renderTimeline();
+            clearInputs();
+        }
+        
+        function removeEvent(index) {
+            events.splice(index, 1);
+            renderEvents();
+            renderTimeline();
+        }
+        
+        function clearInputs() {
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventDesc').value = '';
+        }
+        
+        function clearAll() {
+            if (confirm('确定要清空所有事件吗？')) {
+                events = [];
+                renderEvents();
+                renderTimeline();
+            }
+        }
+        
+        function renderEvents() {
+            const list = document.getElementById('eventsList');
+            if (events.length === 0) {
+                list.innerHTML = '<div class="empty-state"><p>暂无事件，请添加</p></div>';
+                return;
+            }
+            
+            list.innerHTML = events.map((e, i) => `
+                <div class="event-item">
+                    <div class="event-info">
+                        <div class="event-date">${formatDate(e.date)}</div>
+                        <div class="event-title">${e.title}</div>
+                        ${e.desc ? `<div class="event-desc">${e.desc}</div>` : ''}
+                    </div>
+                    <button class="btn-remove" onclick="removeEvent(${i})">删除</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderTimeline() {
+            const timeline = document.getElementById('timeline');
+            if (events.length < 2) {
+                timeline.innerHTML = '<div class="empty-state"><p>添加至少 2 个事件后，将自动生成时间线</p></div>';
+                return;
+            }
+            
+            timeline.innerHTML = `
+                <div class="timeline-line"></div>
+                ${events.map((e, i) => `
+                    <div class="timeline-item ${i % 2 === 0 ? 'left' : 'right'}">
+                        <div class="timeline-content">
+                            <div class="timeline-date">${formatDate(e.date)}</div>
+                            <div class="timeline-title">${e.title}</div>
+                            ${e.desc ? `<div class="timeline-desc">${e.desc}</div>` : ''}
+                        </div>
+                        <div class="timeline-dot"></div>
+                    </div>
+                `).join('')}
+            `;
+        }
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        
+        function exportImage() {
+            if (events.length < 2) {
+                alert('请至少添加 2 个事件！');
+                return;
+            }
+            
+            const timeline = document.getElementById('timeline');
+            html2canvas(timeline, {
+                backgroundColor: '#ffffff',
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'timeline.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+        
+        function exportJSON() {
+            if (events.length === 0) {
+                alert('请至少添加 1 个事件！');
+                return;
+            }
+            
+            const data = JSON.stringify(events, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'timeline.json';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // 设置默认日期为今天
+        document.getElementById('eventDate').valueAsDate = new Date();
+    </script>
+</body>
+</html>

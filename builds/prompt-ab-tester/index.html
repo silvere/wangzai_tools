@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt A/B Tester - 提示词对比测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .test-setup {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .prompt-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .prompt-panel {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .prompt-panel.variant-a {
+            border-color: #667eea;
+        }
+
+        .prompt-panel.variant-b {
+            border-color: #764ba2;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .variant-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .variant-badge.a {
+            background: #667eea;
+        }
+
+        .variant-badge.b {
+            background: #764ba2;
+        }
+
+        .templates {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .template-btn {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .template-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .result-panel {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 300px;
+        }
+
+        .result-panel.variant-a {
+            border-left: 4px solid #667eea;
+        }
+
+        .result-panel.variant-b {
+            border-left: 4px solid #764ba2;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .comparison-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .comparison-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .comparison-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .comparison-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .comparison-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .winner-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #4caf50;
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .history-question {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .history-prompts {
+            font-size: 13px;
+            color: #666;
+        }
+
+        @media (max-width: 1024px) {
+            .prompt-grid,
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 Prompt A/B Tester</h1>
+            <p class="subtitle">对比测试不同提示词的效果，优化你的Prompt</p>
+        </header>
+
+        <div class="main-content">
+            <div class="test-setup">
+                <h3 style="margin-bottom: 15px;">测试设置</h3>
+                
+                <div class="input-group">
+                    <label>测试问题</label>
+                    <textarea id="question" rows="3" placeholder="输入你要测试的问题...&#10;例如：解释什么是量子纠缠"></textarea>
+                </div>
+
+                <div class="prompt-grid">
+                    <div class="prompt-panel variant-a">
+                        <div class="panel-header">
+                            <span class="panel-title">Prompt A</span>
+                            <span class="variant-badge a">变体 A</span>
+                        </div>
+                        <div class="templates">
+                            <button class="template-btn" onclick="loadPromptTemplate('a', 'direct')">直接回答</button>
+                            <button class="template-btn" onclick="loadPromptTemplate('a', 'cot')">思维链</button>
+                            <button class="template-btn" onclick="loadPromptTemplate('a', 'expert')">专家角色</button>
+                            <button class="template-btn" onclick="loadPromptTemplate('a', 'step')">分步骤</button>
+                        </div>
+                        <textarea id="promptA" rows="5" placeholder="输入Prompt A...&#10;例如：请用简单的语言解释"></textarea>
+                    </div>
+
+                    <div class="prompt-panel variant-b">
+                        <div class="panel-header">
+                            <span class="panel-title">Prompt B</span>
+                            <span class="variant-badge b">变体 B</span>
+                        </div>
+                        <div class="templates">
+                            <button class="template-btn" onclick="loadPromptTemplate('b', 'direct')">直接回答</button>
+                            <button class="template-btn" onclick="loadPromptTemplate('b', 'cot')">思维链</button>
+                            <button class="template-btn" onclick="loadPromptTemplate('b', 'expert')">专家角色</button>
+                            <button class="template-btn" onclick="loadPromptTemplate('b', 'step')">分步骤</button>
+                        </div>
+                        <textarea id="promptB" rows="5" placeholder="输入Prompt B...&#10;例如：请用类比的方式解释"></textarea>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="runTest()">🚀 开始测试</button>
+                    <button class="btn btn-secondary" onclick="clearAll()">🔄 清空</button>
+                    <button class="btn btn-secondary" onclick="saveTest()">💾 保存测试</button>
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h3 style="margin-bottom: 20px;">测试结果</h3>
+                
+                <div class="results-grid">
+                    <div class="result-panel variant-a">
+                        <div class="result-header">
+                            <span class="panel-title">结果 A</span>
+                            <span class="variant-badge a">变体 A</span>
+                        </div>
+                        <div class="result-content" id="resultA">等待测试...</div>
+                        <div class="result-meta">
+                            <div class="meta-item">
+                                <span>📏</span>
+                                <span id="lengthA">0 字符</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>⏱️</span>
+                                <span id="timeA">0.0s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-panel variant-b">
+                        <div class="result-header">
+                            <span class="panel-title">结果 B</span>
+                            <span class="variant-badge b">变体 B</span>
+                        </div>
+                        <div class="result-content" id="resultB">等待测试...</div>
+                        <div class="result-meta">
+                            <div class="meta-item">
+                                <span>📏</span>
+                                <span id="lengthB">0 字符</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>⏱️</span>
+                                <span id="timeB">0.0s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-section">
+                    <div class="comparison-title">📊 对比分析</div>
+                    <div class="comparison-grid">
+                        <div class="comparison-card">
+                            <div class="comparison-label">长度对比</div>
+                            <div class="comparison-value" id="lengthComparison">-</div>
+                        </div>
+                        <div class="comparison-card">
+                            <div class="comparison-label">响应时间</div>
+                            <div class="comparison-value" id="timeComparison">-</div>
+                        </div>
+                        <div class="comparison-card">
+                            <div class="comparison-label">详细程度</div>
+                            <div class="comparison-value" id="detailComparison">-</div>
+                        </div>
+                        <div class="comparison-card">
+                            <div class="comparison-label">推荐</div>
+                            <div class="comparison-value" id="recommendation">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3 style="margin-bottom: 15px;">测试历史</h3>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const promptTemplates = {
+            direct: "请直接回答以下问题：",
+            cot: "让我们一步步思考这个问题：\n1. 首先理解问题的核心\n2. 分析相关概念\n3. 给出清晰的解释\n\n问题：",
+            expert: "你是该领域的专家。请用专业但易懂的方式回答：",
+            step: "请按以下步骤回答：\n1. 定义关键概念\n2. 解释工作原理\n3. 举例说明\n4. 总结要点\n\n问题："
+        };
+
+        let testHistory = JSON.parse(localStorage.getItem('promptABHistory') || '[]');
+
+        function loadPromptTemplate(variant, type) {
+            const textarea = document.getElementById(`prompt${variant.toUpperCase()}`);
+            textarea.value = promptTemplates[type];
+        }
+
+        function runTest() {
+            const question = document.getElementById('question').value.trim();
+            const promptA = document.getElementById('promptA').value.trim();
+            const promptB = document.getElementById('promptB').value.trim();
+
+            if (!question) {
+                alert('请输入测试问题');
+                return;
+            }
+
+            if (!promptA || !promptB) {
+                alert('请输入两个Prompt变体');
+                return;
+            }
+
+            // 模拟测试（实际应用中这里会调用API）
+            const startTimeA = Date.now();
+            const resultA = simulateResponse(promptA, question);
+            const timeA = (Date.now() - startTimeA) / 1000;
+
+            const startTimeB = Date.now();
+            const resultB = simulateResponse(promptB, question);
+            const timeB = (Date.now() - startTimeB) / 1000;
+
+            // 显示结果
+            document.getElementById('resultA').textContent = resultA;
+            document.getElementById('resultB').textContent = resultB;
+            document.getElementById('lengthA').textContent = `${resultA.length} 字符`;
+            document.getElementById('lengthB').textContent = `${resultB.length} 字符`;
+            document.getElementById('timeA').textContent = `${timeA.toFixed(2)}s`;
+            document.getElementById('timeB').textContent = `${timeB.toFixed(2)}s`;
+
+            // 对比分析
+            updateComparison(resultA, resultB, timeA, timeB);
+
+            // 显示结果区域
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // 保存到历史
+            saveToHistory(question, promptA, promptB, resultA, resultB);
+        }
+
+        function simulateResponse(prompt, question) {
+            // 模拟不同prompt产生不同长度和风格的回答
+            const fullPrompt = prompt + "\n\n" + question;
+            
+            if (prompt.includes('思维链') || prompt.includes('步骤')) {
+                return `【模拟回答 - 详细分析】\n\n根据您的问题"${question}"，让我详细分析：\n\n1. 首先，我们需要理解核心概念...\n2. 其次，从原理层面来看...\n3. 举个具体例子...\n4. 总结来说...\n\n这是一个需要深入理解的问题，通过分步骤的方式可以更清晰地把握要点。`;
+            } else if (prompt.includes('专家')) {
+                return `【模拟回答 - 专家视角】\n\n作为该领域的专家，我可以告诉您：${question}\n\n从专业角度来看，这涉及到多个层面的理解。核心在于...同时需要注意...在实际应用中...`;
+            } else {
+                return `【模拟回答 - 简洁版】\n\n关于"${question}"，简单来说就是...这个概念的关键在于...希望这个解释对您有帮助。`;
+            }
+        }
+
+        function updateComparison(resultA, resultB, timeA, timeB) {
+            // 长度对比
+            const lengthDiff = resultA.length - resultB.length;
+            document.getElementById('lengthComparison').textContent = 
+                lengthDiff > 0 ? `A 长 ${lengthDiff}字` : `B 长 ${Math.abs(lengthDiff)}字`;
+
+            // 时间对比
+            const timeDiff = timeA - timeB;
+            document.getElementById('timeComparison').textContent = 
+                timeDiff > 0 ? `B 快 ${Math.abs(timeDiff).toFixed(2)}s` : `A 快 ${Math.abs(timeDiff).toFixed(2)}s`;
+
+            // 详细程度
+            const detailA = resultA.split('\n').length;
+            const detailB = resultB.split('\n').length;
+            document.getElementById('detailComparison').textContent = 
+                detailA > detailB ? 'A 更详细' : 'B 更详细';
+
+            // 推荐
+            const scoreA = resultA.length * 0.5 + detailA * 10 - timeA * 5;
+            const scoreB = resultB.length * 0.5 + detailB * 10 - timeB * 5;
+            document.getElementById('recommendation').innerHTML = 
+                scoreA > scoreB ? 
+                '<span class="winner-badge">推荐 A</span>' : 
+                '<span class="winner-badge">推荐 B</span>';
+        }
+
+        function saveToHistory(question, promptA, promptB, resultA, resultB) {
+            const test = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString('zh-CN'),
+                question,
+                promptA,
+                promptB,
+                resultA,
+                resultB
+            };
+
+            testHistory.unshift(test);
+            if (testHistory.length > 10) testHistory.pop();
+            
+            localStorage.setItem('promptABHistory', JSON.stringify(testHistory));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (testHistory.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">暂无测试历史</p>';
+                return;
+            }
+
+            list.innerHTML = testHistory.map(test => `
+                <div class="history-item" onclick="loadTest(${test.id})">
+                    <div class="history-header">
+                        <span class="history-question">${test.question.substring(0, 50)}${test.question.length > 50 ? '...' : ''}</span>
+                        <span class="history-time">${test.timestamp}</span>
+                    </div>
+                    <div class="history-prompts">
+                        A: ${test.promptA.substring(0, 30)}... | B: ${test.promptB.substring(0, 30)}...
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadTest(id) {
+            const test = testHistory.find(t => t.id === id);
+            if (!test) return;
+
+            document.getElementById('question').value = test.question;
+            document.getElementById('promptA').value = test.promptA;
+            document.getElementById('promptB').value = test.promptB;
+            document.getElementById('resultA').textContent = test.resultA;
+            document.getElementById('resultB').textContent = test.resultB;
+            
+            document.getElementById('resultsSection').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function clearAll() {
+            document.getElementById('question').value = '';
+            document.getElementById('promptA').value = '';
+            document.getElementById('promptB').value = '';
+            document.getElementById('resultA').textContent = '等待测试...';
+            document.getElementById('resultB').textContent = '等待测试...';
+            document.getElementById('resultsSection').style.display = 'none';
+        }
+
+        function saveTest() {
+            const question = document.getElementById('question').value.trim();
+            const promptA = document.getElementById('promptA').value.trim();
+            const promptB = document.getElementById('promptB').value.trim();
+
+            if (!question || !promptA || !promptB) {
+                alert('请先完成测试设置');
+                return;
+            }
+
+            const data = {
+                question,
+                promptA,
+                promptB,
+                timestamp: new Date().toLocaleString('zh-CN')
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prompt-ab-test-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ 测试配置已保存');
+        }
+
+        // 初始化
+        renderHistory();
+    </script>
+</body>
+</html>

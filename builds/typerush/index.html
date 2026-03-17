@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⌨️ TypeRush 打字速度测试</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#38bdf8;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--purple:#a78bfa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.header{padding:20px;text-align:center;width:100%}
+.header h1{font-size:24px;font-weight:700}
+.header p{color:var(--text2);font-size:13px;margin-top:4px}
+.container{max-width:800px;width:100%;padding:0 20px 40px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.chip{padding:6px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;transition:all .2s;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.active{background:rgba(56,189,248,.15);border-color:var(--accent);color:var(--accent)}
+.sep{width:1px;background:var(--border);margin:0 4px}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-card .val{font-size:28px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.stat-card .lbl{font-size:11px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.text-display{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;font-size:20px;line-height:1.8;margin-bottom:16px;min-height:160px;position:relative;overflow:hidden;font-family:'SF Mono',Monaco,'Cascadia Code',Consolas,monospace}
+.text-display .char{transition:color .1s}
+.char-correct{color:var(--green)}
+.char-wrong{color:var(--red);text-decoration:underline;text-decoration-color:var(--red)}
+.char-current{background:var(--accent);color:var(--bg);border-radius:2px;animation:blink 1s infinite}
+.char-pending{color:var(--text2)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.7}}
+.input-area{position:relative}
+#typeInput{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;padding:14px 18px;outline:none;font-family:'SF Mono',Monaco,'Cascadia Code',Consolas,monospace;transition:border-color .2s}
+#typeInput:focus{border-color:var(--accent)}
+#typeInput:disabled{opacity:.5;cursor:not-allowed}
+.hint{text-align:center;color:var(--text2);font-size:13px;margin-top:8px}
+.progress{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:20px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .3s;width:0}
+.result-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.9);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.result-overlay.show{display:flex}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center}
+.result-card h2{font-size:22px;margin-bottom:20px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.result-item{background:var(--bg);border-radius:10px;padding:14px}
+.result-item .rv{font-size:24px;font-weight:700;color:var(--accent)}
+.result-item .rl{font-size:11px;color:var(--text2);margin-top:4px}
+.grade{font-size:48px;margin-bottom:8px}
+.grade-text{font-size:14px;color:var(--text2);margin-bottom:20px}
+.btn{padding:10px 24px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;transition:all .2s}
+.btn:hover{background:var(--surface2);border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:#7dd3fc}
+.history{margin-top:24px}
+.history h3{font-size:14px;color:var(--text2);margin-bottom:8px}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.history-item .hi-wpm{font-weight:700;color:var(--accent);font-size:16px}
+.history-item .hi-meta{color:var(--text2)}
+@media(max-width:600px){.stats-bar{grid-template-columns:repeat(2,1fr)}.text-display{font-size:16px;padding:16px}.result-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>⌨️ TypeRush</h1>
+<p>测测你的打字速度 — Build #52 by 旺仔</p>
+</div>
+<div class="container">
+<div class="controls" id="controls">
+<span class="chip active" data-lang="en">English</span>
+<span class="chip" data-lang="zh">中文</span>
+<span class="chip" data-lang="code">Code</span>
+<div class="sep"></div>
+<span class="chip active" data-time="30">30s</span>
+<span class="chip" data-time="60">60s</span>
+<span class="chip" data-time="120">120s</span>
+</div>
+<div class="stats-bar">
+<div class="stat-card"><div class="val" id="wpmVal">0</div><div class="lbl" id="wpmLabel">WPM</div></div>
+<div class="stat-card"><div class="val" id="accVal">100%</div><div class="lbl">准确率</div></div>
+<div class="stat-card"><div class="val" id="timeVal">30</div><div class="lbl">剩余秒数</div></div>
+<div class="stat-card"><div class="val" id="charVal">0</div><div class="lbl">已输入</div></div>
+</div>
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+<div class="text-display" id="textDisplay"></div>
+<div class="input-area">
+<input type="text" id="typeInput" placeholder="点击这里开始打字..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+</div>
+<div class="hint" id="hint">选择语言和时长，然后开始打字</div>
+<div class="history" id="historySection" style="display:none">
+<h3>📜 历史记录</h3>
+<div class="history-list" id="historyList"></div>
+</div>
+</div>
+<div class="result-overlay" id="resultOverlay">
+<div class="result-card">
+<div class="grade" id="gradeEmoji">🎯</div>
+<h2 id="gradeTitle">测试完成！</h2>
+<div class="grade-text" id="gradeText"></div>
+<div class="result-grid">
+<div class="result-item"><div class="rv" id="rWpm">0</div><div class="rl" id="rWpmLabel">WPM</div></div>
+<div class="result-item"><div class="rv" id="rAcc">0%</div><div class="rl">准确率</div></div>
+<div class="result-item"><div class="rv" id="rCorrect">0</div><div class="rl">正确字符</div></div>
+<div class="result-item"><div class="rv" id="rWrong">0</div><div class="rl">错误字符</div></div>
+</div>
+<div style="display:flex;gap:8px;justify-content:center">
+<button class="btn primary" onclick="restart()">🔄 再来一次</button>
+<button class="btn" onclick="closeResult()">关闭</button>
+</div>
+</div>
+</div>
+<script>
+const EN_TEXTS=[
+"The quick brown fox jumps over the lazy dog. Programming is the art of telling another human what one wants the computer to do. Every great developer you know got there by solving problems they were unqualified to solve until they actually did it.",
+"In the world of artificial intelligence, large language models have transformed how we interact with technology. These models can generate text, translate languages, write code, and answer questions with remarkable fluency.",
+"Software engineering is not just about writing code. It is about solving problems, understanding requirements, communicating with teams, and building systems that are maintainable, scalable, and reliable over time.",
+"The best error message is the one that never shows up. Good code is its own best documentation. As you are about to add a comment, ask yourself, how can I improve the code so that this comment is not needed?",
+"Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed. Deep learning uses neural networks with many layers to analyze various factors of data.",
+"Open source software has revolutionized the technology industry. Developers around the world collaborate on projects, sharing code and knowledge freely. This collaborative approach has led to some of the most important software ever created.",
+"Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are by definition not smart enough to debug it. Keep it simple and readable."
+];
+const ZH_TEXTS=[
+"人工智能正在深刻改变我们的生活方式。从智能手机上的语音助手到自动驾驶汽车，从医疗诊断到金融分析，AI技术已经渗透到社会的方方面面。大语言模型的出现更是开启了人机交互的新篇章。",
+"编程不仅仅是写代码，更是一种思维方式。优秀的程序员善于将复杂问题分解为简单的子问题，用清晰的逻辑和优雅的代码来解决它们。代码是写给人看的，顺便让机器执行。",
+"在这个信息爆炸的时代，学会高效获取和处理信息变得尤为重要。我们需要培养批判性思维，学会辨别信息的真伪，从海量数据中提取有价值的知识。终身学习不再是口号，而是生存的必备技能。",
+"开源社区是技术创新的重要推动力。全球开发者通过协作共享代码和知识，推动了无数优秀项目的诞生。从操作系统到编程语言，从数据库到人工智能框架，开源软件已经成为现代技术基础设施的基石。",
+"健康的生活方式需要运动、饮食和休息的平衡。每天坚持适量运动，保持均衡的饮食习惯，确保充足的睡眠时间。身体是革命的本钱，只有保持良好的身体状态，才能更好地工作和生活。",
+"读书是最好的自我投资。一本好书可以开阔视野、启发思考、丰富内心。在快节奏的现代生活中，抽出时间静下心来读一本书，是对自己最好的犒赏。知识的积累终将在某个时刻绽放出耀眼的光芒。"
+];
+const CODE_TEXTS=[
+`function fibonacci(n) {\n  if (n <= 1) return n;\n  let a = 0, b = 1;\n  for (let i = 2; i <= n; i++) {\n    [a, b] = [b, a + b];\n  }\n  return b;\n}`,
+`const fetchData = async (url) => {\n  try {\n    const res = await fetch(url);\n    if (!res.ok) throw new Error(res.status);\n    return await res.json();\n  } catch (err) {\n    console.error("Failed:", err);\n    return null;\n  }\n};`,
+`class TreeNode:\n    def __init__(self, val=0):\n        self.val = val\n        self.left = None\n        self.right = None\n\ndef inorder(root):\n    if not root:\n        return []\n    return inorder(root.left) + [root.val] + inorder(root.right)`,
+`def binary_search(arr, target):\n    lo, hi = 0, len(arr) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1`,
+`SELECT u.name, COUNT(o.id) AS order_count,\n       SUM(o.amount) AS total_spent\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nWHERE o.created_at >= '2026-01-01'\nGROUP BY u.id\nHAVING total_spent > 1000\nORDER BY total_spent DESC\nLIMIT 10;`
+];
+
+let lang='en',duration=30,timer=null,startTime=null,timeLeft=0;
+let currentText='',typed='',correct=0,wrong=0,started=false;
+
+function pickText(){
+  const pool=lang==='en'?EN_TEXTS:lang==='zh'?ZH_TEXTS:CODE_TEXTS;
+  let t=pool[Math.floor(Math.random()*pool.length)];
+  if(lang==='code')return t;
+  // For long tests, concatenate multiple texts
+  while(t.length<duration*8){t+=' '+pool[Math.floor(Math.random()*pool.length)]}
+  return t;
+}
+
+function renderText(){
+  const display=document.getElementById('textDisplay');
+  let html='';
+  for(let i=0;i<currentText.length;i++){
+    let cls='char-pending';
+    if(i<typed.length){
+      cls=typed[i]===currentText[i]?'char-correct':'char-wrong';
+    }else if(i===typed.length){
+      cls='char-current';
+    }
+    const ch=currentText[i]==='\n'?'↵\n':currentText[i]===' '?'&nbsp;':currentText[i].replace(/</g,'&lt;');
+    html+=`<span class="char ${cls}">${ch}</span>`;
+  }
+  display.innerHTML=html;
+  // Auto-scroll
+  const cur=display.querySelector('.char-current');
+  if(cur){
+    const dt=display.getBoundingClientRect().top;
+    const ct=cur.getBoundingClientRect().top;
+    if(ct-dt>120)display.scrollTop+=ct-dt-60;
+  }
+}
+
+function updateStats(){
+  const elapsed=started?(Date.now()-startTime)/1000:0;
+  const minutes=elapsed/60||1;
+  let wpm;
+  if(lang==='zh'){
+    wpm=Math.round(correct/minutes);// CPM for Chinese
+    document.getElementById('wpmLabel').textContent='CPM';
+    document.getElementById('rWpmLabel').textContent='CPM (字/分)';
+  }else{
+    wpm=Math.round((correct/5)/minutes);// WPM standard
+    document.getElementById('wpmLabel').textContent='WPM';
+    document.getElementById('rWpmLabel').textContent='WPM';
+  }
+  const total=correct+wrong;
+  const acc=total>0?Math.round(correct/total*100):100;
+  document.getElementById('wpmVal').textContent=wpm;
+  document.getElementById('accVal').textContent=acc+'%';
+  document.getElementById('timeVal').textContent=timeLeft;
+  document.getElementById('charVal').textContent=typed.length;
+  document.getElementById('progressFill').style.width=((duration-timeLeft)/duration*100)+'%';
+}
+
+function startTimer(){
+  started=true;
+  startTime=Date.now();
+  timeLeft=duration;
+  document.getElementById('hint').textContent='加油！保持节奏 💪';
+  timer=setInterval(()=>{
+    timeLeft=Math.max(0,duration-Math.round((Date.now()-startTime)/1000));
+    updateStats();
+    if(timeLeft<=0)endTest();
+  },200);
+}
+
+function endTest(){
+  clearInterval(timer);
+  timer=null;
+  document.getElementById('typeInput').disabled=true;
+  const elapsed=(Date.now()-startTime)/1000;
+  const minutes=elapsed/60;
+  let wpm=lang==='zh'?Math.round(correct/minutes):Math.round((correct/5)/minutes);
+  const total=correct+wrong;
+  const acc=total>0?Math.round(correct/total*100):100;
+  // Grade
+  let emoji,title,text;
+  const threshold=lang==='zh'?wpm:wpm;// Use same thresholds
+  if(lang==='zh'){
+    if(wpm>=200){emoji='🏆';title='打字大师！';text='你的中文打字速度令人惊叹'}
+    else if(wpm>=120){emoji='🔥';title='飞速输入！';text='你的打字速度远超平均水平'}
+    else if(wpm>=80){emoji='⚡';title='不错的速度！';text='继续练习，你会更快的'}
+    else if(wpm>=40){emoji='👍';title='稳步前进';text='保持练习，速度会逐渐提升'}
+    else{emoji='🌱';title='初学者';text='每个高手都是从这里开始的'}
+  }else{
+    if(wpm>=100){emoji='🏆';title='Typing Master!';text='你的打字速度令人惊叹'}
+    else if(wpm>=70){emoji='🔥';title='Speed Demon!';text='你的打字速度远超平均水平'}
+    else if(wpm>=45){emoji='⚡';title='Above Average!';text='不错的速度，继续保持'}
+    else if(wpm>=25){emoji='👍';title='Getting There';text='保持练习，你会更快的'}
+    else{emoji='🌱';title='Keep Practicing';text='每个高手都是从这里开始的'}
+  }
+  document.getElementById('gradeEmoji').textContent=emoji;
+  document.getElementById('gradeTitle').textContent=title;
+  document.getElementById('gradeText').textContent=text;
+  document.getElementById('rWpm').textContent=wpm;
+  document.getElementById('rAcc').textContent=acc+'%';
+  document.getElementById('rCorrect').textContent=correct;
+  document.getElementById('rWrong').textContent=wrong;
+  document.getElementById('resultOverlay').classList.add('show');
+  // Save history
+  const history=JSON.parse(localStorage.getItem('typerush_history')||'[]');
+  history.unshift({wpm,acc,lang,duration,correct,wrong,date:new Date().toLocaleString('zh-CN')});
+  if(history.length>20)history.length=20;
+  localStorage.setItem('typerush_history',JSON.stringify(history));
+  renderHistory();
+}
+
+function restart(){
+  closeResult();
+  clearInterval(timer);
+  timer=null;started=false;typed='';correct=0;wrong=0;
+  currentText=pickText();
+  renderText();updateStats();
+  document.getElementById('typeInput').disabled=false;
+  document.getElementById('typeInput').value='';
+  document.getElementById('typeInput').focus();
+  document.getElementById('hint').textContent='开始打字即计时 ⏱️';
+  document.getElementById('progressFill').style.width='0';
+  document.getElementById('timeVal').textContent=duration;
+}
+
+function closeResult(){document.getElementById('resultOverlay').classList.remove('show')}
+
+// Input handling
+document.getElementById('typeInput').addEventListener('input',function(e){
+  if(!started&&this.value.length>0)startTimer();
+  // For code mode, handle newlines specially
+  typed=this.value;
+  correct=0;wrong=0;
+  for(let i=0;i<typed.length;i++){
+    if(i<currentText.length){
+      if(typed[i]===currentText[i])correct++;else wrong++;
+    }
+  }
+  renderText();updateStats();
+  // Auto-complete check
+  if(typed.length>=currentText.length)endTest();
+});
+
+// Prevent paste
+document.getElementById('typeInput').addEventListener('paste',e=>e.preventDefault());
+
+// Controls
+document.querySelectorAll('.chip[data-lang]').forEach(el=>{
+  el.onclick=()=>{
+    document.querySelectorAll('.chip[data-lang]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');lang=el.dataset.lang;restart();
+  };
+});
+document.querySelectorAll('.chip[data-time]').forEach(el=>{
+  el.onclick=()=>{
+    document.querySelectorAll('.chip[data-time]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');duration=parseInt(el.dataset.time);restart();
+  };
+});
+
+function renderHistory(){
+  const history=JSON.parse(localStorage.getItem('typerush_history')||'[]');
+  const section=document.getElementById('historySection');
+  const list=document.getElementById('historyList');
+  if(!history.length){section.style.display='none';return}
+  section.style.display='';
+  list.innerHTML=history.slice(0,10).map(h=>{
+    const unit=h.lang==='zh'?'CPM':'WPM';
+    const langLabel=h.lang==='en'?'EN':h.lang==='zh'?'中文':'Code';
+    return`<div class="history-item"><span class="hi-wpm">${h.wpm} ${unit}</span><span class="hi-meta">${langLabel} · ${h.duration}s · ${h.acc}% · ${h.date}</span></div>`;
+  }).join('');
+}
+
+// Init
+currentText=pickText();renderText();updateStats();renderHistory();
+document.getElementById('timeVal').textContent=duration;
+</script>
+</body>
+</html>

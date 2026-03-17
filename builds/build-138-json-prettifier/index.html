@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON 格式化美化工具 🎨 | 旺仔工具百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsonlint@1.6.3/lib/jsonlint.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .code-editor {
+            font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+            tab-size: 2;
+        }
+        
+        .json-key { color: #9d3af6; font-weight: 500; }
+        .json-string { color: #2cc55d; }
+        .json-number { color: #e45649; }
+        .json-boolean { color: #0184bc; }
+        .json-null { color: #a626a4; }
+        .json-error { background-color: #fee2e2; color: #dc2626; }
+        
+        .transition-all {
+            transition: all 0.2s ease;
+        }
+        
+        .editor-container {
+            transition: all 0.3s ease;
+        }
+        
+        .editor-container:hover {
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .copy-success {
+            animation: pulse 0.5s ease;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-teal-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <i class="fa fa-code text-4xl text-emerald-600"></i>
+                <h1 class="text-4xl font-bold text-gray-800">JSON 格式化美化工具</h1>
+            </div>
+            <p class="text-gray-600 text-lg">一键格式化压缩JSON，语法高亮显示，错误智能定位，完全本地运行零数据上传</p>
+        </header>
+
+        <!-- Control Panel -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">缩进空格</label>
+                    <select id="indentSize" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="2">2 个空格</option>
+                        <option value="4" selected>4 个空格</option>
+                        <option value="8">8 个空格</option>
+                        <option value="tab">Tab 缩进</option>
+                    </select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">排序方式</label>
+                    <select id="sortKeys" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="none" selected>不排序（保持原顺序）</option>
+                        <option value="asc">按字母升序</option>
+                        <option value="desc">按字母降序</option>
+                    </select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">主题</label>
+                    <select id="theme" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="light" selected>浅色主题</option>
+                        <option value="dark">深色主题</option>
+                    </select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">选项</label>
+                    <div class="flex gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer flex-1">
+                            <input type="checkbox" id="autoFormat" checked class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500">
+                            <span class="text-sm text-gray-700">实时格式化</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer flex-1">
+                            <input type="checkbox" id="showLineNumbers" checked class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500">
+                            <span class="text-sm text-gray-700">显示行号</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex gap-2">
+                    <button id="formatBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-magic mr-2"></i>格式化
+                    </button>
+                    <button id="minifyBtn" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-compress mr-2"></i>压缩
+                    </button>
+                    <button id="validateBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-check-circle mr-2"></i>验证
+                    </button>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button id="copyBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-copy mr-2"></i>复制结果
+                    </button>
+                    <button id="downloadBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-download mr-2"></i>下载
+                    </button>
+                    <button id="clearBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-trash mr-2"></i>清空
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex flex-wrap gap-2">
+                <span class="text-sm font-medium text-gray-700">快速示例：</span>
+                <button class="example-btn px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-all" data-example="simple">简单JSON</button>
+                <button class="example-btn px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-all" data-example="nested">嵌套JSON</button>
+                <button class="example-btn px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-all" data-example="array">数组JSON</button>
+                <button class="example-btn px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-all" data-example="complex">复杂JSON</button>
+                <label class="cursor-pointer px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-all">
+                    <i class="fa fa-upload mr-1"></i>上传文件
+                    <input type="file" accept=".json,.txt" class="hidden" id="fileInput">
+                </label>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">原始大小</p>
+                        <p id="originalSize" class="text-3xl font-bold text-gray-800">0 B</p>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-file-text-o text-emerald-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">格式化后大小</p>
+                        <p id="formattedSize" class="text-3xl font-bold text-gray-800">0 B</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-code text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">压缩率</p>
+                        <p id="compressionRate" class="text-3xl font-bold text-gray-800">0%</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-percent text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">验证状态</p>
+                        <p id="validStatus" class="text-3xl font-bold text-green-600">✅ 有效</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <i class="fa fa-shield-check text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorContainer" class="hidden mb-8">
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-lg">
+                <div class="flex items-start gap-3">
+                    <i class="fa fa-exclamation-circle text-red-500 text-xl mt-0.5"></i>
+                    <div class="flex-1">
+                        <h3 class="text-red-800 font-semibold mb-1">JSON 格式错误</h3>
+                        <p id="errorMessage" class="text-red-700 text-sm"></p>
+                        <div id="errorLocation" class="mt-2 text-xs text-red-600 bg-red-100 px-3 py-2 rounded"></div>
+                    </div>
+                    <button onclick="document.getElementById('errorContainer').classList.add('hidden')" class="text-red-500 hover:text-red-700">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Left: Input Editor -->
+            <div class="editor-container bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-pencil text-gray-600"></i>
+                        输入 JSON
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <span id="inputLineCount" class="text-sm text-gray-500">0 行</span>
+                        <button id="pasteBtn" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                            <i class="fa fa-paste mr-1"></i>粘贴
+                        </button>
+                    </div>
+                </div>
+                <div class="p-0 relative">
+                    <div class="flex">
+                        <div id="inputLineNumbers" class="bg-gray-50 text-right pr-3 pl-3 py-4 text-gray-400 text-sm select-none hidden border-r border-gray-200 font-mono">
+                            <!-- Line numbers will be generated here -->
+                        </div>
+                        <textarea 
+                            id="jsonInput" 
+                            class="w-full h-[600px] p-4 border-none outline-none resize-none code-editor text-gray-800 text-sm scrollbar-thin"
+                            placeholder="在这里粘贴或输入 JSON 内容...
+
+{
+  \"name\": \"JSON格式化工具\",
+  \"version\": \"1.0.0\",
+  \"features\": [\"格式化\", \"压缩\", \"验证\", \"语法高亮\"]
+}"
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Output Editor -->
+            <div class="editor-container bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-eye text-gray-600"></i>
+                        输出结果
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <span id="outputLineCount" class="text-sm text-gray-500">0 行</span>
+                        <button id="copyOutputBtn" class="text-sm text-green-600 hover:text-green-700 font-medium">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                </div>
+                <div class="p-0 relative">
+                    <div class="flex">
+                        <div id="outputLineNumbers" class="bg-gray-50 text-right pr-3 pl-3 py-4 text-gray-400 text-sm select-none hidden border-r border-gray-200 font-mono">
+                            <!-- Line numbers will be generated here -->
+                        </div>
+                        <pre id="jsonOutput" class="w-full h-[600px] p-4 overflow-y-auto scrollbar-thin code-editor text-sm whitespace-pre-wrap"><code>
+{
+    "name": "JSON格式化工具",
+    "version": "1.0.0",
+    "features": ["格式化", "压缩", "验证", "语法高亮"]
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON Tree View -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fa fa-sitemap text-emerald-600"></i>
+                    JSON 结构树
+                </h2>
+                <div class="flex items-center gap-2">
+                    <button id="expandAllBtn" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        <i class="fa fa-plus-square-o mr-1"></i>全部展开
+                    </button>
+                    <button id="collapseAllBtn" class="text-sm text-gray-600 hover:text-gray-700 font-medium">
+                        <i class="fa fa-minus-square-o mr-1"></i>全部折叠
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 max-h-[400px] overflow-y-auto scrollbar-thin">
+                <div id="jsonTree" class="text-sm">
+                    <div class="text-gray-500 text-center py-8">
+                        <i class="fa fa-tree text-4xl mb-2 text-gray-300"></i>
+                        <p>输入有效的JSON后将显示结构树</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>🔒 所有处理完全在浏览器本地完成，你的JSON数据绝不会上传到任何服务器，安全可靠</p>
+            <p class="mt-2">⭐ 旺仔工具百宝箱 | 开发者必备神器，解决API调试、数据分析等场景的JSON格式化需求</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentJson = null;
+        let formatTimeout = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            toggleLineNumbers();
+            updateLineNumbers('jsonInput', 'inputLineNumbers');
+            updateLineNumbers('jsonOutput', 'outputLineNumbers');
+            formatJSON();
+        });
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 输入变化
+            document.getElementById('jsonInput').addEventListener('input', () => {
+                updateLineNumbers('jsonInput', 'inputLineNumbers');
+                if (document.getElementById('autoFormat').checked) {
+                    clearTimeout(formatTimeout);
+                    formatTimeout = setTimeout(formatJSON, 500);
+                }
+            });
+
+            // 配置变化
+            document.getElementById('indentSize').addEventListener('change', formatJSON);
+            document.getElementById('sortKeys').addEventListener('change', formatJSON);
+            document.getElementById('theme').addEventListener('change', toggleTheme);
+            document.getElementById('showLineNumbers').addEventListener('change', toggleLineNumbers);
+
+            // 按钮事件
+            document.getElementById('formatBtn').addEventListener('click', formatJSON);
+            document.getElementById('minifyBtn').addEventListener('click', minifyJSON);
+            document.getElementById('validateBtn').addEventListener('click', validateJSON);
+            document.getElementById('copyBtn').addEventListener('click', copyOutput);
+            document.getElementById('copyOutputBtn').addEventListener('click', copyOutput);
+            document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
+            document.getElementById('clearBtn').addEventListener('click', clearAll);
+            document.getElementById('pasteBtn').addEventListener('click', pasteFromClipboard);
+            document.getElementById('expandAllBtn').addEventListener('click', () => toggleTree(true));
+            document.getElementById('collapseAllBtn').addEventListener('click', () => toggleTree(false));
+
+            // 示例按钮
+            document.querySelectorAll('.example-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    loadExample(e.target.dataset.example);
+                });
+            });
+
+            // 文件上传
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        }
+
+        // 切换行号显示
+        function toggleLineNumbers() {
+            const show = document.getElementById('showLineNumbers').checked;
+            const lineNumberCols = document.querySelectorAll('[id$="LineNumbers"]');
+            
+            lineNumberCols.forEach(col => {
+                if (show) {
+                    col.classList.remove('hidden');
+                } else {
+                    col.classList.add('hidden');
+                }
+            });
+            
+            updateLineNumbers('jsonInput', 'inputLineNumbers');
+            updateLineNumbers('jsonOutput', 'outputLineNumbers');
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            const theme = document.getElementById('theme').value;
+            const output = document.getElementById('jsonOutput');
+            
+            if (theme === 'dark') {
+                output.classList.add('bg-gray-900', 'text-gray-100');
+                output.classList.remove('bg-white', 'text-gray-800');
+            } else {
+                output.classList.remove('bg-gray-900', 'text-gray-100');
+                output.classList.add('bg-white', 'text-gray-800');
+            }
+            
+            formatJSON();
+        }
+
+        // 更新行号
+        function updateLineNumbers(textareaId, lineNumbersId) {
+            const textarea = document.getElementById(textareaId);
+            const lineNumbers = document.getElementById(lineNumbersId);
+            const lines = textarea.value.split('\n').length;
+            
+            let html = '';
+            for (let i = 1; i <= lines; i++) {
+                html += `<div>${i}</div>`;
+            }
+            
+            lineNumbers.innerHTML = html;
+            
+            // 同步滚动
+            textarea.addEventListener('scroll', () => {
+                lineNumbers.scrollTop = textarea.scrollTop;
+            });
+        }
+
+        // 格式化JSON
+        function formatJSON() {
+            const input = document.getElementById('jsonInput').value.trim();
+            const indentSize = document.getElementById('indentSize').value;
+            const sortKeys = document.getElementById('sortKeys').value;
+            
+            document.getElementById('errorContainer').classList.add('hidden');
+            
+            if (!input) {
+                document.getElementById('jsonOutput').innerHTML = '';
+                updateStatistics('', '');
+                updateLineNumbers('jsonOutput', 'outputLineNumbers');
+                renderTree(null);
+                return;
+            }
+            
+            try {
+                // 解析JSON
+                const parsed = jsonlint.parse(input);
+                currentJson = parsed;
+                
+                // 排序键
+                let sorted = parsed;
+                if (sortKeys !== 'none') {
+                    sorted = sortObjectKeys(parsed, sortKeys === 'asc');
+                }
+                
+                // 格式化
+                const indent = indentSize === 'tab' ? '\t' : parseInt(indentSize);
+                const formatted = JSON.stringify(sorted, null, indent);
+                
+                // 语法高亮
+                const highlighted = highlightJSON(formatted);
+                document.getElementById('jsonOutput').innerHTML = highlighted;
+                
+                // 更新统计
+                updateStatistics(input, formatted);
+                
+                // 更新行号
+                updateLineNumbers('jsonOutput', 'outputLineNumbers');
+                
+                // 更新状态
+                document.getElementById('validStatus').textContent = '✅ 有效';
+                document.getElementById('validStatus').className = 'text-3xl font-bold text-green-600';
+                
+                // 渲染树
+                renderTree(parsed);
+                
+                return true;
+            } catch (error) {
+                // 显示错误
+                document.getElementById('errorContainer').classList.remove('hidden');
+                document.getElementById('errorMessage').textContent = error.message;
+                
+                if (error.location) {
+                    document.getElementById('errorLocation').textContent = 
+                        `错误位置：第 ${error.location.start.line} 行，第 ${error.location.start.column} 列`;
+                }
+                
+                // 更新状态
+                document.getElementById('validStatus').textContent = '❌ 无效';
+                document.getElementById('validStatus').className = 'text-3xl font-bold text-red-600';
+                
+                return false;
+            }
+        }
+
+        // 压缩JSON
+        function minifyJSON() {
+            const input = document.getElementById('jsonInput').value.trim();
+            
+            if (!input) return;
+            
+            try {
+                const parsed = jsonlint.parse(input);
+                const minified = JSON.stringify(parsed);
+                document.getElementById('jsonInput').value = minified;
+                formatJSON();
+                showToast('JSON 已压缩', 'success');
+            } catch (error) {
+                showToast('JSON 格式错误，无法压缩', 'error');
+            }
+        }
+
+        // 验证JSON
+        function validateJSON() {
+            const input = document.getElementById('jsonInput').value.trim();
+            
+            if (!input) {
+                showToast('请输入 JSON 内容', 'warning');
+                return;
+            }
+            
+            try {
+                jsonlint.parse(input);
+                showToast('✅ JSON 格式完全正确', 'success');
+                return true;
+            } catch (error) {
+                showToast(`❌ JSON 格式错误：${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // 复制输出
+        async function copyOutput() {
+            const output = document.getElementById('jsonOutput').textContent;
+            
+            if (!output) {
+                showToast('没有可复制的内容', 'error');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(output);
+                showToast('已复制到剪贴板！', 'success');
+                
+                // 成功动画
+                document.getElementById('jsonOutput').classList.add('copy-success');
+                setTimeout(() => {
+                    document.getElementById('jsonOutput').classList.remove('copy-success');
+                }, 500);
+            } catch (err) {
+                showToast('复制失败，请手动复制', 'error');
+            }
+        }
+
+        // 下载JSON
+        function downloadJSON() {
+            const output = document.getElementById('jsonOutput').textContent;
+            
+            if (!output) {
+                showToast('没有可下载的内容', 'error');
+                return;
+            }
+            
+            const blob = new Blob([output], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `formatted-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('文件已下载', 'success');
+        }
+
+        // 清空
+        function clearAll() {
+            if (confirm('确定要清空所有内容吗？')) {
+                document.getElementById('jsonInput').value = '';
+                document.getElementById('jsonOutput').innerHTML = '';
+                currentJson = null;
+                updateStatistics('', '');
+                updateLineNumbers('jsonInput', 'inputLineNumbers');
+                updateLineNumbers('jsonOutput', 'outputLineNumbers');
+                renderTree(null);
+                document.getElementById('errorContainer').classList.add('hidden');
+                showToast('已清空', 'success');
+            }
+        }
+
+        // 从剪贴板粘贴
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('jsonInput').value = text;
+                updateLineNumbers('jsonInput', 'inputLineNumbers');
+                formatJSON();
+                showToast('已从剪贴板粘贴', 'success');
+            } catch (err) {
+                showToast('粘贴失败，请手动粘贴', 'error');
+            }
+        }
+
+        // 加载示例
+        function loadExample(type) {
+            const examples = {
+                simple: `{
+    "name": "张三",
+    "age": 25,
+    "email": "zhangsan@example.com",
+    "active": true,
+    "address": null
+}`,
+                nested: `{
+    "user": {
+        "id": 123,
+        "name": "张三",
+        "profile": {
+            "age": 25,
+            "email": "zhangsan@example.com",
+            "phone": "13800138000"
+        },
+        "settings": {
+            "notifications": true,
+            "theme": "dark",
+            "language": "zh-CN"
+        }
+    }
+}`,
+                array: `{
+    "users": [
+        {
+            "id": 1,
+            "name": "张三",
+            "age": 25
+        },
+        {
+            "id": 2,
+            "name": "李四",
+            "age": 30
+        },
+        {
+            "id": 3,
+            "name": "王五",
+            "age": 28
+        }
+    ],
+    "total": 3,
+    "page": 1,
+    "perPage": 10
+}`,
+                complex: `{
+    "metadata": {
+        "version": "1.0.0",
+        "timestamp": "2026-03-14T12:00:00Z",
+        "generator": "JSON Formatter"
+    },
+    "data": {
+        "products": [
+            {
+                "id": "prod_123",
+                "name": "MacBook Pro",
+                "price": 19999,
+                "inStock": true,
+                "tags": ["electronics", "laptop", "apple"],
+                "specs": {
+                    "cpu": "M3 Pro",
+                    "ram": "16GB",
+                    "storage": "512GB"
+                }
+            },
+            {
+                "id": "prod_456",
+                "name": "iPhone 15 Pro",
+                "price": 7999,
+                "inStock": false,
+                "tags": ["electronics", "phone", "apple"],
+                "specs": {
+                    "chip": "A17 Pro",
+                    "ram": "8GB",
+                    "storage": "256GB"
+                }
+            }
+        ],
+        "categories": ["electronics", "clothing", "books"],
+        "pagination": {
+            "total": 2,
+            "page": 1,
+            "perPage": 10,
+            "hasNext": false
+        }
+    },
+    "success": true,
+    "error": null
+}`
+            };
+            
+            document.getElementById('jsonInput').value = examples[type];
+            updateLineNumbers('jsonInput', 'inputLineNumbers');
+            formatJSON();
+            showToast('示例已加载', 'success');
+        }
+
+        // 文件上传处理
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('jsonInput').value = event.target.result;
+                updateLineNumbers('jsonInput', 'inputLineNumbers');
+                formatJSON();
+                showToast(`文件 "${file.name}" 已加载`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // 更新统计信息
+        function updateStatistics(input, output) {
+            const inputSize = new Blob([input]).size;
+            const outputSize = new Blob([output]).size;
+            
+            // 格式化大小
+            const formatSize = (bytes) => {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            };
+            
+            document.getElementById('originalSize').textContent = formatSize(inputSize);
+            document.getElementById('formattedSize').textContent = formatSize(outputSize);
+            
+            // 计算压缩率
+            if (inputSize > 0 && outputSize > 0) {
+                const rate = ((inputSize - outputSize) / inputSize * 100).toFixed(1);
+                document.getElementById('compressionRate').textContent = Math.max(0, rate) + '%';
+            } else {
+                document.getElementById('compressionRate').textContent = '0%';
+            }
+            
+            // 更新行数
+            const inputLines = input ? input.split('\n').length : 0;
+            const outputLines = output ? output.split('\n').length : 0;
+            document.getElementById('inputLineCount').textContent = inputLines + ' 行';
+            document.getElementById('outputLineCount').textContent = outputLines + ' 行';
+        }
+
+        // 排序对象键
+        function sortObjectKeys(obj, ascending = true) {
+            if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+                return obj;
+            }
+            
+            const sorted = {};
+            const keys = Object.keys(obj).sort((a, b) => {
+                return ascending ? a.localeCompare(b) : b.localeCompare(a);
+            });
+            
+            keys.forEach(key => {
+                sorted[key] = sortObjectKeys(obj[key], ascending);
+            });
+            
+            return sorted;
+        }
+
+        // JSON语法高亮
+        function highlightJSON(json) {
+            if (!json) return '';
+            
+            // 替换特殊字符
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            // 高亮不同类型
+            return json
+                // 键名
+                .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+                // 字符串值
+                .replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>')
+                // 数字
+                .replace(/: (-?\d+\.?\d*e?[+-]?\d*)/g, ': <span class="json-number">$1</span>')
+                // 布尔值
+                .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+                // null
+                .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+        }
+
+        // 渲染JSON树
+        function renderTree(obj) {
+            const treeContainer = document.getElementById('jsonTree');
+            
+            if (!obj) {
+                treeContainer.innerHTML = `
+                    <div class="text-gray-500 text-center py-8">
+                        <i class="fa fa-tree text-4xl mb-2 text-gray-300"></i>
+                        <p>输入有效的JSON后将显示结构树</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            treeContainer.innerHTML = renderTreeNode(obj, 'root', true);
+            
+            // 添加折叠/展开事件
+            document.querySelectorAll('.tree-toggle').forEach(toggle => {
+                toggle.addEventListener('click', (e) => {
+                    const content = e.target.nextElementSibling.nextElementSibling;
+                    if (content.style.display === 'none') {
+                        content.style.display = 'block';
+                        e.target.classList.remove('fa-caret-right');
+                        e.target.classList.add('fa-caret-down');
+                    } else {
+                        content.style.display = 'none';
+                        e.target.classList.remove('fa-caret-down');
+                        e.target.classList.add('fa-caret-right');
+                    }
+                });
+            });
+        }
+
+        function renderTreeNode(value, key, isRoot = false) {
+            const type = typeof value;
+            
+            if (value === null) {
+                return `<div class="ml-4">
+                    <span class="json-key">${key}</span>: <span class="json-null">null</span>
+                </div>`;
+            }
+            
+            if (Array.isArray(value)) {
+                if (value.length === 0) {
+                    return `<div class="ml-4">
+                        <span class="json-key">${key}</span>: <span class="text-gray-500">[] (空数组)</span>
+                    </div>`;
+                }
+                
+                return `
+                    <div class="ml-4">
+                        <i class="fa fa-caret-down tree-toggle cursor-pointer text-gray-500 mr-1"></i>
+                        <span class="json-key">${key}</span>: <span class="text-gray-500">Array[${value.length}]</span>
+                        <div class="pl-4 border-l border-gray-200">
+                            ${value.map((item, index) => renderTreeNode(item, index)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (type === 'object') {
+                const keys = Object.keys(value);
+                if (keys.length === 0) {
+                    return `<div class="ml-4">
+                        <span class="json-key">${key}</span>: <span class="text-gray-500">{} (空对象)</span>
+                    </div>`;
+                }
+                
+                return `
+                    <div class="ml-4">
+                        <i class="fa fa-caret-down tree-toggle cursor-pointer text-gray-500 mr-1"></i>
+                        <span class="json-key">${key}</span>: <span class="text-gray-500">Object{${keys.length}}</span>
+                        <div class="pl-4 border-l border-gray-200">
+                            ${keys.map(k => renderTreeNode(value[k], k)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (type === 'string') {
+                return `<div class="ml-4">
+                    <span class="json-key">${key}</span>: <span class="json-string">"${value}"</span>
+                </div>`;
+            }
+            
+            if (type === 'number') {
+                return `<div class="ml-4">
+                    <span class="json-key">${key}</span>: <span class="json-number">${value}</span>
+                </div>`;
+            }
+            
+            if (type === 'boolean') {
+                return `<div class="ml-4">
+                    <span class="json-key">${key}</span>: <span class="json-boolean">${value}</span>
+                </div>`;
+            }
+            
+            return `<div class="ml-4">
+                <span class="json-key">${key}</span>: <span>${value}</span>
+            </div>`;
+        }
+
+        // 切换树的展开/折叠
+        function toggleTree(expand) {
+            const toggles = document.querySelectorAll('.tree-toggle');
+            toggles.forEach(toggle => {
+                const content = toggle.nextElementSibling.nextElementSibling;
+                if (expand) {
+                    content.style.display = 'block';
+                    toggle.classList.remove('fa-caret-right');
+                    toggle.classList.add('fa-caret-down');
+                } else {
+                    content.style.display = 'none';
+                    toggle.classList.remove('fa-caret-down');
+                    toggle.classList.add('fa-caret-right');
+                }
+            });
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all transform translate-y-0 opacity-100 ${
+                type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

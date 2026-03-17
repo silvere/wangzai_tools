@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Response Diff | API响应对比工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .mode-switch {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header input {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            width: 200px;
+        }
+
+        .panel-header input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .panel-content {
+            padding: 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+            border: none;
+            padding: 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+            background: #f8f9fa;
+        }
+
+        textarea:focus {
+            outline: none;
+            background: #fff;
+        }
+
+        .diff-view {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .diff-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .diff-header h2 {
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .diff-content {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .diff-line {
+            padding: 2px 0;
+        }
+
+        .diff-added {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .diff-removed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .diff-changed {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .diff-same {
+            color: #666;
+        }
+
+        .templates {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .templates h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .template-btn {
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .template-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .template-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .template-desc {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .mode-switch {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 API Response Diff</h1>
+            <p>对比两个API响应的差异，支持JSON和文本模式</p>
+        </div>
+
+        <div class="templates">
+            <h3>📋 快速模板</h3>
+            <div class="template-grid">
+                <div class="template-btn" onclick="loadTemplate('gpt')">
+                    <div class="template-name">GPT vs Claude</div>
+                    <div class="template-desc">对比两个模型的响应</div>
+                </div>
+                <div class="template-btn" onclick="loadTemplate('api')">
+                    <div class="template-name">API版本对比</div>
+                    <div class="template-desc">对比v1和v2的响应</div>
+                </div>
+                <div class="template-btn" onclick="loadTemplate('error')">
+                    <div class="template-name">错误响应对比</div>
+                    <div class="template-desc">对比正常和错误响应</div>
+                </div>
+                <div class="template-btn" onclick="loadTemplate('clear')">
+                    <div class="template-name">清空</div>
+                    <div class="template-desc">清空所有内容</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="mode-switch">
+                <button class="mode-btn active" onclick="setMode('json')">JSON模式</button>
+                <button class="mode-btn" onclick="setMode('text')">文本模式</button>
+            </div>
+            <button class="action-btn" onclick="compareDiff()">🔍 对比差异</button>
+            <button class="action-btn" onclick="formatJSON()">✨ 格式化JSON</button>
+            <button class="action-btn" onclick="copyDiff()">📋 复制差异报告</button>
+            <button class="action-btn" onclick="swapInputs()">🔄 交换左右</button>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalLines">0</div>
+                <div class="stat-label">总行数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="addedLines">0</div>
+                <div class="stat-label">新增行</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="removedLines">0</div>
+                <div class="stat-label">删除行</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="changedLines">0</div>
+                <div class="stat-label">修改行</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="similarity">100%</div>
+                <div class="stat-label">相似度</div>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>响应 A</span>
+                    <input type="text" id="labelA" placeholder="例如：GPT-4" value="响应 A">
+                </div>
+                <div class="panel-content">
+                    <textarea id="inputA" placeholder="粘贴第一个API响应..."></textarea>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>响应 B</span>
+                    <input type="text" id="labelB" placeholder="例如：Claude-3" value="响应 B">
+                </div>
+                <div class="panel-content">
+                    <textarea id="inputB" placeholder="粘贴第二个API响应..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="diff-view">
+            <div class="diff-header">
+                <h2>📊 差异分析</h2>
+            </div>
+            <div class="diff-content" id="diffOutput">
+                <div style="text-align:center;color:#999;padding:40px 0;">
+                    输入两个响应后点击"对比差异"按钮查看结果
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'json';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function formatJSON() {
+            const inputA = document.getElementById('inputA');
+            const inputB = document.getElementById('inputB');
+
+            try {
+                if (inputA.value.trim()) {
+                    const jsonA = JSON.parse(inputA.value);
+                    inputA.value = JSON.stringify(jsonA, null, 2);
+                }
+            } catch (e) {
+                alert('响应 A 不是有效的JSON格式');
+            }
+
+            try {
+                if (inputB.value.trim()) {
+                    const jsonB = JSON.parse(inputB.value);
+                    inputB.value = JSON.stringify(jsonB, null, 2);
+                }
+            } catch (e) {
+                alert('响应 B 不是有效的JSON格式');
+            }
+        }
+
+        function compareDiff() {
+            const textA = document.getElementById('inputA').value;
+            const textB = document.getElementById('inputB').value;
+            const labelA = document.getElementById('labelA').value || '响应 A';
+            const labelB = document.getElementById('labelB').value || '响应 B';
+
+            if (!textA || !textB) {
+                alert('请输入两个响应内容');
+                return;
+            }
+
+            const linesA = textA.split('\n');
+            const linesB = textB.split('\n');
+
+            const diff = computeDiff(linesA, linesB);
+            displayDiff(diff, labelA, labelB);
+            updateStats(diff, linesA.length, linesB.length);
+        }
+
+        function computeDiff(linesA, linesB) {
+            const result = [];
+            const maxLen = Math.max(linesA.length, linesB.length);
+
+            for (let i = 0; i < maxLen; i++) {
+                const lineA = linesA[i] !== undefined ? linesA[i] : null;
+                const lineB = linesB[i] !== undefined ? linesB[i] : null;
+
+                if (lineA === null && lineB !== null) {
+                    result.push({ type: 'added', line: lineB, lineNum: i + 1 });
+                } else if (lineA !== null && lineB === null) {
+                    result.push({ type: 'removed', line: lineA, lineNum: i + 1 });
+                } else if (lineA !== lineB) {
+                    result.push({ type: 'changed', lineA, lineB, lineNum: i + 1 });
+                } else {
+                    result.push({ type: 'same', line: lineA, lineNum: i + 1 });
+                }
+            }
+
+            return result;
+        }
+
+        function displayDiff(diff, labelA, labelB) {
+            const output = document.getElementById('diffOutput');
+            let html = '';
+
+            diff.forEach(item => {
+                if (item.type === 'same') {
+                    html += `<div class="diff-line diff-same">${escapeHtml(item.line)}</div>`;
+                } else if (item.type === 'added') {
+                    html += `<div class="diff-line diff-added">+ ${escapeHtml(item.line)}</div>`;
+                } else if (item.type === 'removed') {
+                    html += `<div class="diff-line diff-removed">- ${escapeHtml(item.line)}</div>`;
+                } else if (item.type === 'changed') {
+                    html += `<div class="diff-line diff-removed">- ${escapeHtml(item.lineA)}</div>`;
+                    html += `<div class="diff-line diff-added">+ ${escapeHtml(item.lineB)}</div>`;
+                }
+            });
+
+            output.innerHTML = html;
+        }
+
+        function updateStats(diff, lenA, lenB) {
+            let added = 0, removed = 0, changed = 0, same = 0;
+
+            diff.forEach(item => {
+                if (item.type === 'added') added++;
+                else if (item.type === 'removed') removed++;
+                else if (item.type === 'changed') changed++;
+                else if (item.type === 'same') same++;
+            });
+
+            const total = Math.max(lenA, lenB);
+            const similarity = total > 0 ? Math.round((same / total) * 100) : 100;
+
+            document.getElementById('totalLines').textContent = total;
+            document.getElementById('addedLines').textContent = added;
+            document.getElementById('removedLines').textContent = removed;
+            document.getElementById('changedLines').textContent = changed;
+            document.getElementById('similarity').textContent = similarity + '%';
+        }
+
+        function copyDiff() {
+            const diffOutput = document.getElementById('diffOutput').innerText;
+            if (!diffOutput || diffOutput.includes('输入两个响应')) {
+                alert('请先对比差异');
+                return;
+            }
+
+            const labelA = document.getElementById('labelA').value || '响应 A';
+            const labelB = document.getElementById('labelB').value || '响应 B';
+            const stats = `
+差异报告
+========
+${labelA} vs ${labelB}
+
+统计信息：
+- 总行数: ${document.getElementById('totalLines').textContent}
+- 新增行: ${document.getElementById('addedLines').textContent}
+- 删除行: ${document.getElementById('removedLines').textContent}
+- 修改行: ${document.getElementById('changedLines').textContent}
+- 相似度: ${document.getElementById('similarity').textContent}
+
+详细差异：
+${diffOutput}
+            `.trim();
+
+            navigator.clipboard.writeText(stats).then(() => {
+                alert('差异报告已复制到剪贴板！');
+            });
+        }
+
+        function swapInputs() {
+            const inputA = document.getElementById('inputA');
+            const inputB = document.getElementById('inputB');
+            const labelA = document.getElementById('labelA');
+            const labelB = document.getElementById('labelB');
+
+            const tempValue = inputA.value;
+            const tempLabel = labelA.value;
+
+            inputA.value = inputB.value;
+            labelA.value = labelB.value;
+
+            inputB.value = tempValue;
+            labelB.value = tempLabel;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function loadTemplate(type) {
+            const inputA = document.getElementById('inputA');
+            const inputB = document.getElementById('inputB');
+            const labelA = document.getElementById('labelA');
+            const labelB = document.getElementById('labelB');
+
+            if (type === 'gpt') {
+                labelA.value = 'GPT-4';
+                labelB.value = 'Claude-3';
+                inputA.value = JSON.stringify({
+                    "id": "chatcmpl-123",
+                    "object": "chat.completion",
+                    "created": 1677652288,
+                    "model": "gpt-4",
+                    "choices": [{
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "Hello! How can I help you today?"
+                        },
+                        "finish_reason": "stop"
+                    }],
+                    "usage": {
+                        "prompt_tokens": 10,
+                        "completion_tokens": 9,
+                        "total_tokens": 19
+                    }
+                }, null, 2);
+                inputB.value = JSON.stringify({
+                    "id": "msg_123",
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{
+                        "type": "text",
+                        "text": "Hello! How may I assist you today?"
+                    }],
+                    "model": "claude-3-opus",
+                    "stop_reason": "end_turn",
+                    "usage": {
+                        "input_tokens": 10,
+                        "output_tokens": 10
+                    }
+                }, null, 2);
+            } else if (type === 'api') {
+                labelA.value = 'API v1';
+                labelB.value = 'API v2';
+                inputA.value = JSON.stringify({
+                    "status": "success",
+                    "data": {
+                        "user_id": 123,
+                        "username": "john_doe",
+                        "email": "john@example.com"
+                    }
+                }, null, 2);
+                inputB.value = JSON.stringify({
+                    "status": "success",
+                    "data": {
+                        "id": 123,
+                        "name": "john_doe",
+                        "email": "john@example.com",
+                        "created_at": "2026-03-04T08:00:00Z"
+                    }
+                }, null, 2);
+            } else if (type === 'error') {
+                labelA.value = '正常响应';
+                labelB.value = '错误响应';
+                inputA.value = JSON.stringify({
+                    "status": 200,
+                    "message": "Success",
+                    "data": {
+                        "result": "Operation completed"
+                    }
+                }, null, 2);
+                inputB.value = JSON.stringify({
+                    "status": 500,
+                    "message": "Internal Server Error",
+                    "error": {
+                        "code": "SERVER_ERROR",
+                        "details": "Database connection failed"
+                    }
+                }, null, 2);
+            } else if (type === 'clear') {
+                inputA.value = '';
+                inputB.value = '';
+                labelA.value = '响应 A';
+                labelB.value = '响应 B';
+                document.getElementById('diffOutput').innerHTML = '<div style="text-align:center;color:#999;padding:40px 0;">输入两个响应后点击"对比差异"按钮查看结果</div>';
+            }
+        }
+    </script>
+</body>
+</html>

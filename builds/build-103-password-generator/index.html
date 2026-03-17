@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码生成器 🔐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .password-display {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+        
+        .strength-bar {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .password-item {
+            transition: all 0.3s ease;
+        }
+        
+        .password-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-gray-800">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-3">
+                <i class="fas fa-lock mr-3"></i>密码生成器
+            </h1>
+            <p class="text-xl text-white/90 font-light">
+                安全可靠的密码生成工具，一键生成高强度密码，本地离线运行
+            </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">已生成密码</p>
+                        <p class="text-3xl font-bold" id="totalGenerated">0</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-key"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">密码强度</p>
+                        <p class="text-3xl font-bold" id="strengthText">-</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 text-white border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/70 text-sm mb-1">破解时间</p>
+                        <p class="text-3xl font-bold" id="crackTime">-</p>
+                    </div>
+                    <div class="text-4xl text-white/60">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-3xl card-shadow p-8 mb-8">
+            <!-- Password Display -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="block text-gray-700 font-semibold text-lg">
+                        <i class="fas fa-shield-alt mr-2"></i>生成的密码
+                    </label>
+                    <div class="flex gap-2">
+                        <button id="regenerateBtn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition">
+                            <i class="fas fa-sync-alt mr-1"></i>重新生成
+                        </button>
+                        <button id="copyBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition">
+                            <i class="fas fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="passwordDisplay" 
+                        readonly
+                        class="w-full px-6 py-5 rounded-xl border-2 border-gray-200 bg-gray-50 text-xl password-display outline-none"
+                    >
+                    <button id="toggleVisibility" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-eye text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Strength Indicator -->
+                <div class="mt-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-600 font-medium">密码强度</span>
+                        <span id="strengthLabel" class="text-sm font-semibold">未检测</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <div id="strength1" class="strength-bar h-2 flex-1 rounded-full bg-gray-200"></div>
+                        <div id="strength2" class="strength-bar h-2 flex-1 rounded-full bg-gray-200"></div>
+                        <div id="strength3" class="strength-bar h-2 flex-1 rounded-full bg-gray-200"></div>
+                        <div id="strength4" class="strength-bar h-2 flex-1 rounded-full bg-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-sliders-h mr-2 text-purple-600"></i>基础设置
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-gray-700 font-medium">密码长度</label>
+                                <span id="lengthValue" class="text-purple-600 font-bold">16</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                id="lengthSlider" 
+                                min="4" 
+                                max="32" 
+                                value="16"
+                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                            >
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>4</span>
+                                <span>16</span>
+                                <span>32</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="includeUppercase" class="w-5 h-5 text-purple-600" checked>
+                                <span class="ml-2 text-gray-700">包含大写字母 (A-Z)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="includeLowercase" class="w-5 h-5 text-purple-600" checked>
+                                <span class="ml-2 text-gray-700">包含小写字母 (a-z)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="includeNumbers" class="w-5 h-5 text-purple-600" checked>
+                                <span class="ml-2 text-gray-700">包含数字 (0-9)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="includeSymbols" class="w-5 h-5 text-purple-600">
+                                <span class="ml-2 text-gray-700">包含特殊字符 (!@#$%^&*)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="excludeSimilar" class="w-5 h-5 text-purple-600">
+                                <span class="ml-2 text-gray-700">排除相似字符 (0, O, l, 1, I)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="excludeAmbiguous" class="w-5 h-5 text-purple-600">
+                                <span class="ml-2 text-gray-700">排除易混淆符号 ({ } [ ] ( ) / \ ' " ` ~ , ; : . < >)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-magic mr-2 text-purple-600"></i>快速模板
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 gap-3 mb-6">
+                        <button class="template-btn px-4 py-3 border-2 border-gray-200 rounded-xl text-left hover:border-purple-500 hover:bg-purple-50 transition" data-type="pin">
+                            <div class="font-semibold text-gray-800">PIN 码</div>
+                            <div class="text-sm text-gray-600">纯数字，4位长度，适合手机锁屏</div>
+                        </button>
+                        <button class="template-btn px-4 py-3 border-2 border-gray-200 rounded-xl text-left hover:border-purple-500 hover:bg-purple-50 transition" data-type="memorable">
+                            <div class="font-semibold text-gray-800">易记密码</div>
+                            <div class="text-sm text-gray-600">字母+数字组合，12位，好记又安全</div>
+                        </button>
+                        <button class="template-btn px-4 py-3 border-2 border-gray-200 rounded-xl text-left hover:border-purple-500 hover:bg-purple-50 transition" data-type="strong">
+                            <div class="font-semibold text-gray-800">强密码</div>
+                            <div class="text-sm text-gray-600">大小写+数字+符号，16位，高安全性</div>
+                        </button>
+                        <button class="template-btn px-4 py-3 border-2 border-gray-200 rounded-xl text-left hover:border-purple-500 hover:bg-purple-50 transition" data-type="wifi">
+                            <div class="font-semibold text-gray-800">WiFi 密码</div>
+                            <div class="text-sm text-gray-600">字母+数字组合，8位，适合WiFi网络</div>
+                        </button>
+                    </div>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-info-circle mr-2 text-purple-600"></i>安全提示
+                    </h3>
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <ul class="text-sm text-gray-700 space-y-2">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                                <span>建议每个网站使用不同的密码</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                                <span>密码长度至少12位才足够安全</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                                <span>定期更换重要账号的密码</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                                <span>所有密码本地生成，不会上传到服务器</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated History -->
+        <div class="bg-white rounded-3xl card-shadow p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-history mr-3 text-purple-600"></i>生成历史
+                </h2>
+                <button id="clearHistoryBtn" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition">
+                    <i class="fas fa-trash mr-1"></i>清空历史
+                </button>
+            </div>
+
+            <div id="historyList" class="space-y-4">
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                    <p class="text-lg">还没有生成过密码</p>
+                    <p class="text-sm mt-1">生成的密码会保存在这里（仅本地存储）</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/70 text-sm">
+            <p>🔒 所有密码在本地生成，绝不会上传到任何服务器，安全可靠</p>
+            <p class="mt-1">采用浏览器原生加密API生成高质量随机密码</p>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let passwordHistory = JSON.parse(localStorage.getItem('passwordHistory') || '[]');
+        let currentPassword = '';
+        let isVisible = false;
+        
+        // Character sets
+        const charSets = {
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            lowercase: 'abcdefghijklmnopqrstuvwxyz',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        };
+        
+        const similarChars = '0Ol1I';
+        const ambiguousSymbols = '{}[]()/\\\'"`~,;:.<>';
+        
+        // DOM Elements
+        const passwordDisplay = document.getElementById('passwordDisplay');
+        const copyBtn = document.getElementById('copyBtn');
+        const regenerateBtn = document.getElementById('regenerateBtn');
+        const toggleVisibility = document.getElementById('toggleVisibility');
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthValue = document.getElementById('lengthValue');
+        const includeUppercase = document.getElementById('includeUppercase');
+        const includeLowercase = document.getElementById('includeLowercase');
+        const includeNumbers = document.getElementById('includeNumbers');
+        const includeSymbols = document.getElementById('includeSymbols');
+        const excludeSimilar = document.getElementById('excludeSimilar');
+        const excludeAmbiguous = document.getElementById('excludeAmbiguous');
+        const strength1 = document.getElementById('strength1');
+        const strength2 = document.getElementById('strength2');
+        const strength3 = document.getElementById('strength3');
+        const strength4 = document.getElementById('strength4');
+        const strengthLabel = document.getElementById('strengthLabel');
+        const strengthText = document.getElementById('strengthText');
+        const crackTime = document.getElementById('crackTime');
+        const totalGenerated = document.getElementById('totalGenerated');
+        const historyList = document.getElementById('historyList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const templateBtns = document.querySelectorAll('.template-btn');
+        
+        // Initialize
+        updateStats();
+        renderHistory();
+        generatePassword();
+        
+        // Generate secure random password
+        function generatePassword() {
+            const length = parseInt(lengthSlider.value);
+            let chars = '';
+            let password = '';
+            
+            // Build character set
+            if (includeUppercase.checked) chars += charSets.uppercase;
+            if (includeLowercase.checked) chars += charSets.lowercase;
+            if (includeNumbers.checked) chars += charSets.numbers;
+            if (includeSymbols.checked) chars += charSets.symbols;
+            
+            // Exclude similar characters
+            if (excludeSimilar.checked) {
+                chars = chars.split('').filter(c => !similarChars.includes(c)).join('');
+            }
+            
+            // Exclude ambiguous symbols
+            if (excludeAmbiguous.checked) {
+                chars = chars.split('').filter(c => !ambiguousSymbols.includes(c)).join('');
+            }
+            
+            // If no character sets selected, default to lowercase
+            if (chars.length === 0) {
+                chars = charSets.lowercase;
+                includeLowercase.checked = true;
+            }
+            
+            // Generate password using secure random
+            const array = new Uint32Array(length);
+            crypto.getRandomValues(array);
+            
+            for (let i = 0; i < length; i++) {
+                password += chars[array[i] % chars.length];
+            }
+            
+            currentPassword = password;
+            updatePasswordDisplay();
+            updateStrength(password);
+            
+            // Add to history
+            addToHistory(password);
+            
+            return password;
+        }
+        
+        // Update password display
+        function updatePasswordDisplay() {
+            if (isVisible) {
+                passwordDisplay.value = currentPassword;
+                toggleVisibility.innerHTML = '<i class="fas fa-eye-slash text-xl"></i>';
+            } else {
+                passwordDisplay.value = '•'.repeat(currentPassword.length);
+                toggleVisibility.innerHTML = '<i class="fas fa-eye text-xl"></i>';
+            }
+        }
+        
+        // Calculate password strength
+        function updateStrength(password) {
+            let strength = 0;
+            let crackTimeEstimate = '立即';
+            
+            // Length check
+            if (password.length >= 12) strength += 1;
+            if (password.length >= 16) strength += 1;
+            if (password.length >= 20) strength += 1;
+            
+            // Character variety
+            if (/[a-z]/.test(password)) strength += 0.5;
+            if (/[A-Z]/.test(password)) strength += 0.5;
+            if (/[0-9]/.test(password)) strength += 0.5;
+            if (/[^a-zA-Z0-9]/.test(password)) strength += 0.5;
+            
+            // Cap strength at 4
+            strength = Math.min(strength, 4);
+            
+            // Calculate crack time (simplified)
+            const combinations = Math.pow(getCharsetSize(password), password.length);
+            const guessesPerSecond = 1e10; // 100亿次/秒
+            const secondsToCrack = combinations / guessesPerSecond;
+            
+            if (secondsToCrack < 1) {
+                crackTimeEstimate = '立即';
+            } else if (secondsToCrack < 60) {
+                crackTimeEstimate = `${Math.round(secondsToCrack)}秒`;
+            } else if (secondsToCrack < 3600) {
+                crackTimeEstimate = `${Math.round(secondsToCrack / 60)}分钟`;
+            } else if (secondsToCrack < 86400) {
+                crackTimeEstimate = `${Math.round(secondsToCrack / 3600)}小时`;
+            } else if (secondsToCrack < 31536000) {
+                crackTimeEstimate = `${Math.round(secondsToCrack / 86400)}天`;
+            } else if (secondsToCrack < 3.1536e12) {
+                crackTimeEstimate = `${Math.round(secondsToCrack / 31536000)}年`;
+            } else {
+                crackTimeEstimate = '永远';
+            }
+            
+            // Update UI
+            const strengthLevels = ['极弱', '弱', '中等', '强', '极强'];
+            const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-blue-500'];
+            
+            strengthLabel.textContent = strengthLevels[Math.round(strength)];
+            strengthLabel.className = `text-sm font-semibold ${strengthColors[Math.round(strength)].replace('bg-', 'text-')}`;
+            strengthText.textContent = strengthLevels[Math.round(strength)];
+            crackTime.textContent = crackTimeEstimate;
+            
+            // Update strength bars
+            const bars = [strength1, strength2, strength3, strength4];
+            bars.forEach((bar, index) => {
+                if (index < strength) {
+                    bar.className = `strength-bar h-2 flex-1 rounded-full ${strengthColors[Math.round(strength)]}`;
+                } else {
+                    bar.className = 'strength-bar h-2 flex-1 rounded-full bg-gray-200';
+                }
+            });
+        }
+        
+        // Get character set size
+        function getCharsetSize(password) {
+            let size = 0;
+            if (/[a-z]/.test(password)) size += 26;
+            if (/[A-Z]/.test(password)) size += 26;
+            if (/[0-9]/.test(password)) size += 10;
+            if (/[^a-zA-Z0-9]/.test(password)) size += 32;
+            return size || 26;
+        }
+        
+        // Add to history
+        function addToHistory(password) {
+            const entry = {
+                id: Date.now(),
+                password: password,
+                length: password.length,
+                createdAt: new Date().toISOString(),
+                strength: getStrengthLevel(password)
+            };
+            
+            passwordHistory.unshift(entry);
+            // Keep only last 20 entries
+            if (passwordHistory.length > 20) {
+                passwordHistory = passwordHistory.slice(0, 20);
+            }
+            
+            localStorage.setItem('passwordHistory', JSON.stringify(passwordHistory));
+            updateStats();
+            renderHistory();
+        }
+        
+        // Get strength level
+        function getStrengthLevel(password) {
+            let strength = 0;
+            if (password.length >= 12) strength++;
+            if (password.length >= 16) strength++;
+            if (password.length >= 20) strength++;
+            if (/[a-z]/.test(password)) strength += 0.5;
+            if (/[A-Z]/.test(password)) strength += 0.5;
+            if (/[0-9]/.test(password)) strength += 0.5;
+            if (/[^a-zA-Z0-9]/.test(password)) strength += 0.5;
+            
+            const levels = ['极弱', '弱', '中等', '强', '极强'];
+            return levels[Math.min(Math.round(strength), 4)];
+        }
+        
+        // Update stats
+        function updateStats() {
+            totalGenerated.textContent = passwordHistory.length;
+        }
+        
+        // Render history
+        function renderHistory() {
+            if (passwordHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg">还没有生成过密码</p>
+                        <p class="text-sm mt-1">生成的密码会保存在这里（仅本地存储）</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyList.innerHTML = passwordHistory.map(entry => {
+                const strengthColors = {
+                    '极弱': 'bg-red-100 text-red-700',
+                    '弱': 'bg-orange-100 text-orange-700',
+                    '中等': 'bg-yellow-100 text-yellow-700',
+                    '强': 'bg-green-100 text-green-700',
+                    '极强': 'bg-blue-100 text-blue-700'
+                };
+                
+                const date = new Date(entry.createdAt);
+                const timeStr = date.toLocaleString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="password-item bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1 mr-4">
+                                <div class="font-mono text-lg font-semibold text-gray-800 mb-1" id="pass-${entry.id}">
+                                    ${'•'.repeat(entry.password.length)}
+                                </div>
+                                <div class="flex flex-wrap gap-3 text-sm">
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-clock mr-1"></i>${timeStr}
+                                    </span>
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-ruler-combined mr-1"></i>${entry.length}位
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium ${strengthColors[entry.strength]}">
+                                        ${entry.strength}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="copy-btn p-2 bg-purple-100 text-purple-700 rounded-lg" onclick="copyPassword('${entry.password}')" title="复制">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="p-2 bg-gray-100 text-gray-600 rounded-lg" onclick="togglePasswordVisibility('${entry.id}', '${entry.password}')" title="显示/隐藏">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="p-2 bg-red-100 text-red-600 rounded-lg" onclick="deleteHistory(${entry.id})" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Copy password
+        window.copyPassword = async function(password) {
+            try {
+                await navigator.clipboard.writeText(password);
+                copyBtn.innerHTML = '<i class="fas fa-check mr-1"></i>已复制';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy mr-1"></i>复制';
+                }, 2000);
+                
+                // Shake animation
+                copyBtn.classList.add('shake');
+                setTimeout(() => copyBtn.classList.remove('shake'), 500);
+            } catch (err) {
+                alert('复制失败，请手动复制');
+            }
+        }
+        
+        // Toggle password visibility for history
+        window.togglePasswordVisibility = function(id, password) {
+            const el = document.getElementById(`pass-${id}`);
+            if (el.textContent.includes('•')) {
+                el.textContent = password;
+            } else {
+                el.textContent = '•'.repeat(password.length);
+            }
+        }
+        
+        // Delete history entry
+        window.deleteHistory = function(id) {
+            if (confirm('确定要删除这条密码记录吗？')) {
+                passwordHistory = passwordHistory.filter(entry => entry.id !== id);
+                localStorage.setItem('passwordHistory', JSON.stringify(passwordHistory));
+                updateStats();
+                renderHistory();
+            }
+        }
+        
+        // Event Listeners
+        lengthSlider.addEventListener('input', () => {
+            lengthValue.textContent = lengthSlider.value;
+            generatePassword();
+        });
+        
+        [includeUppercase, includeLowercase, includeNumbers, includeSymbols, excludeSimilar, excludeAmbiguous].forEach(checkbox => {
+            checkbox.addEventListener('change', generatePassword);
+        });
+        
+        regenerateBtn.addEventListener('click', generatePassword);
+        
+        copyBtn.addEventListener('click', () => {
+            copyPassword(currentPassword);
+        });
+        
+        toggleVisibility.addEventListener('click', () => {
+            isVisible = !isVisible;
+            updatePasswordDisplay();
+        });
+        
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有密码历史吗？此操作不可恢复！')) {
+                passwordHistory = [];
+                localStorage.removeItem('passwordHistory');
+                updateStats();
+                renderHistory();
+            }
+        });
+        
+        // Template buttons
+        templateBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                
+                // Reset all checkboxes first
+                includeUppercase.checked = false;
+                includeLowercase.checked = false;
+                includeNumbers.checked = false;
+                includeSymbols.checked = false;
+                excludeSimilar.checked = false;
+                excludeAmbiguous.checked = false;
+                
+                switch(type) {
+                    case 'pin':
+                        includeNumbers.checked = true;
+                        lengthSlider.value = 4;
+                        break;
+                    case 'memorable':
+                        includeUppercase.checked = true;
+                        includeLowercase.checked = true;
+                        includeNumbers.checked = true;
+                        lengthSlider.value = 12;
+                        break;
+                    case 'strong':
+                        includeUppercase.checked = true;
+                        includeLowercase.checked = true;
+                        includeNumbers.checked = true;
+                        includeSymbols.checked = true;
+                        excludeSimilar.checked = true;
+                        lengthSlider.value = 16;
+                        break;
+                    case 'wifi':
+                        includeUppercase.checked = true;
+                        includeLowercase.checked = true;
+                        includeNumbers.checked = true;
+                        lengthSlider.value = 8;
+                        break;
+                }
+                
+                lengthValue.textContent = lengthSlider.value;
+                generatePassword();
+                
+                // Highlight selected template
+                templateBtns.forEach(b => b.classList.remove('border-purple-500', 'bg-purple-50'));
+                btn.classList.add('border-purple-500', 'bg-purple-50');
+            });
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + C to copy
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && document.activeElement !== passwordDisplay) {
+                e.preventDefault();
+                copyPassword(currentPassword);
+            }
+            // Ctrl/Cmd + R to regenerate
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                generatePassword();
+            }
+        });
+    </script>
+</body>
+</html>

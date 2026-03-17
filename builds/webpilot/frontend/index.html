@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebPilot 浏览器自动化</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0d14;--surface:#12141f;--card:#181b28;--border:#252840;--text:#e0e2f0;--dim:#5a5e78;--accent:#6366f1;--green:#22c55e;--red:#ef4444;--yellow:#eab308}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)}
+header h1{font-size:18px;font-weight:700}
+header h1 span{color:var(--accent)}
+.version{font-size:11px;color:var(--dim);background:var(--card);padding:2px 8px;border-radius:6px}
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:320px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-section{padding:12px;border-bottom:1px solid var(--border)}
+.sidebar-section h3{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.preview{flex:1;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.preview img{max-width:100%;max-height:100%;object-fit:contain}
+.preview .placeholder{color:var(--dim);font-size:13px}
+.bottom-bar{border-top:1px solid var(--border);display:flex;flex-direction:column}
+.url-bar{display:flex;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid var(--border)}
+.url-bar input{flex:1;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none}
+.url-bar input:focus{border-color:var(--accent)}
+.btn{padding:6px 14px;border-radius:6px;border:none;font-size:12px;font-weight:500;cursor:pointer;transition:.2s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--dim)}.btn-outline:hover{border-color:var(--accent);color:var(--text)}
+.actions-bar{display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;align-items:center}
+.page-item{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:4px;background:var(--surface);border:1px solid var(--border)}
+.page-item:hover{border-color:var(--accent)}
+.page-item.active{border-color:var(--accent);background:var(--accent)15}
+.page-item .url{color:var(--dim);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.log-area{flex:1;overflow-y:auto;padding:8px 12px;font-size:11px;font-family:monospace;max-height:200px}
+.log-entry{padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px}
+.log-time{color:var(--dim);min-width:60px}
+.log-action{color:var(--accent);min-width:70px;font-weight:500}
+.log-detail{color:var(--text);word-break:break-all}
+.log-fail .log-action{color:var(--red)}
+.task-editor{padding:12px}
+.task-editor textarea{width:100%;height:120px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:monospace;padding:8px;resize:vertical;outline:none}
+.task-editor textarea:focus{border-color:var(--accent)}
+.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{padding:8px 14px;font-size:12px;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none}.panel.active{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.selector-input{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.selector-input input{flex:1;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;outline:none}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.on{background:var(--green)}.status-dot.off{background:var(--red)}
+.flex-1{flex:1;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌐 <span>WebPilot</span> 浏览器自动化</h1>
+  <span class="version">V0.1</span>
+</header>
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>📄 页面 <button class="btn btn-sm btn-primary" onclick="createPage()" style="float:right">+ 新建</button></h3>
+      <div id="pagesList"></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchSideTab('actions')">⚡ 操作</div>
+      <div class="tab" onclick="switchSideTab('task')">📋 任务</div>
+      <div class="tab" onclick="switchSideTab('cookies')">🍪 Cookie</div>
+    </div>
+    <div class="panel active" id="panel-actions">
+      <div class="selector-input">
+        <input id="selectorInput" placeholder="CSS 选择器 (如 #login-btn, .submit)">
+      </div>
+      <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="doClick()">🖱️ 点击</button>
+        <button class="btn btn-outline btn-sm" onclick="doType()">⌨️ 输入</button>
+        <button class="btn btn-outline btn-sm" onclick="doWait()">⏳ 等待</button>
+        <button class="btn btn-outline btn-sm" onclick="doEval()">📜 执行JS</button>
+        <button class="btn btn-outline btn-sm" onclick="doContent()">📄 获取内容</button>
+      </div>
+      <div class="selector-input">
+        <input id="typeInput" placeholder="输入文本 (用于输入操作)">
+      </div>
+      <div class="selector-input">
+        <input id="evalInput" placeholder="JavaScript 代码 (用于执行JS)">
+      </div>
+    </div>
+    <div class="panel" id="panel-task">
+      <div class="task-editor">
+        <textarea id="taskScript" placeholder='任务脚本 (JSON 格式):
+[
+  {"action":"navigate","params":{"url":"https://example.com"}},
+  {"action":"screenshot"},
+  {"action":"click","params":{"selector":"#btn"}},
+  {"action":"type","params":{"selector":"#input","text":"hello"}},
+  {"action":"sleep","params":{"seconds":2}},
+  {"action":"screenshot"}
+]'></textarea>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-green btn-sm" onclick="runTask()">▶ 运行</button>
+          <button class="btn btn-outline btn-sm" onclick="loadExample()">📋 示例</button>
+          <input id="taskName" placeholder="任务名称" style="width:100px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px">
+          <button class="btn btn-primary btn-sm" onclick="saveTask()">💾 保存</button>
+        </div>
+      </div>
+      <div class="sidebar-section" style="flex:1;overflow:auto">
+        <h3>📂 已保存任务</h3>
+        <div id="savedTasksList" style="font-size:12px"></div>
+      </div>
+    </div>
+    <div class="panel" id="panel-cookies">
+      <div style="padding:12px">
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <input id="cookieProfile" placeholder="配置名称 (如: xiaohongshu)" style="flex:1;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+          <button class="btn btn-green btn-sm" onclick="saveCookies()">💾 保存</button>
+          <button class="btn btn-primary btn-sm" onclick="loadCookies()">📥 加载</button>
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+          登录网站后保存 Cookie → 下次直接加载，免重新登录
+        </div>
+        <h3 style="font-size:12px;color:var(--dim);margin-bottom:6px">📂 已保存配置</h3>
+        <div id="cookieProfilesList" style="font-size:12px"></div>
+      </div>
+    </div>
+    <div class="sidebar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <h3>📝 操作日志</h3>
+      <div class="log-area" id="logArea"></div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="url-bar">
+      <span class="status-dot off" id="statusDot"></span>
+      <input id="urlInput" placeholder="输入 URL 然后回车" onkeydown="if(event.key==='Enter')doNavigate()">
+      <button class="btn btn-primary btn-sm" onclick="doNavigate()">前往</button>
+      <button class="btn btn-outline btn-sm" onclick="doScreenshot()">📸 截图</button>
+      <button class="btn btn-outline btn-sm" onclick="refreshScreenshot()">🔄 刷新</button>
+    </div>
+    <div class="preview" id="preview">
+      <div class="placeholder">新建页面 → 输入 URL → 开始自动化</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var API = window.location.origin + '/api';
+var currentPage = null;
+
+async function api(path, opts) {
+  var resp = await fetch(API + path, opts);
+  if (!resp.ok) {
+    var err = await resp.text();
+    throw new Error(err);
+  }
+  return resp;
+}
+async function apiJson(path, opts) { return (await api(path, opts)).json(); }
+
+// --- Pages ---
+async function createPage() {
+  var data = await apiJson('/pages', {method:'POST'});
+  currentPage = data.page_id;
+  document.getElementById('statusDot').className = 'status-dot on';
+  loadPages();
+  addLog('create', '新页面: ' + data.page_id, true);
+}
+
+async function loadPages() {
+  var pages = await apiJson('/pages');
+  var el = document.getElementById('pagesList');
+  if (!pages.length) { el.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:4px">无页面</div>'; return; }
+  el.innerHTML = pages.map(function(p) {
+    return '<div class="page-item'+(p.page_id===currentPage?' active':'')+'" onclick="selectPage(\''+p.page_id+'\')">'
+      +'<div><div>'+p.page_id+'</div><div class="url">'+p.url+'</div></div>'
+      +'<button class="btn btn-red btn-sm" onclick="event.stopPropagation();closePage(\''+p.page_id+'\')">✕</button></div>';
+  }).join('');
+}
+
+function selectPage(pid) {
+  currentPage = pid;
+  document.getElementById('statusDot').className = 'status-dot on';
+  loadPages();
+  refreshScreenshot();
+}
+
+async function closePage(pid) {
+  await apiJson('/pages/'+pid, {method:'DELETE'});
+  if (currentPage === pid) { currentPage = null; document.getElementById('statusDot').className = 'status-dot off'; }
+  loadPages();
+  document.getElementById('preview').innerHTML = '<div class="placeholder">页面已关闭</div>';
+}
+
+function requirePage() {
+  if (!currentPage) { alert('请先新建一个页面'); return false; }
+  return true;
+}
+
+// --- Actions ---
+async function doNavigate() {
+  if (!requirePage()) return;
+  var url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+  try {
+    var data = await apiJson('/navigate', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, url: url})});
+    addLog('navigate', data.title + ' — ' + data.url, true);
+    refreshScreenshot();
+    loadPages();
+  } catch(e) { addLog('navigate', e.message, false); }
+}
+
+async function doClick() {
+  if (!requirePage()) return;
+  var sel = document.getElementById('selectorInput').value.trim();
+  if (!sel) return alert('请输入选择器');
+  try {
+    await apiJson('/click', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, selector: sel})});
+    addLog('click', sel, true);
+    setTimeout(refreshScreenshot, 500);
+  } catch(e) { addLog('click', e.message, false); }
+}
+
+async function doType() {
+  if (!requirePage()) return;
+  var sel = document.getElementById('selectorInput').value.trim();
+  var text = document.getElementById('typeInput').value;
+  if (!sel) return alert('请输入选择器');
+  try {
+    await apiJson('/type', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, selector: sel, text: text})});
+    addLog('type', sel + ' → ' + text, true);
+    setTimeout(refreshScreenshot, 500);
+  } catch(e) { addLog('type', e.message, false); }
+}
+
+async function doWait() {
+  if (!requirePage()) return;
+  var sel = document.getElementById('selectorInput').value.trim();
+  if (!sel) return alert('请输入选择器');
+  try {
+    await apiJson('/wait', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, selector: sel})});
+    addLog('wait', sel + ' ✓', true);
+  } catch(e) { addLog('wait', e.message, false); }
+}
+
+async function doEval() {
+  if (!requirePage()) return;
+  var script = document.getElementById('evalInput').value.trim();
+  if (!script) return alert('请输入 JavaScript');
+  try {
+    var data = await apiJson('/eval', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, script: script})});
+    addLog('eval', JSON.stringify(data.result).substring(0, 200), true);
+    setTimeout(refreshScreenshot, 500);
+  } catch(e) { addLog('eval', e.message, false); }
+}
+
+async function doContent() {
+  if (!requirePage()) return;
+  try {
+    var data = await apiJson('/content/' + currentPage);
+    addLog('content', 'Title: ' + data.title + ' | Text: ' + data.text.substring(0, 150) + '...', true);
+  } catch(e) { addLog('content', e.message, false); }
+}
+
+async function doScreenshot() {
+  if (!requirePage()) return;
+  refreshScreenshot();
+}
+
+async function refreshScreenshot() {
+  if (!currentPage) return;
+  try {
+    var resp = await api('/screenshot/' + currentPage);
+    var blob = await resp.blob();
+    var url = URL.createObjectURL(blob);
+    document.getElementById('preview').innerHTML = '<img src="'+url+'" alt="screenshot">';
+    addLog('screenshot', '截图已更新', true);
+  } catch(e) { addLog('screenshot', e.message, false); }
+}
+
+// --- Task Runner ---
+async function runTask() {
+  var script = document.getElementById('taskScript').value.trim();
+  if (!script) return alert('请输入任务脚本');
+  try {
+    var steps = JSON.parse(script);
+    var data = await apiJson('/tasks/run', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name: 'manual', steps: steps})});
+    currentPage = data.page_id;
+    loadPages();
+    data.results.forEach(function(r) {
+      addLog(r.action, r.ok ? '✓' + (r.url||'') : '✗ ' + (r.error||''), r.ok);
+      if (r.image_b64) {
+        document.getElementById('preview').innerHTML = '<img src="data:image/png;base64,'+r.image_b64+'">';
+      }
+    });
+    refreshScreenshot();
+  } catch(e) { addLog('task', e.message, false); }
+}
+
+function loadExample() {
+  document.getElementById('taskScript').value = JSON.stringify([
+    {"action":"navigate","params":{"url":"https://example.com"}},
+    {"action":"screenshot"},
+    {"action":"eval","params":{"script":"document.title"}}
+  ], null, 2);
+}
+
+// --- Sidebar Tabs ---
+function switchSideTab(name) {
+  document.querySelectorAll('.sidebar .tab').forEach(function(t) {
+    t.classList.toggle('active', t.textContent.indexOf(name==='actions'?'操作':name==='task'?'任务':'Cookie')>=0);
+  });
+  document.querySelectorAll('.sidebar .panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name==='task') loadSavedTasks();
+  if (name==='cookies') loadCookieProfiles();
+}
+
+// --- Logs ---
+function addLog(action, detail, success) {
+  var el = document.getElementById('logArea');
+  var now = new Date();
+  var time = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  el.innerHTML += '<div class="log-entry'+(success?'':' log-fail')+'"><span class="log-time">'+time+'</span><span class="log-action">'+action+'</span><span class="log-detail">'+detail+'</span></div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+loadPages();
+
+// --- Cookies ---
+async function saveCookies() {
+  if (!requirePage()) return;
+  var name = document.getElementById('cookieProfile').value.trim();
+  if (!name) return alert('请输入配置名称');
+  try {
+    var data = await apiJson('/cookies/save', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, profile_name: name})});
+    addLog('cookies', '保存 ' + data.count + ' 个 cookie → ' + name, true);
+    loadCookieProfiles();
+  } catch(e) { addLog('cookies', e.message, false); }
+}
+
+async function loadCookies() {
+  if (!requirePage()) return;
+  var name = document.getElementById('cookieProfile').value.trim();
+  if (!name) return alert('请输入配置名称');
+  try {
+    var data = await apiJson('/cookies/load', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({page_id: currentPage, profile_name: name})});
+    addLog('cookies', '加载 ' + data.count + ' 个 cookie ← ' + name, true);
+  } catch(e) { addLog('cookies', e.message, false); }
+}
+
+async function loadCookieProfiles() {
+  try {
+    var profiles = await apiJson('/cookies/profiles');
+    var el = document.getElementById('cookieProfilesList');
+    if (!profiles.length) { el.innerHTML = '<div style="color:var(--dim)">暂无保存的配置</div>'; return; }
+    el.innerHTML = profiles.map(function(p) {
+      return '<div class="page-item"><div><div>🍪 '+p.name+'</div><div class="url">'+p.count+' cookies</div></div>'
+        +'<div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'cookieProfile\').value=\''+p.name+'\';loadCookies()">📥</button>'
+        +'<button class="btn btn-sm btn-red" onclick="delCookieProfile(\''+p.name+'\')">✕</button></div></div>';
+    }).join('');
+  } catch(e) {}
+}
+
+async function delCookieProfile(name) {
+  await apiJson('/cookies/profiles/'+name, {method:'DELETE'});
+  loadCookieProfiles();
+}
+
+// --- Saved Tasks ---
+async function saveTask() {
+  var name = document.getElementById('taskName').value.trim();
+  var script = document.getElementById('taskScript').value.trim();
+  if (!name) return alert('请输入任务名称');
+  if (!script) return alert('请输入任务脚本');
+  try {
+    var steps = JSON.parse(script);
+    await apiJson('/tasks/save', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name: name, steps: steps})});
+    addLog('task', '任务已保存: ' + name, true);
+    loadSavedTasks();
+  } catch(e) { addLog('task', e.message, false); }
+}
+
+async function loadSavedTasks() {
+  try {
+    var tasks = await apiJson('/tasks/saved');
+    var el = document.getElementById('savedTasksList');
+    if (!tasks.length) { el.innerHTML = '<div style="color:var(--dim)">暂无保存的任务</div>'; return; }
+    el.innerHTML = tasks.map(function(t) {
+      return '<div class="page-item"><div><div>📋 '+t.name+'</div><div class="url">'+t.steps_count+' 步</div></div>'
+        +'<div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm btn-green" onclick="loadAndRunTask(\''+t.name+'\')">▶</button>'
+        +'<button class="btn btn-sm btn-primary" onclick="loadTaskToEditor(\''+t.name+'\')">✏️</button>'
+        +'<button class="btn btn-sm btn-red" onclick="delSavedTask(\''+t.name+'\')">✕</button></div></div>';
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadTaskToEditor(name) {
+  try {
+    var data = await apiJson('/tasks/saved/'+name);
+    document.getElementById('taskScript').value = JSON.stringify(data.steps, null, 2);
+    document.getElementById('taskName').value = name;
+    addLog('task', '已加载任务: ' + name, true);
+  } catch(e) { addLog('task', e.message, false); }
+}
+
+async function loadAndRunTask(name) {
+  try {
+    var data = await apiJson('/tasks/saved/'+name);
+    document.getElementById('taskScript').value = JSON.stringify(data.steps, null, 2);
+    document.getElementById('taskName').value = name;
+    runTask();
+  } catch(e) { addLog('task', e.message, false); }
+}
+
+async function delSavedTask(name) {
+  await apiJson('/tasks/saved/'+name, {method:'DELETE'});
+  loadSavedTasks();
+}
+</script>
+</body>
+</html>

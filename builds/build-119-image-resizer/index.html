@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片批量压缩调整工具 🖼️ | 旺仔工具百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1F2937',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .progress-bar {
+                background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
+                animation: progress-animation 2s ease-in-out infinite;
+            }
+            @keyframes progress-animation {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fa fa-picture-o text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">图片批量压缩调整工具 🖼️</h1>
+                        <p class="text-purple-100 mt-1">完全离线运行，批量处理图片，支持格式转换、尺寸调整、压缩优化</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">100% 本地处理</span>
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">零上传风险</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">已选择图片</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1" id="totalCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-primary">
+                        <i class="fa fa-file-image-o text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">总原始大小</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1" id="totalOriginalSize">0 MB</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                        <i class="fa fa-database text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">总压缩后大小</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1" id="totalCompressedSize">0 MB</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-success">
+                        <i class="fa fa-compress text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">压缩率</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1" id="compressionRate">0%</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-warning">
+                        <i class="fa fa-percent text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Panel: Settings -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Upload Section -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-upload text-primary mr-2"></i>
+                        上传图片
+                    </h2>
+                    <div 
+                        id="dropZone"
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors duration-300"
+                    >
+                        <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">拖拽图片到这里，或者</p>
+                        <label class="cursor-pointer">
+                            <span class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                选择文件
+                            </span>
+                            <input 
+                                type="file" 
+                                id="fileInput" 
+                                accept="image/*" 
+                                multiple 
+                                class="hidden"
+                            >
+                        </label>
+                        <p class="text-gray-500 text-sm mt-3">支持 JPG, PNG, GIF, WebP 格式，单文件最大 20MB</p>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-sliders text-primary mr-2"></i>
+                        处理设置
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Output Format -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">输出格式</label>
+                            <select id="outputFormat" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                                <option value="original">保持原格式</option>
+                                <option value="jpeg">JPEG</option>
+                                <option value="png">PNG</option>
+                                <option value="webp">WebP (推荐, 体积最小)</option>
+                            </select>
+                        </div>
+
+                        <!-- Quality -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block text-sm font-medium text-gray-700">压缩质量</label>
+                                <span class="text-sm text-gray-500" id="qualityValue">85%</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                id="quality" 
+                                min="10" 
+                                max="100" 
+                                value="85" 
+                                step="5"
+                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                            >
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>低质量 (小体积)</span>
+                                <span>高质量 (大体积)</span>
+                            </div>
+                        </div>
+
+                        <!-- Resize Mode -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">尺寸调整</label>
+                            <select id="resizeMode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                                <option value="none">不调整尺寸</option>
+                                <option value="width">按宽度调整</option>
+                                <option value="height">按高度调整</option>
+                                <option value="max">按最大边调整</option>
+                                <option value="custom">自定义尺寸</option>
+                            </select>
+                        </div>
+
+                        <!-- Width/Height Inputs -->
+                        <div id="resizeDimensions" class="grid grid-cols-2 gap-3 hidden">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">宽度 (px)</label>
+                                <input 
+                                    type="number" 
+                                    id="resizeWidth" 
+                                    value="1920" 
+                                    min="10" 
+                                    max="10000"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">高度 (px)</label>
+                                <input 
+                                    type="number" 
+                                    id="resizeHeight" 
+                                    value="1080" 
+                                    min="10" 
+                                    max="10000"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Preset Sizes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">快速预设</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" class="preset-btn px-3 py-2 border border-gray-300 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors" data-width="1920" data-height="1080">1920×1080 (Full HD)</button>
+                                <button type="button" class="preset-btn px-3 py-2 border border-gray-300 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors" data-width="1280" data-height="720">1280×720 (HD)</button>
+                                <button type="button" class="preset-btn px-3 py-2 border border-gray-300 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors" data-width="1080" data-height="1080">1080×1080 (正方形)</button>
+                                <button type="button" class="preset-btn px-3 py-2 border border-gray-300 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors" data-width="800" data-height="800">800×800 (商品图)</button>
+                            </div>
+                        </div>
+
+                        <!-- File Naming -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">文件名前缀</label>
+                            <input 
+                                type="text" 
+                                id="filenamePrefix" 
+                                placeholder="例如: compressed_"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                            >
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-4 space-y-3">
+                            <button 
+                                id="processBtn" 
+                                disabled
+                                class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                <i class="fa fa-cog mr-2"></i>
+                                开始处理
+                            </button>
+                            <button 
+                                id="clearBtn" 
+                                disabled
+                                class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors flex items-center justify-center disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                            >
+                                <i class="fa fa-trash mr-2"></i>
+                                清空所有
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Preview and Results -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Progress Bar (Hidden by default) -->
+                <div id="progressContainer" class="bg-white rounded-xl shadow-md p-6 hidden">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fa fa-spinner fa-spin text-primary mr-2"></i>
+                        处理进度
+                    </h2>
+                    <div class="w-full bg-gray-200 rounded-full h-4 mb-3">
+                        <div id="progressBar" class="progress-bar h-4 rounded-full w-0"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 text-center" id="progressText">准备处理...</p>
+                </div>
+
+                <!-- Image List -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                            <i class="fa fa-th-large text-primary mr-2"></i>
+                            图片列表
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <button 
+                                id="downloadAllBtn" 
+                                disabled
+                                class="bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                <i class="fa fa-download mr-2"></i>
+                                下载全部
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="imageList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Empty State -->
+                        <div class="col-span-full text-center py-12">
+                            <i class="fa fa-file-image-o text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">还没有上传任何图片</p>
+                            <p class="text-gray-400 text-sm mt-2">上传图片后会在这里显示预览和处理结果</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                        <div class="flex items-center mb-2">
+                            <i class="fa fa-shield text-primary text-xl mr-2"></i>
+                            <h3 class="font-semibold text-gray-900">完全本地处理</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">所有图片处理都在浏览器中完成，绝不会上传到任何服务器，安全可靠</p>
+                    </div>
+                    <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                        <div class="flex items-center mb-2">
+                            <i class="fa fa-bolt text-success text-xl mr-2"></i>
+                            <h3 class="font-semibold text-gray-900">批量处理</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">支持同时上传几十上百张图片，一键批量处理，节省大量时间</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <div class="flex items-center mb-2">
+                            <i class="fa fa-sliders text-blue-600 text-xl mr-2"></i>
+                            <h3 class="font-semibold text-gray-900">灵活配置</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">支持格式转换、尺寸调整、质量调节，满足各种场景的图片处理需求</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>🚀 旺仔工具百宝箱 | 图片批量压缩调整工具 🖼️</p>
+            <p class="text-sm mt-2">100% 本地运行 · 零数据上传 · 安全可靠</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global state
+        let images = [];
+        let processedImages = [];
+
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const imageList = document.getElementById('imageList');
+        const totalCount = document.getElementById('totalCount');
+        const totalOriginalSize = document.getElementById('totalOriginalSize');
+        const totalCompressedSize = document.getElementById('totalCompressedSize');
+        const compressionRate = document.getElementById('compressionRate');
+        const quality = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+        const resizeMode = document.getElementById('resizeMode');
+        const resizeDimensions = document.getElementById('resizeDimensions');
+        const resizeWidth = document.getElementById('resizeWidth');
+        const resizeHeight = document.getElementById('resizeHeight');
+        const processBtn = document.getElementById('processBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const outputFormat = document.getElementById('outputFormat');
+        const filenamePrefix = document.getElementById('filenamePrefix');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+
+        // Initialize
+        function init() {
+            // Event listeners
+            fileInput.addEventListener('change', handleFileSelect);
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+            dropZone.addEventListener('drop', handleDrop);
+            dropZone.addEventListener('click', () => fileInput.click());
+            
+            quality.addEventListener('input', () => {
+                qualityValue.textContent = `${quality.value}%`;
+            });
+
+            resizeMode.addEventListener('change', () => {
+                resizeDimensions.classList.toggle('hidden', resizeMode.value === 'none');
+            });
+
+            presetBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    resizeWidth.value = btn.dataset.width;
+                    resizeHeight.value = btn.dataset.height;
+                    resizeMode.value = 'custom';
+                    resizeDimensions.classList.remove('hidden');
+                });
+            });
+
+            processBtn.addEventListener('click', processImages);
+            clearBtn.addEventListener('click', clearAll);
+            downloadAllBtn.addEventListener('click', downloadAll);
+        }
+
+        // File handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('border-primary', 'bg-purple-50');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-purple-50');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-purple-50');
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            addFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
+            addFiles(files);
+        }
+
+        function addFiles(files) {
+            if (files.length === 0) return;
+
+            // Remove empty state
+            if (images.length === 0) {
+                imageList.innerHTML = '';
+            }
+
+            files.forEach(file => {
+                const imageId = Date.now() + Math.random();
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const imageData = {
+                            id: imageId,
+                            file: file,
+                            name: file.name,
+                            size: file.size,
+                            width: img.width,
+                            height: img.height,
+                            type: file.type,
+                            preview: e.target.result,
+                            processed: false,
+                            compressedSize: 0,
+                            compressedUrl: ''
+                        };
+                        
+                        images.push(imageData);
+                        renderImageCard(imageData);
+                        updateStats();
+                    };
+                    img.src = e.target.result;
+                };
+                
+                reader.readAsDataURL(file);
+            });
+
+            // Enable buttons
+            processBtn.disabled = false;
+            clearBtn.disabled = false;
+        }
+
+        function renderImageCard(image) {
+            const card = document.createElement('div');
+            card.className = 'bg-gray-50 rounded-lg border border-gray-200 overflow-hidden card-hover';
+            card.id = `image-${image.id}`;
+            
+            card.innerHTML = `
+                <div class="relative h-48 bg-gray-100">
+                    <img src="${image.preview}" alt="${image.name}" class="w-full h-full object-contain">
+                    ${image.processed ? `
+                    <div class="absolute top-2 right-2 bg-success text-white px-2 py-1 rounded-full text-xs font-medium">
+                        处理完成
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="p-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-900 truncate" title="${image.name}">${image.name}</p>
+                            <p class="text-sm text-gray-500">${image.width} × ${image.height}px</p>
+                        </div>
+                        <button class="delete-btn text-gray-400 hover:text-danger ml-2" data-id="${image.id}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                        <div class="bg-white rounded p-2">
+                            <p class="text-gray-500 text-xs">原始大小</p>
+                            <p class="font-semibold text-gray-900">${formatFileSize(image.size)}</p>
+                        </div>
+                        <div class="bg-white rounded p-2">
+                            <p class="text-gray-500 text-xs">压缩后大小</p>
+                            <p class="font-semibold ${image.processed ? 'text-success' : 'text-gray-400'}">
+                                ${image.processed ? formatFileSize(image.compressedSize) : '-'}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    ${image.processed ? `
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="download-btn bg-primary hover:bg-primary/90 text-white py-1.5 rounded text-sm font-medium" data-id="${image.id}">
+                            <i class="fa fa-download mr-1"></i> 下载
+                        </button>
+                        <button class="preview-btn bg-gray-200 hover:bg-gray-300 text-gray-700 py-1.5 rounded text-sm font-medium" data-id="${image.id}">
+                            <i class="fa fa-eye mr-1"></i> 预览
+                        </button>
+                    </div>
+                    ` : `
+                    <div class="h-9"></div>
+                    `}
+                </div>
+            `;
+
+            imageList.appendChild(card);
+
+            // Add event listeners
+            card.querySelector('.delete-btn').addEventListener('click', () => deleteImage(image.id));
+            if (image.processed) {
+                card.querySelector('.download-btn').addEventListener('click', () => downloadImage(image.id));
+                card.querySelector('.preview-btn').addEventListener('click', () => previewImage(image.id));
+            }
+        }
+
+        function updateImageCard(image) {
+            const card = document.getElementById(`image-${image.id}`);
+            if (!card) return;
+            
+            // Re-render the card with updated data
+            const parent = card.parentNode;
+            card.remove();
+            renderImageCard(image);
+        }
+
+        function deleteImage(id) {
+            images = images.filter(img => img.id !== id);
+            processedImages = processedImages.filter(img => img.id !== id);
+            document.getElementById(`image-${id}`).remove();
+            
+            if (images.length === 0) {
+                renderEmptyState();
+                processBtn.disabled = true;
+                clearBtn.disabled = true;
+                downloadAllBtn.disabled = true;
+            }
+            
+            updateStats();
+        }
+
+        function clearAll() {
+            if (!confirm('确定要清空所有图片吗？')) return;
+            
+            images = [];
+            processedImages = [];
+            imageList.innerHTML = '';
+            renderEmptyState();
+            
+            processBtn.disabled = true;
+            clearBtn.disabled = true;
+            downloadAllBtn.disabled = true;
+            
+            updateStats();
+        }
+
+        function renderEmptyState() {
+            imageList.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <i class="fa fa-file-image-o text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">还没有上传任何图片</p>
+                    <p class="text-gray-400 text-sm mt-2">上传图片后会在这里显示预览和处理结果</p>
+                </div>
+            `;
+        }
+
+        async function processImages() {
+            if (images.length === 0) return;
+
+            // Show progress
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = `准备处理 ${images.length} 张图片...`;
+            processBtn.disabled = true;
+
+            const settings = {
+                quality: parseInt(quality.value) / 100,
+                outputFormat: outputFormat.value,
+                resizeMode: resizeMode.value,
+                width: parseInt(resizeWidth.value),
+                height: parseInt(resizeHeight.value),
+                prefix: filenamePrefix.value.trim()
+            };
+
+            processedImages = [];
+            let processedCount = 0;
+
+            for (let i = 0; i < images.length; i++) {
+                const image = images[i];
+                
+                try {
+                    progressText.textContent = `正在处理 ${i + 1}/${images.length}: ${image.name}`;
+                    progressBar.style.width = `${((i + 1) / images.length) * 100}%`;
+
+                    const processedImage = await processSingleImage(image, settings);
+                    processedImages.push(processedImage);
+                    
+                    // Update the image in the list
+                    const index = images.findIndex(img => img.id === image.id);
+                    if (index !== -1) {
+                        images[index] = processedImage;
+                        updateImageCard(processedImage);
+                    }
+
+                    processedCount++;
+                    
+                    // Small delay to prevent UI freezing
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert(`处理图片 ${image.name} 时出错: ${error.message}`);
+                }
+            }
+
+            // Complete
+            progressText.textContent = `处理完成！成功处理 ${processedCount}/${images.length} 张图片`;
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+            }, 2000);
+
+            downloadAllBtn.disabled = processedImages.length === 0;
+            processBtn.disabled = false;
+            
+            updateStats();
+        }
+
+        async function processSingleImage(image, settings) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Calculate new dimensions
+                    let newWidth = img.width;
+                    let newHeight = img.height;
+
+                    switch (settings.resizeMode) {
+                        case 'width':
+                            newWidth = settings.width;
+                            newHeight = Math.round((img.height / img.width) * settings.width);
+                            break;
+                        case 'height':
+                            newHeight = settings.height;
+                            newWidth = Math.round((img.width / img.height) * settings.height);
+                            break;
+                        case 'max':
+                            const maxDim = Math.max(settings.width, settings.height);
+                            if (img.width > img.height) {
+                                newWidth = maxDim;
+                                newHeight = Math.round((img.height / img.width) * maxDim);
+                            } else {
+                                newHeight = maxDim;
+                                newWidth = Math.round((img.width / img.height) * maxDim);
+                            }
+                            break;
+                        case 'custom':
+                            newWidth = settings.width;
+                            newHeight = settings.height;
+                            break;
+                    }
+
+                    // Create canvas
+                    const canvas = document.createElement('canvas');
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Draw and resize image
+                    ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                    // Determine output format
+                    let outputMimeType = image.type;
+                    if (settings.outputFormat !== 'original') {
+                        outputMimeType = `image/${settings.outputFormat}`;
+                    }
+
+                    // Convert to blob
+                    canvas.toBlob(
+                        (blob) => {
+                            if (!blob) {
+                                reject(new Error('Failed to create image blob'));
+                                return;
+                            }
+
+                            // Generate filename
+                            let ext = outputMimeType.split('/')[1];
+                            if (ext === 'jpeg') ext = 'jpg';
+                            const nameWithoutExt = image.name.replace(/\.[^\.]+$/, '');
+                            const newFilename = `${settings.prefix}${nameWithoutExt}.${ext}`;
+
+                            const processedImage = {
+                                ...image,
+                                processed: true,
+                                compressedSize: blob.size,
+                                compressedUrl: URL.createObjectURL(blob),
+                                outputFilename: newFilename,
+                                outputType: outputMimeType
+                            };
+
+                            resolve(processedImage);
+                        },
+                        outputMimeType,
+                        settings.quality
+                    );
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = image.preview;
+            });
+        }
+
+        function downloadImage(id) {
+            const image = images.find(img => img.id === id && img.processed);
+            if (!image) return;
+
+            const a = document.createElement('a');
+            a.href = image.compressedUrl;
+            a.download = image.outputFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function previewImage(id) {
+            const image = images.find(img => img.id === id && img.processed);
+            if (!image) return;
+            window.open(image.compressedUrl, '_blank');
+        }
+
+        function downloadAll() {
+            if (processedImages.length === 0) return;
+
+            // If only one image, download directly
+            if (processedImages.length === 1) {
+                downloadImage(processedImages[0].id);
+                return;
+            }
+
+            // For multiple images, create a zip (simplified: download all individually)
+            // Note: In a real implementation, you could use JSZip to create a zip file
+            processedImages.forEach(image => {
+                const a = document.createElement('a');
+                a.href = image.compressedUrl;
+                a.download = image.outputFilename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        }
+
+        function updateStats() {
+            const count = images.length;
+            const originalTotal = images.reduce((sum, img) => sum + img.size, 0);
+            const compressedTotal = images.reduce((sum, img) => sum + (img.compressedSize || 0), 0);
+            const rate = originalTotal > 0 ? Math.round((1 - compressedTotal / originalTotal) * 100) : 0;
+
+            totalCount.textContent = count;
+            totalOriginalSize.textContent = formatFileSize(originalTotal);
+            totalCompressedSize.textContent = formatFileSize(compressedTotal);
+            compressionRate.textContent = `${rate}%`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON 转 TypeScript 接口工具 🔧</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3178c6',
+                        secondary: '#007acc',
+                        accent: '#f0db4f',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .editor-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            }
+            .btn-hover {
+                transition: all 0.2s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .code-line {
+                @apply font-mono text-sm leading-relaxed;
+            }
+            .keyword {
+                @apply text-purple-600 font-semibold;
+            }
+            .type-name {
+                @apply text-blue-600 font-semibold;
+            }
+            .property {
+                @apply text-red-600;
+            }
+            .comment {
+                @apply text-green-600 italic;
+            }
+            .punctuation {
+                @apply text-slate-700;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg">
+                        <i class="fa fa-code text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">JSON 转 TypeScript 接口工具 🔧</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">完全本地运行 · 零数据上传</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 配置选项 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fa fa-sliders mr-2 text-primary"></i>转换配置
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">根接口名称</label>
+                    <input type="text" id="interfaceName" value="RootObject" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">命名风格</label>
+                    <select id="namingConvention" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="preserve">保持原样</option>
+                        <option value="camelCase">驼峰命名 (camelCase)</option>
+                        <option value="PascalCase">帕斯卡命名 (PascalCase)</option>
+                        <option value="snake_case">下划线命名 (snake_case)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">导出方式</label>
+                    <select id="exportMode" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="export">导出接口 (export interface)</option>
+                        <option value="declare">声明接口 (declare interface)</option>
+                        <option value="none">不导出 (interface)</option>
+                        <option value="type">导出类型别名 (export type)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">缩进大小</label>
+                    <select id="indentSize" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="2">2 空格</option>
+                        <option value="4" selected>4 空格</option>
+                        <option value="tab">Tab 缩进</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="flex items-center">
+                    <input type="checkbox" id="optionalFields" class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded">
+                    <label for="optionalFields" class="ml-2 block text-sm text-slate-700">所有字段可选 (添加 ? 后缀)</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="addComments" checked class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded">
+                    <label for="addComments" class="ml-2 block text-sm text-slate-700">添加字段注释 (示例值)</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="readonly" class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded">
+                    <label for="readonly" class="ml-2 block text-sm text-slate-700">只读字段 (添加 readonly 前缀)</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑器区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- JSON 输入区域 -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center">
+                        <i class="fa fa-file-json-o mr-2 text-primary"></i>JSON 输入
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="clearBtn" class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 transition btn-hover">
+                            <i class="fa fa-eraser mr-1"></i>清空
+                        </button>
+                        <button id="exampleBtn" class="px-3 py-1.5 bg-blue-50 text-primary rounded-lg text-sm hover:bg-blue-100 transition btn-hover">
+                            <i class="fa fa-file-text-o mr-1"></i>示例
+                        </button>
+                        <button id="formatBtn" class="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm hover:bg-purple-100 transition btn-hover">
+                            <i class="fa fa-magic mr-1"></i>格式化
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <textarea id="jsonInput" class="w-full h-[70vh] p-4 border border-slate-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-primary focus:border-primary editor-shadow resize-none" placeholder="请输入 JSON 数据...">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "user": {
+      "id": 12345,
+      "name": "张三",
+      "email": "zhangsan@example.com",
+      "age": 28,
+      "is_active": true,
+      "roles": ["admin", "user"],
+      "profile": {
+        "avatar": "https://example.com/avatar.jpg",
+        "bio": "前端开发工程师",
+        "location": "上海",
+        "created_at": "2023-01-15T10:30:00Z"
+      }
+    },
+    "permissions": {
+      "menus": [
+        { "id": 1, "name": "首页", "path": "/home" },
+        { "id": 2, "name": "用户管理", "path": "/users" }
+      ],
+      "buttons": ["create", "edit", "delete"]
+    }
+  },
+  "timestamp": 1709876543
+}</textarea>
+                    <div class="absolute bottom-3 right-3 text-xs text-slate-400">
+                        <span id="inputStats">0 字符 | 0 行</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TypeScript 输出区域 -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center">
+                        <i class="fa fa-file-code-o mr-2 text-secondary"></i>TypeScript 输出
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="copyBtn" class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm hover:bg-green-100 transition btn-hover">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                        <button id="downloadBtn" class="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm hover:bg-amber-100 transition btn-hover">
+                            <i class="fa fa-download mr-1"></i>下载 .d.ts
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <pre id="tsOutput" class="w-full h-[70vh] p-4 bg-slate-50 border border-slate-300 rounded-xl font-mono text-sm overflow-auto editor-shadow"></pre>
+                    <div class="absolute bottom-3 right-3 text-xs text-slate-400">
+                        <span id="outputStats">0 字符 | 0 行</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex justify-center mb-8">
+            <button id="convertBtn" class="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all btn-hover text-lg">
+                <i class="fa fa-exchange mr-2"></i>一键转换
+            </button>
+        </div>
+
+        <!-- 提示信息 -->
+        <div id="errorAlert" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                <span id="errorMessage">JSON 格式错误，请检查输入内容。</span>
+            </div>
+        </div>
+
+        <div id="successAlert" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-check-circle mr-2"></i>
+                <span id="successMessage">转换成功！</span>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fa fa-info-circle mr-2 text-primary"></i>使用说明
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
+                <div>
+                    <h3 class="font-medium text-slate-800 mb-2">功能特点</h3>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li>支持任意复杂度的 JSON 结构转换</li>
+                        <li>自动识别嵌套对象和数组，生成对应的子接口</li>
+                        <li>智能类型推断：字符串、数字、布尔值、数组、null等</li>
+                        <li>支持多种命名风格转换，满足不同团队编码规范</li>
+                        <li>完全本地运行，JSON 数据不会上传到任何服务器</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-medium text-slate-800 mb-2">使用场景</h3>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li>前后端联调时，根据接口返回生成 TypeScript 类型定义</li>
+                        <li>处理第三方 API 响应，快速生成类型声明</li>
+                        <li>从 JSON 配置文件生成类型定义，提升开发效率</li>
+                        <li>减少手动编写 interface 的重复劳动，避免拼写错误</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>💡 旺仔工具百宝箱 - JSON 转 TypeScript 接口工具 | 完全本地运行，数据安全可靠</p>
+            <p class="mt-2">前端开发必备神器，节省80%的类型定义编写时间</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM 元素
+        const jsonInput = document.getElementById('jsonInput');
+        const tsOutput = document.getElementById('tsOutput');
+        const convertBtn = document.getElementById('convertBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const exampleBtn = document.getElementById('exampleBtn');
+        const formatBtn = document.getElementById('formatBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const interfaceNameInput = document.getElementById('interfaceName');
+        const namingConventionSelect = document.getElementById('namingConvention');
+        const exportModeSelect = document.getElementById('exportMode');
+        const indentSizeSelect = document.getElementById('indentSize');
+        const optionalFieldsCheckbox = document.getElementById('optionalFields');
+        const addCommentsCheckbox = document.getElementById('addComments');
+        const readonlyCheckbox = document.getElementById('readonly');
+        const errorAlert = document.getElementById('errorAlert');
+        const successAlert = document.getElementById('successAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const inputStats = document.getElementById('inputStats');
+        const outputStats = document.getElementById('outputStats');
+
+        // 示例 JSON
+        const exampleJson = `{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "user": {
+      "id": 12345,
+      "name": "张三",
+      "email": "zhangsan@example.com",
+      "age": 28,
+      "is_active": true,
+      "roles": ["admin", "user"],
+      "profile": {
+        "avatar": "https://example.com/avatar.jpg",
+        "bio": "前端开发工程师",
+        "location": "上海",
+        "created_at": "2023-01-15T10:30:00Z"
+      }
+    },
+    "permissions": {
+      "menus": [
+        { "id": 1, "name": "首页", "path": "/home" },
+        { "id": 2, "name": "用户管理", "path": "/users" }
+      ],
+      "buttons": ["create", "edit", "delete"]
+    }
+  },
+  "timestamp": 1709876543
+}`;
+
+        // 命名转换函数
+        function convertName(name, convention) {
+            switch (convention) {
+                case 'camelCase':
+                    return name.replace(/[_-]([a-z])/g, (g) => g[1].toUpperCase());
+                case 'PascalCase':
+                    const camel = name.replace(/[_-]([a-z])/g, (g) => g[1].toUpperCase());
+                    return camel.charAt(0).toUpperCase() + camel.slice(1);
+                case 'snake_case':
+                    return name.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+                default:
+                    return name;
+            }
+        }
+
+        // 获取类型名称
+        function getTypeName(value, name, parentType = '') {
+            if (value === null) return 'null';
+            if (Array.isArray(value)) {
+                if (value.length === 0) return 'any[]';
+                const itemType = getTypeName(value[0], name, parentType);
+                return `${itemType}[]`;
+            }
+            if (typeof value === 'object') {
+                const typeName = convertName(name, 'PascalCase');
+                return parentType ? `${parentType}${typeName}` : typeName;
+            }
+            return typeof value;
+        }
+
+        // 生成接口定义
+        function generateInterface(name, obj, config, parentType = '') {
+            const { namingConvention, optionalFields, addComments, readonly, exportMode, indentSize } = config;
+            const indent = indentSize === 'tab' ? '\t' : ' '.repeat(parseInt(indentSize));
+            let output = '';
+            const nestedInterfaces = [];
+            
+            // 接口前缀
+            const exportPrefix = exportMode === 'export' ? 'export ' : exportMode === 'declare' ? 'declare ' : '';
+            const typeKeyword = exportMode === 'type' ? 'type' : 'interface';
+            const equalSign = exportMode === 'type' ? ' =' : '';
+
+            output += `${exportPrefix}${typeKeyword} ${name}${equalSign} {\n`;
+
+            for (const [key, value] of Object.entries(obj)) {
+                const convertedKey = convertName(key, namingConvention);
+                const isOptional = optionalFields ? '?' : '';
+                const readonlyPrefix = readonly ? 'readonly ' : '';
+                const type = getTypeName(value, key, name);
+
+                // 处理嵌套对象
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    nestedInterfaces.push(generateInterface(type, value, config));
+                }
+
+                // 处理对象数组
+                if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                    const itemTypeName = type.replace('[]', '');
+                    nestedInterfaces.push(generateInterface(itemTypeName, value[0], config));
+                }
+
+                // 添加注释
+                if (addComments) {
+                    let comment = '';
+                    if (typeof value === 'string') {
+                        comment = value.length > 30 ? `${value.slice(0, 30)}...` : value;
+                        comment = ` // "${comment}"`;
+                    } else if (typeof value === 'number' || typeof value === 'boolean') {
+                        comment = ` // ${value}`;
+                    } else if (Array.isArray(value)) {
+                        comment = ` // Array[${value.length}]`;
+                    }
+                    output += `${indent}${readonlyPrefix}${convertedKey}${isOptional}: ${type};${comment}\n`;
+                } else {
+                    output += `${indent}${readonlyPrefix}${convertedKey}${isOptional}: ${type};\n`;
+                }
+            }
+
+            output += `}\n\n`;
+
+            // 合并嵌套接口
+            return nestedInterfaces.join('') + output;
+        }
+
+        // 转换 JSON 到 TypeScript
+        function convertJsonToTs() {
+            try {
+                const jsonText = jsonInput.value.trim();
+                if (!jsonText) {
+                    showError('请输入 JSON 数据');
+                    return;
+                }
+
+                const obj = JSON.parse(jsonText);
+                const rootName = interfaceNameInput.value.trim() || 'RootObject';
+
+                const config = {
+                    namingConvention: namingConventionSelect.value,
+                    exportMode: exportModeSelect.value,
+                    indentSize: indentSizeSelect.value,
+                    optionalFields: optionalFieldsCheckbox.checked,
+                    addComments: addCommentsCheckbox.checked,
+                    readonly: readonlyCheckbox.checked,
+                };
+
+                const tsCode = generateInterface(rootName, obj, config);
+                tsOutput.textContent = tsCode;
+
+                // 更新统计
+                updateStats();
+
+                showSuccess('转换成功！');
+                errorAlert.classList.add('hidden');
+
+            } catch (error) {
+                showError('JSON 格式错误：' + error.message);
+                tsOutput.textContent = '';
+                updateStats();
+            }
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            // 输入统计
+            const inputLines = jsonInput.value.split('\n').length;
+            const inputChars = jsonInput.value.length;
+            inputStats.textContent = `${inputChars} 字符 | ${inputLines} 行`;
+
+            // 输出统计
+            const outputLines = tsOutput.textContent.split('\n').length;
+            const outputChars = tsOutput.textContent.length;
+            outputStats.textContent = `${outputChars} 字符 | ${outputLines} 行`;
+        }
+
+        // 显示错误
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => {
+                errorAlert.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 显示成功
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successAlert.classList.remove('hidden');
+            setTimeout(() => {
+                successAlert.classList.add('hidden');
+            }, 2000);
+        }
+
+        // 格式化 JSON
+        function formatJson() {
+            try {
+                const jsonText = jsonInput.value.trim();
+                if (!jsonText) {
+                    showError('请输入 JSON 数据');
+                    return;
+                }
+                const obj = JSON.parse(jsonText);
+                jsonInput.value = JSON.stringify(obj, null, 2);
+                updateStats();
+                showSuccess('JSON 格式化完成');
+            } catch (error) {
+                showError('JSON 格式错误：' + error.message);
+            }
+        }
+
+        // 清空输入
+        function clearInput() {
+            jsonInput.value = '';
+            tsOutput.textContent = '';
+            updateStats();
+            showSuccess('已清空内容');
+        }
+
+        // 加载示例
+        function loadExample() {
+            jsonInput.value = exampleJson;
+            convertJsonToTs();
+            showSuccess('已加载示例 JSON');
+        }
+
+        // 复制结果
+        function copyResult() {
+            const result = tsOutput.textContent;
+            if (!result) {
+                showError('没有可复制的内容');
+                return;
+            }
+            navigator.clipboard.writeText(result).then(() => {
+                showSuccess('已复制到剪贴板');
+            }).catch(() => {
+                showError('复制失败，请手动复制');
+            });
+        }
+
+        // 下载结果
+        function downloadResult() {
+            const result = tsOutput.textContent;
+            if (!result) {
+                showError('没有可下载的内容');
+                return;
+            }
+            const blob = new Blob([result], { type: 'text/typescript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'interface.d.ts';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showSuccess('文件已下载');
+        }
+
+        // 事件监听
+        convertBtn.addEventListener('click', convertJsonToTs);
+        clearBtn.addEventListener('click', clearInput);
+        exampleBtn.addEventListener('click', loadExample);
+        formatBtn.addEventListener('click', formatJson);
+        copyBtn.addEventListener('click', copyResult);
+        downloadBtn.addEventListener('click', downloadResult);
+        jsonInput.addEventListener('input', updateStats);
+
+        // 配置变更自动重新转换
+        interfaceNameInput.addEventListener('change', convertJsonToTs);
+        namingConventionSelect.addEventListener('change', convertJsonToTs);
+        exportModeSelect.addEventListener('change', convertJsonToTs);
+        indentSizeSelect.addEventListener('change', convertJsonToTs);
+        optionalFieldsCheckbox.addEventListener('change', convertJsonToTs);
+        addCommentsCheckbox.addEventListener('change', convertJsonToTs);
+        readonlyCheckbox.addEventListener('change', convertJsonToTs);
+
+        // 快捷键支持
+        jsonInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                convertJsonToTs();
+            }
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            convertJsonToTs();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+#!/usr/bin/env python3
+"""Generate Badminton Scoreboard HTML"""
+
+html = r'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🏸 羽毛球计分板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a12;--surface:#141422;--border:#252540;--text:#e8e8f0;--dim:#666;--p1:#3b82f6;--p1bg:#3b82f620;--p2:#ef4444;--p2bg:#ef444420;--gold:#fbbf24;--green:#22c55e}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.top-bar h1{font-size:16px;font-weight:600}
+.top-bar .actions{display:flex;gap:8px}
+.btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:12px;transition:.2s}
+.btn:hover{border-color:var(--p1)}
+.btn.danger{border-color:#f8514950;color:#f85149}
+.btn.danger:hover{background:#f8514920}
+.game-info{display:flex;justify-content:center;align-items:center;gap:20px;padding:10px 16px;font-size:13px;color:var(--dim)}
+.game-info .game-score{font-size:18px;font-weight:700;color:var(--text);letter-spacing:4px}
+.game-info .label{font-size:11px}
+.court{flex:1;display:grid;grid-template-columns:1fr 1fr;position:relative}
+.court::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--border)}
+.player-side{display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;padding:20px;position:relative}
+.player-side:active{opacity:.85}
+.player-side.p1{background:var(--p1bg)}.player-side.p1:active{background:#3b82f635}
+.player-side.p2{background:var(--p2bg)}.player-side.p2:active{background:#ef444435}
+.player-name{font-size:16px;font-weight:600;margin-bottom:8px;padding:4px 12px;border-radius:6px;border:1px solid transparent;cursor:text;min-width:60px;text-align:center}
+.player-name:focus{outline:none;border-color:var(--border);background:var(--surface)}
+.score{font-size:120px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.p1 .score{color:var(--p1)}.p2 .score{color:var(--p2)}
+.serve-badge{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0;transition:.3s}
+.serve-badge.active{opacity:1}
+.p1 .serve-badge{background:var(--p1);color:#fff}
+.p2 .serve-badge{background:var(--p2);color:#fff}
+.point-hint{font-size:12px;color:var(--dim);margin-top:12px}
+.bottom-bar{display:flex;justify-content:center;gap:12px;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
+.game-point{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;opacity:0;transition:.3s}
+.game-point.show{opacity:1}
+.match-point{color:var(--green)}
+.history{display:none;position:fixed;inset:0;background:#000c;z-index:10;align-items:center;justify-content:center}
+.history.show{display:flex}
+.history-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto}
+.history-panel h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.history-panel .close{cursor:pointer;font-size:20px;color:var(--dim)}
+.history-panel .close:hover{color:var(--text)}
+.match-record{padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13px}
+.match-record .winner{color:var(--gold);font-weight:600}
+.match-record .detail{color:var(--dim);font-size:11px;margin-top:4px}
+.no-history{color:var(--dim);text-align:center;padding:20px;font-size:13px}
+.settings{display:none;position:fixed;inset:0;background:#000c;z-index:10;align-items:center;justify-content:center}
+.settings.show{display:flex}
+.settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:360px;width:90%}
+.settings-panel h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.setting-row:last-child{border:none}
+.setting-row select,.setting-row input[type=number]{padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:80px;text-align:center}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 32px;font-size:18px;font-weight:700;z-index:20;opacity:0;transition:.3s;pointer-events:none;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.toast .sub{font-size:13px;font-weight:400;color:var(--dim);margin-top:6px}
+@media(max-width:480px){.score{font-size:80px}.player-name{font-size:14px}}
+@media(min-height:700px){.score{font-size:140px}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🏸 羽毛球计分板</h1>
+  <div class="actions">
+    <button class="btn" onclick="undo()">↩ 撤销</button>
+    <button class="btn" onclick="showSettings()">⚙️</button>
+    <button class="btn" onclick="showHistory()">📋</button>
+    <button class="btn danger" onclick="confirmReset()">重置</button>
+  </div>
+</div>
+<div class="game-info">
+  <div><div class="label">局数</div><div class="game-score" id="gameScore">0 - 0</div></div>
+  <div><div class="label">第 <span id="currentGame">1</span> 局</div></div>
+  <div><div class="label">赛制</div><div id="formatLabel">三局两胜</div></div>
+</div>
+<div class="court" id="court">
+  <div class="player-side p1" onclick="addPoint(0)">
+    <div class="serve-badge" id="serve0">🏸</div>
+    <div class="player-name" contenteditable="true" id="name0">选手 A</div>
+    <div class="score" id="score0">0</div>
+    <div class="point-hint">点击得分</div>
+    <div class="game-point" id="gp0"></div>
+  </div>
+  <div class="player-side p2" onclick="addPoint(1)">
+    <div class="serve-badge" id="serve1">🏸</div>
+    <div class="player-name" contenteditable="true" id="name1">选手 B</div>
+    <div class="score" id="score1">0</div>
+    <div class="point-hint">点击得分</div>
+    <div class="game-point" id="gp1"></div>
+  </div>
+</div>
+<div class="bottom-bar">
+  <button class="btn" onclick="switchSides()">🔄 换边</button>
+  <button class="btn" onclick="switchServe()">🏸 换发球</button>
+</div>
+<div class="history" id="historyModal"><div class="history-panel"><h2>比赛记录 <span class="close" onclick="hideHistory()">✕</span></h2><div id="historyList"></div></div></div>
+<div class="settings" id="settingsModal">
+  <div class="settings-panel">
+    <h2>设置 <span class="close" onclick="hideSettings()">✕</span></h2>
+    <div class="setting-row"><span>赛制</span><select id="setFormat" onchange="applySettings()"><option value="3">三局两胜</option><option value="1">单局</option><option value="5">五局三胜</option></select></div>
+    <div class="setting-row"><span>每局分数</span><input type="number" id="setPoints" value="21" min="5" max="30" onchange="applySettings()"></div>
+    <div class="setting-row"><span>封顶分数</span><input type="number" id="setCap" value="30" min="10" max="50" onchange="applySettings()"></div>
+    <div class="setting-row"><span>需领先</span><input type="number" id="setLead" value="2" min="1" max="5" onchange="applySettings()"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let state={
+  scores:[0,0],games:[0,0],currentGame:1,
+  serve:0,history:[],undoStack:[],
+  gameDetails:[],
+  format:3,targetPoints:21,cap:30,lead:2,
+  matchOver:false
+};
+
+function save(){localStorage.setItem('badminton_state',JSON.stringify(state))}
+function load(){
+  const s=localStorage.getItem('badminton_state');
+  if(s)try{Object.assign(state,JSON.parse(s))}catch(e){}
+}
+
+function render(){
+  document.getElementById('score0').textContent=state.scores[0];
+  document.getElementById('score1').textContent=state.scores[1];
+  document.getElementById('gameScore').textContent=state.games[0]+' - '+state.games[1];
+  document.getElementById('currentGame').textContent=state.currentGame;
+  document.getElementById('serve0').classList.toggle('active',state.serve===0);
+  document.getElementById('serve1').classList.toggle('active',state.serve===1);
+  // game/match point indicators
+  const gp0=document.getElementById('gp0'),gp1=document.getElementById('gp1');
+  gp0.textContent='';gp1.textContent='';
+  gp0.classList.remove('show','match-point');
+  gp1.classList.remove('show','match-point');
+  if(!state.matchOver){
+    for(let p=0;p<2;p++){
+      const el=p===0?gp0:gp1;
+      const opp=1-p;
+      const needWin=Math.ceil(state.format/2);
+      if(isGamePoint(p)){
+        if(state.games[p]===needWin-1){
+          el.textContent='🏆 赛点';el.classList.add('show','match-point');
+        }else{
+          el.textContent='🔥 局点';el.classList.add('show');
+        }
+      }
+    }
+  }
+  const fl=document.getElementById('formatLabel');
+  fl.textContent=state.format===1?'单局':state.format===3?'三局两胜':'五局三胜';
+  save();
+}
+
+function isGamePoint(p){
+  const s=state.scores,tp=state.targetPoints,cap=state.cap,lead=state.lead;
+  const opp=1-p;
+  if(s[p]>=tp-1&&s[p]>=s[opp]+lead-1)return true;
+  if(s[p]>=cap-1&&s[opp]>=cap-1&&s[p]>=s[opp])return true;
+  return false;
+}
+
+function checkGameWin(p){
+  const s=state.scores,tp=state.targetPoints,cap=state.cap,lead=state.lead;
+  const opp=1-p;
+  if(s[p]>=tp&&s[p]-s[opp]>=lead)return true;
+  if(s[p]>=cap)return true;
+  return false;
+}
+
+function addPoint(p){
+  if(state.matchOver)return;
+  state.undoStack.push(JSON.parse(JSON.stringify({scores:[...state.scores],games:[...state.games],currentGame:state.currentGame,serve:state.serve,matchOver:state.matchOver,gameDetails:[...state.gameDetails]})));
+  if(state.undoStack.length>50)state.undoStack.shift();
+  state.scores[p]++;
+  // serve: changes when total points is even (every 2 points), or every point after deuce
+  updateServe();
+  if(checkGameWin(p)){
+    const n0=document.getElementById('name0').textContent.trim();
+    const n1=document.getElementById('name1').textContent.trim();
+    state.gameDetails.push({scores:[...state.scores],winner:p});
+    state.games[p]++;
+    const needWin=Math.ceil(state.format/2);
+    if(state.games[p]>=needWin){
+      state.matchOver=true;
+      render();
+      showToast('🏆 '+(p===0?n0:n1)+' 获胜！',state.gameDetails.map((g,i)=>'第'+(i+1)+'局 '+g.scores.join(' : ')).join(' | '));
+      saveMatch(p);
+      return;
+    }
+    render();
+    showToast('🎉 '+(p===0?n0:n1)+' 赢得第'+state.currentGame+'局',state.scores[0]+' : '+state.scores[1]);
+    state.currentGame++;
+    state.scores=[0,0];
+    // switch serve each game
+    state.serve=state.currentGame%2===0?1:0;
+    setTimeout(render,100);
+    return;
+  }
+  render();
+}
+
+function updateServe(){
+  const total=state.scores[0]+state.scores[1];
+  const tp=state.targetPoints;
+  // After both reach tp-1 (deuce territory), serve changes every point
+  if(state.scores[0]>=tp-1&&state.scores[1]>=tp-1){
+    state.serve=(total)%2===0?state.serve:1-state.serve;
+    // Actually simpler: just alternate based on total
+    // In badminton, server is the one who scored the last point
+    // Let's use standard badminton rules: server scores = keep serve, receiver scores = switch
+    // But we don't track who scored... let's use the standard: serve switches every 2 points, every 1 in deuce
+  }
+  // Standard badminton: the player who wins a rally gets the next serve
+  // Since addPoint(p) means p scored, p gets serve
+  state.serve=arguments.length?state.scores[0]+state.scores[1]>0?getLastScorer():0:state.serve;
+}
+
+function getLastScorer(){
+  // The player who just scored serves next - this is standard badminton
+  // We know from addPoint(p) that p just scored
+  // But updateServe is called inside addPoint before we return
+  // So we can check which score just increased
+  // Actually let's just set serve = p in addPoint directly
+  return state.serve;
+}
+
+function undo(){
+  if(state.undoStack.length===0)return;
+  const prev=state.undoStack.pop();
+  state.scores=prev.scores;
+  state.games=prev.games;
+  state.currentGame=prev.currentGame;
+  state.serve=prev.serve;
+  state.matchOver=prev.matchOver;
+  state.gameDetails=prev.gameDetails;
+  render();
+}
+
+function switchSides(){
+  // Swap display positions
+  const court=document.getElementById('court');
+  const sides=court.children;
+  court.appendChild(sides[0]);
+}
+
+function switchServe(){
+  state.serve=1-state.serve;
+  render();
+}
+
+function confirmReset(){
+  if(state.scores[0]===0&&state.scores[1]===0&&state.games[0]===0&&state.games[1]===0)return;
+  if(confirm('确定重置当前比赛？')){
+    state.scores=[0,0];state.games=[0,0];state.currentGame=1;
+    state.serve=0;state.undoStack=[];state.gameDetails=[];state.matchOver=false;
+    render();
+  }
+}
+
+function saveMatch(winner){
+  const n0=document.getElementById('name0').textContent.trim();
+  const n1=document.getElementById('name1').textContent.trim();
+  const record={
+    date:new Date().toLocaleString('zh-CN'),
+    players:[n0,n1],
+    winner:winner,
+    games:[...state.games],
+    details:[...state.gameDetails]
+  };
+  state.history.unshift(record);
+  if(state.history.length>20)state.history.pop();
+  save();
+}
+
+function showHistory(){
+  const list=document.getElementById('historyList');
+  if(state.history.length===0){
+    list.innerHTML='<div class="no-history">暂无比赛记录</div>';
+  }else{
+    list.innerHTML=state.history.map(r=>{
+      const wName=r.players[r.winner];
+      const detail=r.details.map((g,i)=>'G'+(i+1)+': '+g.scores.join('-')).join('  ');
+      return `<div class="match-record"><span class="winner">🏆 ${wName}</span> 胜 (${r.games.join('-')})<div class="detail">${r.players.join(' vs ')} · ${detail} · ${r.date}</div></div>`;
+    }).join('');
+  }
+  document.getElementById('historyModal').classList.add('show');
+}
+function hideHistory(){document.getElementById('historyModal').classList.remove('show')}
+
+function showSettings(){document.getElementById('settingsModal').classList.add('show')}
+function hideSettings(){document.getElementById('settingsModal').classList.remove('show')}
+
+function applySettings(){
+  state.format=parseInt(document.getElementById('setFormat').value);
+  state.targetPoints=parseInt(document.getElementById('setPoints').value);
+  state.cap=parseInt(document.getElementById('setCap').value);
+  state.lead=parseInt(document.getElementById('setLead').value);
+  render();
+}
+
+function showToast(msg,sub){
+  const t=document.getElementById('toast');
+  t.innerHTML=msg+(sub?'<div class="sub">'+sub+'</div>':'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Fix: in badminton, the scorer gets serve
+// Override updateServe to simply set serve to the scorer
+(function(){
+  const origAdd=addPoint;
+  window.addPoint=function(p){
+    if(state.matchOver)return;
+    state.undoStack.push(JSON.parse(JSON.stringify({scores:[...state.scores],games:[...state.games],currentGame:state.currentGame,serve:state.serve,matchOver:state.matchOver,gameDetails:[...state.gameDetails]})));
+    if(state.undoStack.length>50)state.undoStack.shift();
+    state.scores[p]++;
+    state.serve=p; // scorer serves next in badminton
+    if(checkGameWin(p)){
+      const n0=document.getElementById('name0').textContent.trim();
+      const n1=document.getElementById('name1').textContent.trim();
+      state.gameDetails.push({scores:[...state.scores],winner:p});
+      state.games[p]++;
+      const needWin=Math.ceil(state.format/2);
+      if(state.games[p]>=needWin){
+        state.matchOver=true;
+        render();
+        showToast('🏆 '+(p===0?n0:n1)+' 获胜！',state.gameDetails.map((g,i)=>'第'+(i+1)+'局 '+g.scores.join(' : ')).join(' | '));
+        saveMatch(p);
+        return;
+      }
+      render();
+      showToast('🎉 '+(p===0?n0:n1)+' 赢得第'+state.currentGame+'局',state.scores[0]+' : '+state.scores[1]);
+      state.currentGame++;
+      state.scores=[0,0];
+      state.serve=state.currentGame%2===0?1:0;
+      setTimeout(render,100);
+      return;
+    }
+    render();
+  };
+})();
+
+// Init
+load();
+document.getElementById('setFormat').value=state.format;
+document.getElementById('setPoints').value=state.targetPoints;
+document.getElementById('setCap').value=state.cap;
+document.getElementById('setLead').value=state.lead;
+render();
+
+// Prevent name editing from triggering score
+document.querySelectorAll('.player-name').forEach(el=>{
+  el.addEventListener('click',e=>e.stopPropagation());
+  el.addEventListener('touchstart',e=>e.stopPropagation());
+});
+</script>
+</body>
+</html>'''
+
+with open('/root/clawd/builds/badminton/index.html','w',encoding='utf-8') as f:
+    f.write(html)
+print(f"OK {len(html)} bytes")

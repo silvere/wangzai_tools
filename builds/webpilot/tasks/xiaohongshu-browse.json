@@ -1,0 +1,10 @@
+{
+  "name": "xiaohongshu-browse",
+  "description": "打开小红书首页并截图",
+  "steps": [
+    {"action": "navigate", "params": {"url": "https://www.xiaohongshu.com"}},
+    {"action": "sleep", "params": {"seconds": 3}},
+    {"action": "screenshot"}
+  ],
+  "created_at": 1740153600
+}

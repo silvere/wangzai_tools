@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目灵感粉碎机 💡 — 再也不愁想不出好项目了</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        dark: '#1e1b4b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .animate-float {
+                animation: float 3s ease-in-out infinite;
+            }
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+                100% { transform: translateY(0px); }
+            }
+            .tag {
+                @apply px-2 py-1 rounded-full text-xs font-medium;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-12 px-4 shadow-lg">
+        <div class="container mx-auto max-w-6xl text-center">
+            <div class="text-8xl mb-6 animate-float">💡</div>
+            <h1 class="text-5xl font-bold mb-4">项目灵感粉碎机</h1>
+            <p class="text-purple-100 text-xl max-w-2xl mx-auto">
+                一键生成创业、开源、副业、AI项目灵感，再也不愁想不出好点子了！
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-6xl px-4 py-12">
+        <!-- Generate Section -->
+        <section class="mb-12">
+            <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2 text-left">项目方向</label>
+                        <select id="category" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                            <option value="all">全部方向</option>
+                            <option value="ai">AI 相关</option>
+                            <option value="saas">SaaS 工具</option>
+                            <option value="opensource">开源项目</option>
+                            <option value="side">副业赚钱</option>
+                            <option value="automation">自动化工具</option>
+                            <option value="content">内容创作</option>
+                            <option value="productivity">生产力工具</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2 text-left">技术栈</label>
+                        <select id="tech" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                            <option value="any">任意技术栈</option>
+                            <option value="python">Python 为主</option>
+                            <option value="web">Web 开发 (HTML/CSS/JS)</option>
+                            <option value="fullstack">全栈开发</option>
+                            <option value="mobile">移动端开发</option>
+                            <option value="lowcode">低代码/无代码</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2 text-left">项目难度</label>
+                        <select id="difficulty" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                            <option value="any">任意难度</option>
+                            <option value="easy">简单 (1-2 周可完成)</option>
+                            <option value="medium">中等 (1-3 个月)</option>
+                            <option value="hard">复杂 (长期项目)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="generateBtn" class="bg-primary hover:bg-primary/90 text-white px-12 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg shadow-primary/20 mx-auto">
+                    <i class="fa fa-magic text-xl"></i>
+                    <span>生成项目灵感</span>
+                </button>
+
+                <p class="text-gray-500 text-sm mt-4">
+                    <i class="fa fa-lightbulb-o mr-1"></i> 已经生成了 <span id="generatedCount" class="font-semibold text-primary">0</span> 个灵感
+                </p>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden mb-8">
+            <div class="bg-white rounded-2xl shadow-xl p-12 text-center">
+                <div class="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                <p class="text-gray-700 text-xl font-medium">正在为你粉碎灵感...</p>
+                <p class="text-gray-500 mt-2">马上就有好点子了！</p>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <section id="result" class="hidden space-y-8">
+            <!-- Idea Card -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover">
+                <div class="gradient-bg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span id="ideaCategory" class="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm"></span>
+                            <span id="ideaDifficulty" class="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm"></span>
+                            <span id="ideaTech" class="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm"></span>
+                        </div>
+                        <span id="ideaScore" class="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm font-bold"></span>
+                    </div>
+                    <h2 id="ideaTitle" class="text-3xl font-bold mb-2"></h2>
+                    <p id="ideaTagline" class="text-purple-100 text-lg"></p>
+                </div>
+                <div class="p-6 space-y-6">
+                    <section>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fa fa-star text-yellow-500 mr-2"></i>项目亮点
+                        </h3>
+                        <ul id="ideaHighlights" class="space-y-2 text-gray-700">
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fa fa-list text-blue-500 mr-2"></i>核心功能
+                        </h3>
+                        <ul id="ideaFeatures" class="space-y-2 text-gray-700">
+                        </ul>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <section>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <i class="fa fa-technologies text-green-500 mr-2"></i>技术栈建议
+                            </h3>
+                            <div id="ideaTechStack" class="flex flex-wrap gap-2">
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <i class="fa fa-money text-green-600 mr-2"></i>商业化潜力
+                            </h3>
+                            <p id="ideaMonetization" class="text-gray-700"></p>
+                        </section>
+                    </div>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fa fa-road text-orange-500 mr-2"></i>实施路线图
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                                <div class="text-blue-600 font-medium mb-2 flex items-center gap-1">
+                                    <i class="fa fa-rocket"></i> 第一周
+                                </div>
+                                <p id="ideaWeek1" class="text-sm text-gray-700"></p>
+                            </div>
+                            <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                                <div class="text-purple-600 font-medium mb-2 flex items-center gap-1">
+                                    <i class="fa fa-cogs"></i> 第一个月
+                                </div>
+                                <p id="ideaMonth1" class="text-sm text-gray-700"></p>
+                            </div>
+                            <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                                <div class="text-green-600 font-medium mb-2 flex items-center gap-1">
+                                    <i class="fa fa-line-chart"></i> 长期规划
+                                </div>
+                                <p id="ideaLongTerm" class="text-sm text-gray-700"></p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="regenerateBtn" class="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+                    <i class="fa fa-refresh"></i>
+                    <span>再换一个</span>
+                </button>
+                <button id="copyBtn" class="bg-secondary hover:bg-secondary/90 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-secondary/20">
+                    <i class="fa fa-copy"></i>
+                    <span>复制完整方案</span>
+                </button>
+                <button id="saveBtn" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-green-600/20">
+                    <i class="fa fa-heart"></i>
+                    <span>保存灵感</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Saved Ideas -->
+        <section id="savedSection" class="mt-12 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="fa fa-bookmark text-primary mr-2"></i>已保存的灵感
+            </h2>
+            <div id="savedGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8 mt-12">
+        <div class="container mx-auto max-w-6xl px-4 text-center">
+            <p class="text-gray-400">
+                创业点子那么多，不如现在就动手做一个！
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                Powered by 旺仔 🥛 | Build #99
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Ideas database
+        const ideas = [
+            {
+                id: 1,
+                title: "AI 论文速读助手",
+                tagline: "输入 arXiv 论文链接，10 秒提炼核心内容",
+                category: "ai",
+                difficulty: "easy",
+                tech: "python",
+                score: "⭐⭐⭐⭐⭐",
+                highlights: [
+                    "解决科研人员读论文效率低的痛点",
+                    "自动提炼核心创新、关键结果、研究方法",
+                    "支持导出 Markdown 笔记，无缝对接知识管理系统",
+                    "可以扩展支持中文论文、会议论文等多种格式"
+                ],
+                features: [
+                    "arXiv 链接自动解析",
+                    "四大维度智能摘要（创新/结果/方法/价值）",
+                    "一键复制/下载完整笔记",
+                    "本地运行，保护隐私"
+                ],
+                techStack: ["Python", "FastAPI", "LLM API", "纯 HTML/CSS/JS 前端"],
+                monetization: "开源免费获得用户，高级功能付费订阅，企业版部署",
+                week1: "完成基础解析功能，对接 LLM API，做出最小可用版本",
+                month1: "优化摘要质量，支持更多数据源，开发浏览器插件",
+                longTerm: "构建论文知识库，支持语义搜索，形成科研人员社区"
+            },
+            {
+                id: 2,
+                title: "短视频脚本生成器",
+                tagline: "输入主题，10 秒生成爆款短视频脚本",
+                category: "content",
+                difficulty: "easy",
+                tech: "web",
+                score: "⭐⭐⭐⭐",
+                highlights: [
+                    "抖音/小红书短视频创作者刚需工具",
+                    "内置多种爆款模板和风格",
+                    "支持自定义时长、风格、目标人群",
+                    "生成的脚本直接可以拍摄使用"
+                ],
+                features: [
+                    "10+ 内容类型支持（知识/好物/剧情/测评等）",
+                    "8 种风格可选（幽默/干货/深情/硬核等）",
+                    "自动生成分镜、台词、BGM 建议",
+                    "一键复制导出"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "可以对接 LLM API 增强效果"],
+                monetization: "免费基础功能，高级模板付费解锁，会员制",
+                week1: "完成基础模板，实现核心生成逻辑，上线可用版本",
+                month1: "收集用户反馈，增加更多模板，优化生成质量",
+                longTerm: "对接视频生成 API，直接从脚本生成短视频"
+            },
+            {
+                id: 3,
+                title: "个人知识库助手",
+                tagline: "自动整理微信笔记、网页收藏、文件到统一知识库",
+                category: "productivity",
+                difficulty: "medium",
+                tech: "python",
+                score: "⭐⭐⭐⭐⭐",
+                highlights: [
+                    "解决个人信息碎片化的痛点",
+                    "自动同步多平台的笔记和收藏",
+                    "智能分类、打标签、语义搜索",
+                    "本地部署，数据完全自己掌控"
+                ],
+                features: [
+                    "多平台同步（微信/公众号/浏览器/Notion等）",
+                    "AI 自动摘要、分类、打标签",
+                    "语义搜索，自然语言提问找资料",
+                    "知识图谱可视化，发现关联"
+                ],
+                techStack: ["Python", "FastAPI", "向量数据库", "React 前端"],
+                monetization: "开源免费，付费云服务版本，企业部署",
+                week1: "完成基础同步功能，支持浏览器和微信笔记导入",
+                month1: "实现语义搜索，优化分类算法，开发移动端",
+                longTerm: "支持插件系统，对接更多数据源，形成知识管理生态"
+            },
+            {
+                id: 4,
+                title: "AI 面试模拟系统",
+                tagline: "模拟真实面试场景，AI 实时点评，提升面试通过率",
+                category: "saas",
+                difficulty: "medium",
+                tech: "fullstack",
+                score: "⭐⭐⭐⭐⭐",
+                highlights: [
+                    "求职者刚需，市场规模大",
+                    "支持程序员、产品经理、运营等多个岗位",
+                    "真实面试题，实时语音/视频模拟",
+                    "AI 给出详细点评和改进建议"
+                ],
+                features: [
+                    "20+ 岗位题库，持续更新",
+                    "语音/视频模拟面试，全程录制",
+                    "多维度评分（表达/逻辑/专业度等）",
+                    "生成详细的改进报告"
+                ],
+                techStack: ["React", "Node.js", "WebRTC", "LLM API", "语音识别"],
+                monetization: "按次付费，会员订阅，企业版批量账号",
+                week1: "完成文本面试功能，支持程序员岗位基础题",
+                month1: "实现语音面试，增加更多岗位，优化点评质量",
+                longTerm: "对接企业招聘，推荐合适的候选人，形成招聘闭环"
+            },
+            {
+                id: 5,
+                title: "自动化报表生成工具",
+                tagline: "连接各种数据源，自动生成日报/周报/月报",
+                category: "automation",
+                difficulty: "medium",
+                tech: "python",
+                score: "⭐⭐⭐⭐",
+                highlights: [
+                    "职场人士刚需，节省大量做报表的时间",
+                    "支持 Excel/CSV/数据库/API 等多种数据源",
+                    "自定义报表模板，自动计算、生成图表",
+                    "定时发送到邮箱/企业微信/飞书"
+                ],
+                features: [
+                    "可视化配置数据源和报表格式",
+                    "支持多种图表类型，自动计算指标",
+                    "定时任务，自动生成和发送",
+                    "导出 Excel/PDF/图片等多种格式"
+                ],
+                techStack: ["Python", "FastAPI", "React", "ECharts"],
+                monetization: "个人版免费，专业版付费，企业部署许可",
+                week1: "完成基础数据源连接，实现简单报表生成",
+                month1: "增加更多模板，支持定时发送，优化可视化",
+                longTerm: "支持 AI 自动分析数据，给出洞察和建议"
+            },
+            {
+                id: 6,
+                title: "二手闲置 AI 估价助手",
+                tagline: "拍照上传二手物品，AI 自动估价，推荐最优出手渠道",
+                category: "side",
+                difficulty: "medium",
+                tech: "fullstack",
+                score: "⭐⭐⭐⭐",
+                highlights: [
+                    "解决二手交易定价难的痛点",
+                    "图像识别物品，自动抓取全网同款价格",
+                    "推荐最优出售渠道和定价策略",
+                    "自动生成商品描述和关键词"
+                ],
+                features: [
+                    "拍照识别物品类型和成色",
+                    "多平台价格对比，给出合理估价",
+                    "自动生成商品描述和标题",
+                    "推荐最合适的出售平台"
+                ],
+                techStack: ["图像识别 API", "Python 爬虫", "小程序/移动端"],
+                monetization: "交易佣金，广告收入，付费加速出售",
+                week1: "完成手机/数码产品的估价功能，做最小可用版本",
+                month1: "支持更多物品类型，优化估价准确率，上线小程序",
+                longTerm: "对接二手平台，一键发布，形成交易闭环"
+            },
+            {
+                id: 7,
+                title: "开源项目文档自动生成器",
+                tagline: "扫描代码仓库，自动生成高质量 README 和 API 文档",
+                category: "opensource",
+                difficulty: "easy",
+                tech: "python",
+                score: "⭐⭐⭐⭐",
+                highlights: [
+                    "开发者刚需，解决写文档麻烦的痛点",
+                    "支持多种编程语言，自动识别函数和注释",
+                    "生成规范的 README 结构和 API 文档",
+                    "可以直接提交 PR 到代码仓库"
+                ],
+                features: [
+                    "自动识别项目类型和技术栈",
+                    "提取代码中的注释和类型定义",
+                    "生成包含安装、使用、示例等完整结构的 README",
+                    "支持 Markdown 导出，直接使用"
+                ],
+                techStack: ["Python", "代码解析库", "LLM API 可选"],
+                monetization: "开源免费，企业版高级功能付费",
+                week1: "完成 Python/JS 项目的基础文档生成",
+                month1: "支持更多语言，优化文档质量，开发 VS Code 插件",
+                longTerm: "支持自动更新文档，集成 CI/CD 流程"
+            },
+            {
+                id: 8,
+                title: "AI 健身计划生成器",
+                tagline: "根据个人情况生成个性化健身计划，自动跟踪进度",
+                category: "side",
+                difficulty: "easy",
+                tech: "web",
+                score: "⭐⭐⭐⭐",
+                highlights: [
+                    "健身人群刚需，用户粘性高",
+                    "个性化定制，比通用计划更有效",
+                    "自动跟踪进度，调整计划",
+                    "包含饮食建议、动作演示等内容"
+                ],
+                features: [
+                    "输入身高体重、健身目标、可用时间等",
+                    "生成个性化的周训练计划",
+                    "每个动作带演示和注意事项",
+                    "进度记录和计划自动调整"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "本地存储", "可选后端同步"],
+                monetization: "免费基础功能，高级计划和饮食建议付费",
+                week1: "完成基础计划生成功能，支持常见健身目标",
+                month1: "增加动作库，优化个性化算法，开发移动端",
+                longTerm: "对接智能硬件，社区功能，健身教练入驻"
+            },
+            {
+                id: 9,
+                title: "多平台内容同步工具",
+                tagline: "一篇文章，一键发布到公众号/知乎/小红书/掘金等多个平台",
+                category: "automation",
+                difficulty: "medium",
+                tech: "python",
+                score: "⭐⭐⭐⭐⭐",
+                highlights: [
+                    "内容创作者刚需，节省大量重复发布的时间",
+                    "自动适配各个平台的格式要求",
+                    "支持定时发布，数据统一统计",
+                    "本地运行，账号安全有保障"
+                ],
+                features: [
+                    "Markdown 格式自动转各平台支持的格式",
+                    "图片自动上传到对应平台的图床",
+                    "一键发布到 10+ 内容平台",
+                    "统一查看各平台的阅读/点赞数据"
+                ],
+                techStack: ["Python", "自动化脚本", "Electron 桌面端"],
+                monetization: "一次性付费购买，年付会员制",
+                week1: "完成公众号/知乎/掘金三个平台的发布功能",
+                month1: "支持更多平台，优化格式适配，发布桌面端",
+                longTerm: "AI 生成内容建议，分析各平台数据，优化内容"
+            },
+            {
+                id: 10,
+                title: "AI 代码评审助手",
+                tagline: "自动扫描代码 PR，给出代码质量评审意见",
+                category: "ai",
+                difficulty: "medium",
+                tech: "python",
+                score: "⭐⭐⭐⭐⭐",
+                highlights: [
+                    "开发者和团队刚需，提高代码质量和评审效率",
+                    "支持多种编程语言，识别常见的代码问题",
+                    "给出具体的改进建议和最佳实践",
+                    "可以集成到 CI/CD 流程，自动评审"
+                ],
+                features: [
+                    "自动拉取 PR 代码变更",
+                    "检查代码规范、潜在 Bug、性能问题",
+                    "给出详细的评审意见和修改建议",
+                    "支持自定义评审规则和团队规范"
+                ],
+                techStack: ["Python", "代码解析工具", "LLM API", "GitHub/GitLab 集成"],
+                monetization: "开源免费，企业版高级功能和技术支持付费",
+                week1: "完成 Python/JS 代码的基础评审功能，支持 GitHub",
+                month1: "支持更多语言，优化评审准确性，集成 GitLab 等平台",
+                longTerm: "支持自定义规则，团队知识库，代码质量分析报告"
+            },
+            {
+                id: 11,
+                title: "本地生活优惠聚合助手",
+                tagline: "聚合周边餐饮、电影、出行的各种优惠信息，用最低价消费",
+                category: "side",
+                difficulty: "medium",
+                tech: "fullstack",
+                score: "⭐⭐⭐⭐",
+                highlights: [
+                    "所有消费者的刚需，省钱神器",
+                    "自动聚合各大平台的优惠券和活动",
+                    "对比价格，推荐最优购买渠道",
+                    "到店提醒，不会错过任何优惠"
+                ],
+                features: [
+                    "聚合美团/大众点评/抖音/银行等的优惠信息",
+                    "智能推荐附近的优惠活动",
+                    "价格对比，历史价格查询",
+                    "优惠到期提醒，自动帮你省钱"
+                ],
+                techStack: ["小程序", "Python 爬虫", "地理位置服务"],
+                monetization: "佣金返现，广告收入，付费会员",
+                week1: "完成餐饮和电影优惠的聚合，上线基础版小程序",
+                month1: "增加更多品类，优化推荐算法，积累种子用户",
+                longTerm: "社区功能，用户分享优惠，对接商家发放专属优惠"
+            },
+            {
+                id: 12,
+                title: "大模型评测自动化平台",
+                tagline: "一键评测多个大模型在多个基准上的表现，自动生成报告",
+                category: "ai",
+                difficulty: "hard",
+                tech: "python",
+                score: "⭐⭐⭐⭐⭐",
+                highlights: [
+                    "大模型公司和研究机构刚需",
+                    "支持主流的评测基准和自定义数据集",
+                    "自动调度评测任务，并行执行",
+                    "可视化对比分析，自动生成评测报告"
+                ],
+                features: [
+                    "支持 20+ 主流大模型 API 接入",
+                    "内置 30+ 常用评测基准",
+                    "多维度可视化对比分析",
+                    "一键导出专业评测报告"
+                ],
+                techStack: ["Python", "FastAPI", "React", "Celery 任务调度", "可视化库"],
+                monetization: "开源免费，企业版部署和定制功能付费",
+                week1: "完成基础评测框架，支持 3-5 个主流基准",
+                month1: "支持更多模型和基准，优化可视化功能，发布正式版本",
+                longTerm: "成为行业标准的评测工具，提供评测服务，对接模型供应商"
+            }
+        ];
+
+        // DOM Elements
+        const categorySelect = document.getElementById('category');
+        const techSelect = document.getElementById('tech');
+        const difficultySelect = document.getElementById('difficulty');
+        const generateBtn = document.getElementById('generateBtn');
+        const regenerateBtn = document.getElementById('regenerateBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const savedSection = document.getElementById('savedSection');
+        const savedGrid = document.getElementById('savedGrid');
+        const generatedCount = document.getElementById('generatedCount');
+
+        // State
+        let currentIdea = null;
+        let savedIdeas = JSON.parse(localStorage.getItem('savedIdeas') || '[]');
+        let count = parseInt(localStorage.getItem('generatedCount') || '0');
+
+        // Update count display
+        generatedCount.textContent = count;
+
+        // Generate idea
+        function generateIdea() {
+            const category = categorySelect.value;
+            const tech = techSelect.value;
+            const difficulty = difficultySelect.value;
+
+            // Filter ideas
+            let filtered = ideas.filter(idea => {
+                const matchCategory = category === 'all' || idea.category === category;
+                const matchTech = tech === 'any' || idea.tech === tech;
+                const matchDifficulty = difficulty === 'any' || idea.difficulty === difficulty;
+                return matchCategory && matchTech && matchDifficulty;
+            });
+
+            if (filtered.length === 0) {
+                filtered = ideas; // Fallback to all if no matches
+            }
+
+            // Random select
+            currentIdea = filtered[Math.floor(Math.random() * filtered.length)];
+
+            // Show loading
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            // Simulate processing
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                displayIdea(currentIdea);
+                result.classList.remove('hidden');
+                count++;
+                generatedCount.textContent = count;
+                localStorage.setItem('generatedCount', count.toString());
+
+                // Smooth scroll to result
+                result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 1500);
+        }
+
+        // Display idea
+        function displayIdea(idea) {
+            document.getElementById('ideaTitle').textContent = idea.title;
+            document.getElementById('ideaTagline').textContent = idea.tagline;
+            document.getElementById('ideaCategory').textContent = getCategoryName(idea.category);
+            document.getElementById('ideaDifficulty').textContent = getDifficultyName(idea.difficulty);
+            document.getElementById('ideaTech').textContent = getTechName(idea.tech);
+            document.getElementById('ideaScore').textContent = idea.score;
+
+            // Highlights
+            const highlightsList = document.getElementById('ideaHighlights');
+            highlightsList.innerHTML = '';
+            idea.highlights.forEach(h => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<i class="fa fa-check-circle text-green-500 mt-1 flex-shrink-0"></i><span>${h}</span>`;
+                highlightsList.appendChild(li);
+            });
+
+            // Features
+            const featuresList = document.getElementById('ideaFeatures');
+            featuresList.innerHTML = '';
+            idea.features.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<i class="fa fa-star text-yellow-500 mt-1 flex-shrink-0"></i><span>${f}</span>`;
+                featuresList.appendChild(li);
+            });
+
+            // Tech stack
+            const techStackDiv = document.getElementById('ideaTechStack');
+            techStackDiv.innerHTML = '';
+            idea.techStack.forEach(t => {
+                const span = document.createElement('span');
+                span.className = 'tag bg-blue-100 text-blue-800';
+                span.textContent = t;
+                techStackDiv.appendChild(span);
+            });
+
+            // Monetization
+            document.getElementById('ideaMonetization').textContent = idea.monetization;
+
+            // Roadmap
+            document.getElementById('ideaWeek1').textContent = idea.week1;
+            document.getElementById('ideaMonth1').textContent = idea.month1;
+            document.getElementById('ideaLongTerm').textContent = idea.longTerm;
+
+            // Update save button state
+            updateSaveButton();
+        }
+
+        // Get category display name
+        function getCategoryName(category) {
+            const names = {
+                'ai': 'AI 相关',
+                'saas': 'SaaS 工具',
+                'opensource': '开源项目',
+                'side': '副业赚钱',
+                'automation': '自动化工具',
+                'content': '内容创作',
+                'productivity': '生产力工具'
+            };
+            return names[category] || category;
+        }
+
+        // Get difficulty display name
+        function getDifficultyName(difficulty) {
+            const names = {
+                'easy': '简单',
+                'medium': '中等',
+                'hard': '复杂'
+            };
+            return names[difficulty] || difficulty;
+        }
+
+        // Get tech display name
+        function getTechName(tech) {
+            const names = {
+                'any': '任意技术栈',
+                'python': 'Python',
+                'web': 'Web 开发',
+                'fullstack': '全栈开发',
+                'mobile': '移动端开发',
+                'lowcode': '低代码'
+            };
+            return names[tech] || tech;
+        }
+
+        // Update save button
+        function updateSaveButton() {
+            const isSaved = savedIdeas.some(i => i.id === currentIdea.id);
+            if (isSaved) {
+                saveBtn.innerHTML = '<i class="fa fa-check"></i> <span>已保存</span>';
+                saveBtn.classList.add('bg-gray-500');
+                saveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                saveBtn.disabled = true;
+            } else {
+                saveBtn.innerHTML = '<i class="fa fa-heart"></i> <span>保存灵感</span>';
+                saveBtn.classList.remove('bg-gray-500');
+                saveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Save idea
+        function saveIdea() {
+            if (!savedIdeas.some(i => i.id === currentIdea.id)) {
+                savedIdeas.push(currentIdea);
+                localStorage.setItem('savedIdeas', JSON.stringify(savedIdeas));
+                updateSaveButton();
+                renderSavedIdeas();
+                savedSection.classList.remove('hidden');
+
+                // Show success
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fa fa-check"></i> <span>保存成功！</span>';
+                setTimeout(() => {
+                    updateSaveButton();
+                }, 2000);
+            }
+        }
+
+        // Render saved ideas
+        function renderSavedIdeas() {
+            savedGrid.innerHTML = '';
+            savedIdeas.forEach(idea => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-lg p-4 card-hover';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-900">${idea.title}</h3>
+                            <p class="text-sm text-gray-500">${idea.tagline}</p>
+                        </div>
+                        <button class="delete-saved text-gray-400 hover:text-red-500 transition-all" data-id="${idea.id}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mb-3">
+                        <span class="tag bg-blue-100 text-blue-800 text-xs">${getCategoryName(idea.category)}</span>
+                        <span class="tag bg-orange-100 text-orange-800 text-xs">${getDifficultyName(idea.difficulty)}</span>
+                        <span class="tag bg-green-100 text-green-800 text-xs">${idea.score}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 line-clamp-2">${idea.highlights[0]}</p>
+                `;
+                savedGrid.appendChild(card);
+            });
+
+            // Add delete event listeners
+            document.querySelectorAll('.delete-saved').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    savedIdeas = savedIdeas.filter(i => i.id !== id);
+                    localStorage.setItem('savedIdeas', JSON.stringify(savedIdeas));
+                    renderSavedIdeas();
+                    updateSaveButton();
+                    if (savedIdeas.length === 0) {
+                        savedSection.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        // Copy idea
+        function copyIdea() {
+            const content = `# ${currentIdea.title}
+${currentIdea.tagline}
+
+## 基本信息
+- **分类**: ${getCategoryName(currentIdea.category)}
+- **难度**: ${getDifficultyName(currentIdea.difficulty)}
+- **技术栈**: ${getTechName(currentIdea.tech)}
+- **商业价值**: ${currentIdea.score}
+
+## 项目亮点
+${currentIdea.highlights.map(h => `- ${h}`).join('\n')}
+
+## 核心功能
+${currentIdea.features.map(f => `- ${f}`).join('\n')}
+
+## 技术栈建议
+${currentIdea.techStack.join(', ')}
+
+## 商业化潜力
+${currentIdea.monetization}
+
+## 实施路线图
+### 第一周
+${currentIdea.week1}
+
+### 第一个月
+${currentIdea.month1}
+
+### 长期规划
+${currentIdea.longTerm}
+`;
+
+            navigator.clipboard.writeText(content).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa fa-check"></i> <span>复制成功！</span>';
+                copyBtn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.classList.remove('bg-green-600');
+                }, 2000);
+            });
+        }
+
+        // Event listeners
+        generateBtn.addEventListener('click', generateIdea);
+        regenerateBtn.addEventListener('click', generateIdea);
+        copyBtn.addEventListener('click', copyIdea);
+        saveBtn.addEventListener('click', saveIdea);
+
+        // Initial render of saved ideas
+        if (savedIdeas.length > 0) {
+            savedSection.classList.remove('hidden');
+            renderSavedIdeas();
+        }
+    </script>
+</body>
+</html>

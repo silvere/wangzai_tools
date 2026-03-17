@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Checklist Generator - 评测检查清单生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .config-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .checklist-output {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .checklist-output.show {
+            display: block;
+        }
+        
+        .checklist-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .checklist-header h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .checklist-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .checklist-section {
+            margin-bottom: 30px;
+        }
+        
+        .checklist-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .checklist-item {
+            display: flex;
+            align-items: start;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .checklist-item input[type="checkbox"] {
+            margin-right: 12px;
+            margin-top: 4px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checklist-item-content {
+            flex: 1;
+        }
+        
+        .checklist-item-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .checklist-item-desc {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .config-section, .actions {
+                display: none;
+            }
+            
+            .checklist-output {
+                box-shadow: none;
+            }
+            
+            .checklist-item input[type="checkbox"] {
+                -webkit-appearance: checkbox;
+                appearance: checkbox;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Evaluation Checklist Generator</h1>
+            <div class="subtitle">评测检查清单生成器 - 确保评测流程不遗漏</div>
+        </div>
+        
+        <div class="config-section">
+            <h3>📋 配置评测信息</h3>
+            
+            <div class="form-group">
+                <label>评测名称</label>
+                <input type="text" id="evalName" placeholder="例如：GPT-4o vs Claude Opus 4 综合评测">
+            </div>
+            
+            <div class="form-group">
+                <label>评测日期</label>
+                <input type="date" id="evalDate">
+            </div>
+            
+            <div class="form-group">
+                <label>评测人员</label>
+                <input type="text" id="evalPerson" placeholder="例如：张三、李四">
+            </div>
+            
+            <div class="form-group">
+                <label>选择Benchmark</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-humaneval" value="HumanEval">
+                        <label for="bench-humaneval">HumanEval</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-mmlu" value="MMLU">
+                        <label for="bench-mmlu">MMLU</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-mmlu-pro" value="MMLU-Pro">
+                        <label for="bench-mmlu-pro">MMLU-Pro</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-gpqa" value="GPQA">
+                        <label for="bench-gpqa">GPQA</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-gsm8k" value="GSM8K">
+                        <label for="bench-gsm8k">GSM8K</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-math" value="MATH">
+                        <label for="bench-math">MATH</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-swe" value="SWE-bench">
+                        <label for="bench-swe">SWE-bench</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="bench-arena" value="Chatbot Arena">
+                        <label for="bench-arena">Chatbot Arena</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>备注</label>
+                <textarea id="evalNotes" rows="3" placeholder="其他需要注意的事项..."></textarea>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-primary" onclick="generateChecklist()">🎯 生成检查清单</button>
+                <button class="btn btn-secondary" onclick="printChecklist()">🖨️ 打印</button>
+                <button class="btn btn-secondary" onclick="resetForm()">🔄 重置</button>
+            </div>
+        </div>
+        
+        <div class="checklist-output" id="checklistOutput">
+            <div class="checklist-header">
+                <h2 id="outputTitle">评测检查清单</h2>
+                <div class="checklist-meta">
+                    <div id="outputMeta"></div>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            
+            <div id="checklistContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        const checklistTemplates = {
+            "准备阶段": [
+                { title: "确认评测目标", desc: "明确本次评测的目的和预期结果" },
+                { title: "选择评测模型", desc: "确定要评测的模型及其版本" },
+                { title: "准备评测环境", desc: "配置API密钥、环境变量、依赖库" },
+                { title: "下载benchmark数据集", desc: "确保数据集完整且版本正确" },
+                { title: "检查数据污染风险", desc: "确认模型训练数据是否包含测试集" }
+            ],
+            "执行阶段": [
+                { title: "运行baseline测试", desc: "先运行一个简单测试确保环境正常" },
+                { title: "记录模型配置", desc: "记录temperature、top_p等参数" },
+                { title: "执行完整评测", desc: "运行所有选定的benchmark" },
+                { title: "监控评测进度", desc: "定期检查评测是否正常运行" },
+                { title: "保存原始结果", desc: "保存所有原始输出和日志" }
+            ],
+            "分析阶段": [
+                { title: "计算评测指标", desc: "准确率、F1分数等" },
+                { title: "对比基准模型", desc: "与已知模型进行横向对比" },
+                { title: "分析失败案例", desc: "深入分析错误样本" },
+                { title: "识别异常结果", desc: "检查是否有异常高分或低分" },
+                { title: "验证统计显著性", desc: "确保结果具有统计意义" }
+            ],
+            "报告阶段": [
+                { title: "整理评测数据", desc: "制作表格和图表" },
+                { title: "撰写评测报告", desc: "包含方法、结果、分析、结论" },
+                { title: "同行评审", desc: "请其他人review评测方法和结果" },
+                { title: "发布评测结果", desc: "通过适当渠道发布" },
+                { title: "归档评测资料", desc: "保存所有相关文件和代码" }
+            ]
+        };
+        
+        const benchmarkChecks = {
+            "HumanEval": [
+                { title: "检查代码执行环境", desc: "确保Python环境配置正确" },
+                { title: "注意数据污染", desc: "HumanEval数据污染严重，需要额外验证" }
+            ],
+            "MMLU": [
+                { title: "测试zero-shot和few-shot", desc: "对比不同提示词的效果" },
+                { title: "分学科分析", desc: "不要只看总分，分析各学科表现" }
+            ],
+            "MMLU-Pro": [
+                { title: "对比MMLU结果", desc: "计算下降幅度，分析原因" },
+                { title: "关注干扰项", desc: "分析模型在难干扰项上的表现" }
+            ],
+            "GPQA": [
+                { title: "明确人类基准", desc: "使用65%（专家）还是34%（非专家）" },
+                { title: "警惕数据污染", desc: "高分可能是数据污染而非真实能力" }
+            ],
+            "GSM8K": [
+                { title: "测试CoT效果", desc: "对比有无思维链的表现" },
+                { title: "考虑升级到MATH", desc: "GSM8K太简单，考虑用MATH" }
+            ],
+            "MATH": [
+                { title: "分难度分析", desc: "分析不同难度级别的表现" },
+                { title: "检查推理过程", desc: "不只看答案，也看推理步骤" }
+            ],
+            "SWE-bench": [
+                { title: "准备代码执行环境", desc: "需要Docker等容器环境" },
+                { title: "预留充足时间", desc: "SWE-bench评测耗时较长" }
+            ],
+            "Chatbot Arena": [
+                { title: "准备多样化测试", desc: "覆盖不同类型的对话场景" },
+                { title: "邀请多位评审", desc: "减少个人偏见" }
+            ]
+        };
+        
+        function generateChecklist() {
+            const name = document.getElementById('evalName').value || '未命名评测';
+            const date = document.getElementById('evalDate').value || new Date().toISOString().split('T')[0];
+            const person = document.getElementById('evalPerson').value || '未指定';
+            const notes = document.getElementById('evalNotes').value;
+            
+            // 获取选中的benchmark
+            const selectedBenchmarks = [];
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]:checked').forEach(cb => {
+                selectedBenchmarks.push(cb.value);
+            });
+            
+            // 生成标题和元信息
+            document.getElementById('outputTitle').textContent = name;
+            document.getElementById('outputMeta').innerHTML = `
+                <div><strong>日期：</strong>${date}</div>
+                <div><strong>评测人员：</strong>${person}</div>
+                ${selectedBenchmarks.length > 0 ? `<div><strong>Benchmark：</strong>${selectedBenchmarks.join(', ')}</div>` : ''}
+                ${notes ? `<div><strong>备注：</strong>${notes}</div>` : ''}
+            `;
+            
+            // 生成检查清单内容
+            let content = '';
+            
+            // 通用检查项
+            for (const [section, items] of Object.entries(checklistTemplates)) {
+                content += `<div class="checklist-section">
+                    <h3>${section}</h3>`;
+                
+                items.forEach((item, index) => {
+                    content += `
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check-${section}-${index}" onchange="updateProgress()">
+                            <div class="checklist-item-content">
+                                <div class="checklist-item-title">${item.title}</div>
+                                <div class="checklist-item-desc">${item.desc}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                content += '</div>';
+            }
+            
+            // Benchmark特定检查项
+            if (selectedBenchmarks.length > 0) {
+                content += `<div class="checklist-section">
+                    <h3>Benchmark特定检查</h3>`;
+                
+                selectedBenchmarks.forEach(bench => {
+                    if (benchmarkChecks[bench]) {
+                        content += `<div style="margin-bottom: 15px;"><strong>${bench}：</strong></div>`;
+                        benchmarkChecks[bench].forEach((item, index) => {
+                            content += `
+                                <div class="checklist-item">
+                                    <input type="checkbox" id="check-bench-${bench}-${index}" onchange="updateProgress()">
+                                    <div class="checklist-item-content">
+                                        <div class="checklist-item-title">${item.title}</div>
+                                        <div class="checklist-item-desc">${item.desc}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+                
+                content += '</div>';
+            }
+            
+            document.getElementById('checklistContent').innerHTML = content;
+            document.getElementById('checklistOutput').classList.add('show');
+            updateProgress();
+            
+            // 滚动到检查清单
+            document.getElementById('checklistOutput').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('#checklistContent input[type="checkbox"]');
+            const checked = document.querySelectorAll('#checklistContent input[type="checkbox"]:checked');
+            const progress = checkboxes.length > 0 ? (checked.length / checkboxes.length * 100).toFixed(0) : 0;
+            
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = progress + '%';
+            progressFill.textContent = progress + '%';
+        }
+        
+        function printChecklist() {
+            window.print();
+        }
+        
+        function resetForm() {
+            document.getElementById('evalName').value = '';
+            document.getElementById('evalDate').value = '';
+            document.getElementById('evalPerson').value = '';
+            document.getElementById('evalNotes').value = '';
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('checklistOutput').classList.remove('show');
+        }
+        
+        // 设置默认日期为今天
+        document.getElementById('evalDate').valueAsDate = new Date();
+    </script>
+</body>
+</html>

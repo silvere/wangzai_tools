@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token计数器 & 成本估算 💰</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .model-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .model-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .model-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .model-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .cost-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .cost-table th,
+        .cost-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .cost-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .cost-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .price-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .input-group input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .examples {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Token计数器 & 成本估算</h1>
+            <p>实时计算token数量，精准估算API成本</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📝 输入文本</h2>
+                <textarea id="inputText" placeholder="在这里输入或粘贴你的文本...&#10;&#10;支持：&#10;- Prompt模板&#10;- 对话历史&#10;- 评测数据集&#10;- 任何需要计算token的文本"></textarea>
+                
+                <div class="examples">
+                    <button class="example-btn" onclick="loadExample('short')">短文本示例</button>
+                    <button class="example-btn" onclick="loadExample('medium')">中等文本示例</button>
+                    <button class="example-btn" onclick="loadExample('long')">长文本示例</button>
+                    <button class="example-btn" onclick="loadExample('code')">代码示例</button>
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="clearText()">清空</button>
+                    <button class="btn btn-primary" onclick="copyStats()">复制统计</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Token统计</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">字符数</div>
+                        <div class="stat-value" id="charCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">单词数</div>
+                        <div class="stat-value" id="wordCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">估算Token (英文)</div>
+                        <div class="stat-value" id="tokenCountEn">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">估算Token (中文)</div>
+                        <div class="stat-value" id="tokenCountZh">0</div>
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 20px;">💵 成本估算</h2>
+                <div class="model-selector">
+                    <button class="model-btn active" data-model="gpt4">GPT-4</button>
+                    <button class="model-btn" data-model="gpt35">GPT-3.5</button>
+                    <button class="model-btn" data-model="claude">Claude</button>
+                    <button class="model-btn" data-model="custom">自定义</button>
+                </div>
+
+                <div class="price-input" id="priceInput" style="display: none;">
+                    <div class="input-group">
+                        <label>输入价格 ($/1M tokens)</label>
+                        <input type="number" id="inputPrice" value="30" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>输出价格 ($/1M tokens)</label>
+                        <input type="number" id="outputPrice" value="60" step="0.1">
+                    </div>
+                </div>
+
+                <table class="cost-table">
+                    <thead>
+                        <tr>
+                            <th>场景</th>
+                            <th>Token数</th>
+                            <th>成本 (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costTableBody">
+                        <tr>
+                            <td>单次输入</td>
+                            <td id="singleInput">0</td>
+                            <td id="singleInputCost">$0.000</td>
+                        </tr>
+                        <tr>
+                            <td>单次输出 (同等长度)</td>
+                            <td id="singleOutput">0</td>
+                            <td id="singleOutputCost">$0.000</td>
+                        </tr>
+                        <tr>
+                            <td>100次调用</td>
+                            <td id="batch100">0</td>
+                            <td id="batch100Cost">$0.000</td>
+                        </tr>
+                        <tr>
+                            <td>1000次调用</td>
+                            <td id="batch1000">0</td>
+                            <td id="batch1000Cost">$0.000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模型定价 ($/1M tokens)
+        const modelPricing = {
+            gpt4: { input: 30, output: 60 },
+            gpt35: { input: 0.5, output: 1.5 },
+            claude: { input: 15, output: 75 },
+            custom: { input: 30, output: 60 }
+        };
+
+        let currentModel = 'gpt4';
+
+        // Token估算函数
+        function estimateTokens(text, language = 'en') {
+            if (!text) return 0;
+            
+            if (language === 'en') {
+                // 英文：约4个字符 = 1 token
+                return Math.ceil(text.length / 4);
+            } else {
+                // 中文：约1.5个字符 = 1 token
+                return Math.ceil(text.length / 1.5);
+            }
+        }
+
+        // 检测文本主要语言
+        function detectLanguage(text) {
+            const chineseChars = text.match(/[\u4e00-\u9fa5]/g);
+            const chineseRatio = chineseChars ? chineseChars.length / text.length : 0;
+            return chineseRatio > 0.3 ? 'zh' : 'en';
+        }
+
+        // 更新统计
+        function updateStats() {
+            const text = document.getElementById('inputText').value;
+            const charCount = text.length;
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const language = detectLanguage(text);
+            const tokenCountEn = estimateTokens(text, 'en');
+            const tokenCountZh = estimateTokens(text, 'zh');
+
+            document.getElementById('charCount').textContent = charCount.toLocaleString();
+            document.getElementById('wordCount').textContent = wordCount.toLocaleString();
+            document.getElementById('tokenCountEn').textContent = tokenCountEn.toLocaleString();
+            document.getElementById('tokenCountZh').textContent = tokenCountZh.toLocaleString();
+
+            updateCost(language === 'zh' ? tokenCountZh : tokenCountEn);
+        }
+
+        // 更新成本
+        function updateCost(tokens) {
+            const pricing = currentModel === 'custom' 
+                ? { 
+                    input: parseFloat(document.getElementById('inputPrice').value) || 30,
+                    output: parseFloat(document.getElementById('outputPrice').value) || 60
+                  }
+                : modelPricing[currentModel];
+
+            const inputCost = (tokens / 1000000) * pricing.input;
+            const outputCost = (tokens / 1000000) * pricing.output;
+            const roundTripCost = inputCost + outputCost;
+
+            document.getElementById('singleInput').textContent = tokens.toLocaleString();
+            document.getElementById('singleInputCost').textContent = `$${inputCost.toFixed(6)}`;
+            
+            document.getElementById('singleOutput').textContent = tokens.toLocaleString();
+            document.getElementById('singleOutputCost').textContent = `$${outputCost.toFixed(6)}`;
+            
+            document.getElementById('batch100').textContent = (tokens * 100).toLocaleString();
+            document.getElementById('batch100Cost').textContent = `$${(roundTripCost * 100).toFixed(3)}`;
+            
+            document.getElementById('batch1000').textContent = (tokens * 1000).toLocaleString();
+            document.getElementById('batch1000Cost').textContent = `$${(roundTripCost * 1000).toFixed(2)}`;
+        }
+
+        // 模型选择
+        document.querySelectorAll('.model-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentModel = this.dataset.model;
+                
+                const priceInput = document.getElementById('priceInput');
+                priceInput.style.display = currentModel === 'custom' ? 'grid' : 'none';
+                
+                updateStats();
+            });
+        });
+
+        // 自定义价格输入
+        document.getElementById('inputPrice').addEventListener('input', updateStats);
+        document.getElementById('outputPrice').addEventListener('input', updateStats);
+
+        // 文本输入监听
+        document.getElementById('inputText').addEventListener('input', updateStats);
+
+        // 示例文本
+        const examples = {
+            short: "你好，请帮我分析一下这段代码的时间复杂度。",
+            medium: `请评估以下Python代码的性能：
+
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+这个实现有什么问题？如何优化？`,
+            long: `# 大模型评测任务说明
+
+## 背景
+我们需要对多个大语言模型进行全面评测，包括但不限于：
+- GPT-4、Claude 3.5、Gemini Pro
+- 国产模型：文心一言、通义千问、智谱GLM
+
+## 评测维度
+1. 代码生成能力 (HumanEval, MBPP)
+2. 数学推理能力 (GSM8K, MATH)
+3. 常识推理 (MMLU, C-Eval)
+4. 指令遵循 (IFEval)
+5. 长文本理解 (LongBench)
+
+## 评测流程
+1. 准备测试数据集
+2. 批量调用API
+3. 收集模型输出
+4. 自动化评分
+5. 生成对比报告
+
+请根据以上要求，设计详细的评测方案。`,
+            code: `import torch
+import torch.nn as nn
+
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model, n_heads, d_ff, dropout=0.1):
+        super().__init__()
+        self.attention = nn.MultiheadAttention(d_model, n_heads, dropout=dropout)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.feed_forward = nn.Sequential(
+            nn.Linear(d_model, d_ff),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_ff, d_model)
+        )
+        self.dropout = nn.Dropout(dropout)
+    
+    def forward(self, x, mask=None):
+        attn_out, _ = self.attention(x, x, x, attn_mask=mask)
+        x = self.norm1(x + self.dropout(attn_out))
+        ff_out = self.feed_forward(x)
+        x = self.norm2(x + self.dropout(ff_out))
+        return x`
+        };
+
+        function loadExample(type) {
+            document.getElementById('inputText').value = examples[type];
+            updateStats();
+        }
+
+        function clearText() {
+            document.getElementById('inputText').value = '';
+            updateStats();
+        }
+
+        function copyStats() {
+            const text = document.getElementById('inputText').value;
+            const charCount = document.getElementById('charCount').textContent;
+            const wordCount = document.getElementById('wordCount').textContent;
+            const tokenCountEn = document.getElementById('tokenCountEn').textContent;
+            const tokenCountZh = document.getElementById('tokenCountZh').textContent;
+            const singleInputCost = document.getElementById('singleInputCost').textContent;
+            const batch100Cost = document.getElementById('batch100Cost').textContent;
+            const batch1000Cost = document.getElementById('batch1000Cost').textContent;
+
+            const stats = `Token统计报告
+================
+字符数: ${charCount}
+单词数: ${wordCount}
+Token数 (英文估算): ${tokenCountEn}
+Token数 (中文估算): ${tokenCountZh}
+
+成本估算 (${currentModel.toUpperCase()})
+================
+单次输入: ${singleInputCost}
+100次调用: ${batch100Cost}
+1000次调用: ${batch1000Cost}`;
+
+            navigator.clipboard.writeText(stats).then(() => {
+                alert('统计信息已复制到剪贴板！');
+            });
+        }
+
+        // 初始化
+        updateStats();
+    </script>
+</body>
+</html>

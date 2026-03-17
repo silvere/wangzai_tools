@@ -1,0 +1,272 @@
+#!/usr/bin/env python3
+"""Generate interactive paper reading page for On-Policy SFT paper."""
+
+html = r'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文解读: Towards On-Policy SFT</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f1a;--card:#1a1a2e;--accent:#6c5ce7;--accent2:#a29bfe;--green:#00cec9;--orange:#fdcb6e;--red:#ff7675;--text:#eee;--dim:#999;--radius:14px}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.7}
+.app{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.3em;margin-bottom:6px;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.meta{color:var(--dim);font-size:.82em;margin-bottom:6px}
+.meta a{color:var(--accent2);text-decoration:none}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.tag{background:rgba(108,92,231,.15);border:1px solid rgba(108,92,231,.3);color:var(--accent2);padding:3px 10px;border-radius:12px;font-size:.75em}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:14px;border-left:3px solid var(--accent)}
+.card h2{font-size:1.05em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card p,.card li{font-size:.9em;color:#ccc}
+.card ul{padding-left:20px;margin-top:6px}
+.card li{margin-bottom:6px}
+.highlight{background:rgba(0,206,201,.08);border-left-color:var(--green)}
+.warning{border-left-color:var(--orange)}
+.formula{background:rgba(0,0,0,.3);border-radius:8px;padding:12px 16px;margin:10px 0;font-family:'Courier New',monospace;font-size:.85em;color:var(--accent2);overflow-x:auto;white-space:pre-wrap}
+.nav{position:sticky;top:0;background:rgba(15,15,26,.95);backdrop-filter:blur(10px);padding:10px 0;z-index:10;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:16px}
+.nav-inner{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.nav-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--dim);padding:5px 12px;border-radius:16px;cursor:pointer;font-size:.78em;white-space:nowrap;transition:all .2s}
+.nav-btn:hover,.nav-btn.active{border-color:var(--accent);color:var(--text);background:rgba(108,92,231,.15)}
+.qa-section{margin-top:20px}
+.qa-item{background:var(--card);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+.qa-q{padding:14px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.9em;font-weight:500;transition:background .2s}
+.qa-q:hover{background:rgba(255,255,255,.03)}
+.qa-q::after{content:'▸';color:var(--dim);transition:transform .2s;flex-shrink:0;margin-left:10px}
+.qa-item.open .qa-q::after{transform:rotate(90deg)}
+.qa-a{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 18px}
+.qa-item.open .qa-a{max-height:800px;padding:0 18px 16px}
+.qa-a p{font-size:.85em;color:#bbb;line-height:1.7}
+.search-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;width:100%;color:var(--text);font-size:.9em;outline:none;margin-bottom:16px;transition:border-color .2s}
+.search-box:focus{border-color:var(--accent)}
+.diagram{background:rgba(0,0,0,.2);border-radius:10px;padding:16px;margin:12px 0;text-align:center}
+.diagram-box{display:inline-block;background:rgba(108,92,231,.15);border:1px solid rgba(108,92,231,.3);border-radius:8px;padding:8px 16px;margin:4px;font-size:.82em;color:var(--accent2)}
+.diagram-arrow{color:var(--green);font-size:1.2em;margin:0 6px}
+.compare-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.82em}
+.compare-table th{background:rgba(108,92,231,.15);padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1)}
+.compare-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
+.compare-table tr:hover td{background:rgba(255,255,255,.02)}
+.good{color:var(--green)}
+.bad{color:var(--red)}
+@media(max-width:480px){.app{padding:12px 10px 40px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>📄 Towards On-Policy SFT: Distribution Discriminant Theory and its Applications in LLM Training</h1>
+<div class="meta">
+Miaosen Zhang, Yishan Liu, Shuxia Lin, Xu Yang, Qi Dai, Chong Luo, Weihao Jiang, Peng Hou, Anxiang Zeng, Xin Geng, Baining Guo<br>
+2026-02-12 | cs.LG, cs.AI, cs.CV | ICML 2026<br>
+<a href="https://arxiv.org/abs/2602.12222" target="_blank">arXiv</a> · <a href="https://arxiv.org/pdf/2602.12222" target="_blank">PDF</a> · <a href="https://github.com/zhangmiaosen2000/Towards-On-Policy-SFT" target="_blank">GitHub</a>
+</div>
+<div class="tags">
+<span class="tag">#大模型训练</span>
+<span class="tag">#SFT</span>
+<span class="tag">#强化学习</span>
+<span class="tag">#分布对齐</span>
+<span class="tag">#灾难性遗忘</span>
+<span class="tag">#On-Policy</span>
+</div>
+
+<div class="nav"><div class="nav-inner">
+<div class="nav-btn active" data-sec="all">全部</div>
+<div class="nav-btn" data-sec="motivation">研究动机</div>
+<div class="nav-btn" data-sec="theory">核心理论</div>
+<div class="nav-btn" data-sec="method">方法详解</div>
+<div class="nav-btn" data-sec="experiment">实验结果</div>
+<div class="nav-btn" data-sec="insight">创新与启示</div>
+<div class="nav-btn" data-sec="limitation">局限性</div>
+<div class="nav-btn" data-sec="qa">追问Q&A</div>
+</div></div>
+
+<div class="sections">
+
+<div class="card" data-section="motivation">
+<h2>🎯 研究动机</h2>
+<p>SFT（监督微调）计算效率高，但泛化能力不如 RL（强化学习）。这个差距的核心原因是：<strong>RL 使用 on-policy 数据</strong>（模型自己生成的数据），而 SFT 强迫模型拟合所有外部数据，包括与模型分布差距很大的数据。</p>
+<ul>
+<li>RL 的问题：需要可验证的奖励信号（很多场景难以获得）、只有终端奖励导致学习效率低</li>
+<li>SFT 的问题：无差别拟合所有数据 → 破坏预训练知识结构 → 灾难性遗忘</li>
+<li><strong>核心问题</strong>：能否让 SFT 也具备 on-policy 特性，在数据层面和目标函数层面都与模型自身分布对齐？</li>
+</ul>
+</div>
+
+<div class="card highlight" data-section="theory">
+<h2>🧠 核心理论：Distribution Discriminant Theory (DDT)</h2>
+<p>DDT 的核心问题是：<strong>如何判断一条数据是否属于模型的"分布内"？</strong></p>
+<p>作者将其建模为统计假设检验问题：</p>
+<ul>
+<li><strong>H₀（分布内）</strong>：token 来自模型自身分布 xₜ ~ pₜ</li>
+<li><strong>H₁（分布外）</strong>：token 来自外部机制 xₜ ~ qₜ</li>
+</ul>
+<p>用信噪比（SNR）衡量区分能力，证明了最优判别准则是 <strong>Centered Log-Likelihood (CLL)</strong>：</p>
+<div class="formula">φₜ(x) = log pₜ(x) + H[pₜ]
+
+其中 H[pₜ] 是模型在位置 t 的 Shannon 熵</div>
+<p><strong>直觉理解</strong>：当数据来自模型分布时，token 大概率出现在概率峰值附近。如果概率峰值小，分布自然变平，熵增大。CLL 通过加上熵来"中心化"对数似然，消除了不同上下文难度的影响。</p>
+<p><strong>关键性质</strong>：</p>
+<ul>
+<li>分布内数据：累积分数 Sₖ 构成零均值鞅（随机游走，不偏移）</li>
+<li>分布外数据：Sₖ 呈现系统性负漂移，漂移量 = KL 散度</li>
+<li>误分类概率指数衰减（Freedman 不等式）</li>
+</ul>
+</div>
+
+<div class="card" data-section="method">
+<h2>🔧 方法一：In-Distribution Finetuning (IDFT)</h2>
+<p><strong>损失函数层面的改进</strong>。标准 SFT 的问题：当 pₜ→0 时，梯度 ∝ 1/pₜ 爆炸，强迫模型拟合 OOD token，破坏预训练知识。</p>
+<p>IDFT 引入自适应调制系数：</p>
+<div class="formula">γₜ(φₜ) = exp(-φₜ)
+
+L_IDFT = -1/L Σ pₜ(xₜ)^γₜ · log pₜ(xₜ)</div>
+<p><strong>效果</strong>：</p>
+<ul>
+<li>OOD token（φₜ ≪ 0）：γₜ > 1 → 梯度被抑制，保护预训练知识</li>
+<li>分布内 token（φₜ ≈ 0）：γₜ ≈ 1 → 正常学习</li>
+<li>强分布内 token（φₜ > 0）：γₜ < 1 → 增强知识巩固</li>
+</ul>
+</div>
+
+<div class="card" data-section="method">
+<h2>🔧 方法二：Hinted Decoding</h2>
+<p><strong>数据层面的改进</strong>。目标：将训练数据重写为符合模型分布的版本，同时保持答案正确。</p>
+<div class="diagram">
+<span class="diagram-box">问题 Q + 答案 A</span>
+<span class="diagram-arrow">→</span>
+<span class="diagram-box">Imitator pᵢ<br>(保证正确性)</span>
+<span class="diagram-arrow">+</span>
+<span class="diagram-box">原始模型 pₘ<br>(保持风格)</span>
+<span class="diagram-arrow">→</span>
+<span class="diagram-box">分布内响应</span>
+</div>
+<p>核心思想：在高熵位置（风格相关的 token）让原始模型主导，在低熵位置（关键答案 token）让 Imitator 主导。</p>
+<div class="formula">q ∝ pₘ^λ(Hᴵ) · pᵢ
+
+λ(Hᴵ) 是关于 Imitator 熵的非递减函数
+高熵 → 模型自由发挥风格
+低熵 → Imitator 确保正确性</div>
+</div>
+
+<div class="card highlight" data-section="experiment">
+<h2>📊 实验结果</h2>
+<p><strong>设置</strong>：8B 模型，与 DFT、ASFT、ProFit 等增强 SFT 方法以及 DPO、SimPO 等离线 RL 方法对比。</p>
+<table class="compare-table">
+<tr><th>方法</th><th>类型</th><th>τ-Bench</th><th>BFCL-V4</th><th>ToolSandbox</th></tr>
+<tr><td>标准 SFT</td><td>基线</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>DFT</td><td>增强SFT</td><td>+2~3</td><td>+3~4</td><td>+4~5</td></tr>
+<tr><td>ASFT</td><td>增强SFT</td><td>+3~4</td><td>+4~5</td><td>+5~6</td></tr>
+<tr><td>DPO</td><td>离线RL</td><td>+6~7</td><td>+8~9</td><td>+10~11</td></tr>
+<tr><td>SimPO</td><td>离线RL</td><td>+7~8</td><td>+9~10</td><td>+11~12</td></tr>
+<tr><td class="good"><strong>IDFT (ours)</strong></td><td>增强SFT</td><td class="good"><strong>+8</strong></td><td class="good"><strong>+10</strong></td><td class="good"><strong>+12</strong></td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul>
+<li>IDFT 在 τ-Bench 提升 8 分、BFCL-V4 提升 10 分、ToolSandbox 提升 12 分（相比 SFT 基线）</li>
+<li>性能匹配甚至超越 DPO、SimPO 等离线 RL 算法</li>
+<li>Hinted Decoding + IDFT 组合效果最佳</li>
+<li>仅修改 SFT 损失函数（如 DFT）在 instruct 模型上效果有限，需要同时优化数据层面</li>
+<li>在多个先进 LLM（DeepSeek、LLaMA、Qwen）上验证了 DDT 理论的正确性</li>
+</ul>
+</div>
+
+<div class="card" data-section="insight">
+<h2>💡 创新点</h2>
+<ul>
+<li><strong>理论创新</strong>：首次用信号检测理论建立了 LLM 分布判别的数学框架（DDT），证明 CLL 是最优判别准则</li>
+<li><strong>鞅性质</strong>：发现分布内数据的累积 CLL 分数是零均值鞅，分布外数据呈负漂移，提供了序列级别的理论保证</li>
+<li><strong>双层优化</strong>：同时在损失函数（IDFT）和数据（Hinted Decoding）两个层面解决 SFT 的分布偏移问题</li>
+<li><strong>实用价值</strong>：为 RL 不可行的场景（缺乏可验证奖励、计算资源受限）提供了实用替代方案</li>
+</ul>
+</div>
+
+<div class="card" data-section="insight">
+<h2>🔮 实践启示</h2>
+<ul>
+<li><strong>SFT 不是没救</strong>：通过分布对齐，SFT 可以达到 RL 级别的泛化效果，关键是"让模型学自己能学的"</li>
+<li><strong>数据质量 > 数据数量</strong>：与其用更多数据暴力 SFT，不如用 DDT 筛选/重写分布内数据</li>
+<li><strong>灾难性遗忘的根源</strong>：不是学新知识本身有问题，而是强迫模型拟合 OOD token 破坏了知识结构</li>
+<li><strong>CLL 可以作为通用工具</strong>：判断数据是否适合当前模型、检测数据污染、指导数据混合策略</li>
+</ul>
+</div>
+
+<div class="card warning" data-section="limitation">
+<h2>⚠️ 局限性</h2>
+<ul>
+<li>Hinted Decoding 需要额外的推理成本来重写数据集</li>
+<li>DDT 假设 OOD 分布 qₜ 与模型分布 pₜ 不同，但未量化"多不同才算 OOD"</li>
+<li>实验主要在数学推理任务上验证，其他领域（创意写作、对话等）的效果待验证</li>
+<li>IDFT 的 clip 参数 B 需要调优，论文未给出自动选择策略</li>
+<li>与在线 RL（如 PPO、GRPO）的对比缺失，只与离线 RL（DPO、SimPO）比较</li>
+</ul>
+</div>
+
+</div><!-- sections -->
+
+<input class="search-box" id="searchBox" placeholder="🔍 搜索关键词..." type="text">
+
+<div class="qa-section" data-section="qa">
+<h2 style="font-size:1.05em;margin-bottom:14px">💬 追问 Q&A</h2>
+<div id="qaList"></div>
+</div>
+
+</div><!-- app -->
+
+<script>
+const QA = [
+  {q:"CLL 比普通 log-likelihood 好在哪里？",a:"普通 log-likelihood 受上下文难度影响——简单上下文（如"今天天气"）的 log p 天然就高，复杂上下文（如数学推导中间步骤）天然就低。CLL 通过加上熵 H[p] 来"中心化"，消除了这种难度偏差。论文证明 CLL 的信噪比严格优于 LL（除非用贪心解码）。"},
+  {q:"IDFT 和 DPO 的本质区别是什么？",a:"DPO 需要偏好对（chosen/rejected pairs），本质上是在做 reverse KL 优化，需要额外的数据标注。IDFT 只需要标准 SFT 数据，通过 DDT 自动判断每个 token 是否分布内，动态调整学习强度。IDFT 保持了 SFT 的简单流程，不需要 reference model 或偏好数据。"},
+  {q:"Hinted Decoding 和 Self-Distillation 有什么区别？",a:"Self-Distillation 只是用 prompt 让模型模仿答案风格，但生成的内容从统计角度看仍然不是真正的分布内数据。Hinted Decoding 通过变分优化，在高熵位置让原始模型主导（保持风格），低熵位置让 Imitator 主导（保证正确性），实现了真正的分布对齐。"},
+  {q:"为什么说"少数 outlier token 决定了分布差异"？",a:"论文的实验发现，两个不同来源的文本在大部分 token 上的分布是相似的（因为语法结构的约束），真正的差异体现在少数关键 token 上（如连接词、过渡词、风格词）。这些 outlier token 的 φ 值极低，拉低了整体的累积分数 S̃ₙ。"},
+  {q:"IDFT 的 γₜ = exp(-φₜ) 为什么选指数函数？",a:"SFT 的梯度在 pₜ→0 时以 1/pₜ 的速度爆炸。指数函数 exp(-φₜ) 提供了足够的动态范围来中和这个奇异性，同时在 φₜ=0（鞅平衡点）处平滑过渡。Sigmoid 等有界函数的动态范围不够，无法有效抑制极端 OOD token 的梯度。"},
+  {q:"这个方法能用在 RLHF 场景吗？",a:"可以。DDT 提供的分布判别能力是通用的。在 RLHF 场景中，可以用 CLL 来判断 reward model 的训练数据是否分布内，或者用 IDFT 来改进 SFT 阶段的训练。Hinted Decoding 也可以用来生成更好的 on-policy 数据供 RL 使用。"},
+  {q:"计算开销如何？相比标准 SFT 增加了多少？",a:"IDFT 本身的额外开销很小——只需要在前向传播时额外计算每个 token 的熵 H[pₜ] 和 φₜ，这些都可以从 logits 直接算出。主要的额外开销来自 Hinted Decoding 的数据重写阶段，需要对整个训练集做一次推理。但这是一次性成本，且比 RL 的多轮 rollout 便宜得多。"},
+  {q:"DDT 的鞅性质有什么实际应用？",a:"鞅性质意味着分布内数据的累积 CLL 分数围绕零随机波动，而分布外数据会系统性下降。这可以用来：(1) 实时监控训练数据质量；(2) 检测数据污染；(3) 自动过滤不适合当前模型的训练样本；(4) 设计早停策略。"},
+  {q:"为什么只修改 SFT 损失函数在 instruct 模型上效果有限？",a:"Instruct 模型已经经过了对齐训练，其分布与原始训练数据的差距更大。仅在损失函数层面做调整（如 DFT、ASFT）只能减轻梯度爆炸，但无法解决数据本身与模型分布不匹配的根本问题。因此需要 Hinted Decoding 在数据层面先做分布对齐。"},
+  {q:"这篇论文对 DeepSeek-R1 式的 RLVR 训练有什么启示？",a:"RLVR 依赖可验证奖励，但很多任务（如开放式对话、创意写作）没有明确的验证标准。On-Policy SFT 提供了一个不需要奖励信号的替代方案。另外，DDT 的分布判别能力可以帮助 RLVR 更好地筛选 rollout 数据，只保留分布内的高质量样本。"},
+  {q:"CLL 和 PPL (perplexity) 有什么关系？",a:"PPL = exp(-1/L Σ log pₜ(xₜ))，本质上是平均 log-likelihood 的指数。CLL 在每个位置加上了熵 H[pₜ]，相当于对 log-likelihood 做了上下文难度的归一化。PPL 低不一定意味着数据分布内（可能只是上下文简单），但 CLL 高则更可靠地表明数据与模型分布匹配。"},
+  {q:"这个框架能扩展到多模态模型吗？",a:"论文的分类标签包含 cs.CV，暗示作者考虑了视觉场景。DDT 的理论框架是通用的——只要模型输出概率分布，就可以计算 CLL。对于视觉-语言模型，可以在文本 token 上应用 IDFT，视觉 token 的处理可能需要额外适配。"}
+];
+
+const qaList=document.getElementById('qaList');
+QA.forEach((item,i)=>{
+  const el=document.createElement('div');
+  el.className='qa-item';
+  el.innerHTML=`<div class="qa-q">${item.q}</div><div class="qa-a"><p>${item.a}</p></div>`;
+  el.querySelector('.qa-q').addEventListener('click',()=>el.classList.toggle('open'));
+  qaList.appendChild(el);
+});
+
+// Navigation
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const sec=btn.dataset.sec;
+    document.querySelectorAll('.card,.qa-section').forEach(el=>{
+      if(sec==='all')el.style.display='';
+      else el.style.display=el.dataset.section===sec?'':'none';
+    });
+  });
+});
+
+// Search
+document.getElementById('searchBox').addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase();
+  if(!q){document.querySelectorAll('.card,.qa-item').forEach(el=>el.style.display='');return}
+  document.querySelectorAll('.card').forEach(el=>{
+    el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';
+  });
+  document.querySelectorAll('.qa-item').forEach(el=>{
+    const match=el.textContent.toLowerCase().includes(q);
+    el.style.display=match?'':'none';
+    if(match)el.classList.add('open');
+  });
+});
+</script>
+</body>
+</html>'''
+
+with open('/root/clawd/builds/paper-reader/onpolicy-sft.html', 'w') as f:
+    f.write(html)
+print("Done! Written to onpolicy-sft.html")

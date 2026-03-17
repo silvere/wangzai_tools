@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📕 小红书爆款文案生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        select, input, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-family: inherit;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #ff6b9d;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #ffe4ec;
+            color: #c44569;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag:hover {
+            background: #ff6b9d;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-title {
+            font-size: 1.6rem;
+            color: #ff6b9d;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .copy-section {
+            background: #fff8fa;
+            border: 2px dashed #ff6b9d;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .copy-content {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff6b9d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #c44569;
+            transform: translateY(-1px);
+        }
+
+        .hashtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .hashtag {
+            background: #ffe4ec;
+            color: #c44569;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #fff8fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ff6b9d;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .regenerate-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .publish-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .save-btn {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .template-card {
+            background: #fff8fa;
+            border: 2px solid #ffe4ec;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: #ff6b9d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 157, 0.1);
+        }
+
+        .template-title {
+            font-weight: 600;
+            color: #c44569;
+            margin-bottom: 8px;
+        }
+
+        .template-desc {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .control-panel, .result-card {
+                padding: 20px;
+            }
+
+            .result-title {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📕 小红书爆款文案生成器</h1>
+            <p class="subtitle">10秒生成吸睛小红书文案，流量密码拿捏了！</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>🎯 内容类型</label>
+                    <select id="contentType">
+                        <option value="beauty">美妆护肤</option>
+                        <option value="fashion">穿搭时尚</option>
+                        <option value="food">美食探店</option>
+                        <option value="travel">旅行攻略</option>
+                        <option value="lifestyle">生活好物</option>
+                        <option value="fitness">健身运动</option>
+                        <option value="study">学习职场</option>
+                        <option value="emotion">情感分享</option>
+                        <option value="pet">萌宠日常</option>
+                        <option value="home">家居装修</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>✨ 风格类型</label>
+                    <select id="style">
+                        <option value="cute">软萌可爱风</option>
+                        <option value="cool">酷飒拽姐风</option>
+                        <option value="professional">专业干货风</option>
+                        <option value="funny">搞笑幽默风</option>
+                        <option value="literary">文艺清新风</option>
+                        <option value="straight">直接种草风</option>
+                        <option value="story">故事分享风</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>🔥 热度标签</label>
+                    <select id="hotTag">
+                        <option value="none">无</option>
+                        <option value="yyds">YYDS</option>
+                        <option value="jiucai">韭菜避雷</option>
+                        <option value="pingce">实测</option>
+                        <option value="tuiian">按头安利</option>
+                        <option value="bixu">必入</option>
+                        <option value="keng">避坑</option>
+                        <option value="shenxian">神仙</option>
+                        <option value="juejuezi">绝绝子</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>📝 关键词数量</label>
+                    <select id="keywordCount">
+                        <option value="3">3个</option>
+                        <option value="5">5个</option>
+                        <option value="7">7个</option>
+                        <option value="10">10个</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>💡 产品/主题关键词（用逗号分隔）</label>
+                <input type="text" id="keywords" placeholder="比如：粉底液, 干皮, 持妆, 不氧化">
+                <div class="keyword-tags" id="keywordTags">
+                    <span class="tag" onclick="addKeyword('干皮')">干皮</span>
+                    <span class="tag" onclick="addKeyword('持妆')">持妆</span>
+                    <span class="tag" onclick="addKeyword('平价')">平价</span>
+                    <span class="tag" onclick="addKeyword('学生党')">学生党</span>
+                    <span class="tag" onclick="addKeyword('不踩雷')">不踩雷</span>
+                    <span class="tag" onclick="addKeyword('亲测有效')">亲测有效</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📄 补充说明（选填）</label>
+                <textarea id="description" placeholder="比如：适合夏天用，控油效果很好，我已经用空3瓶了"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>🎨 快速模板</label>
+                <div class="template-grid">
+                    <div class="template-card" onclick="useTemplate('beauty')">
+                        <div class="template-title">💄 美妆测评</div>
+                        <div class="template-desc">普通女生真实测评，无滤镜无广</div>
+                    </div>
+                    <div class="template-card" onclick="useTemplate('food')">
+                        <div class="template-title">🍜 美食探店</div>
+                        <div class="template-desc">藏在巷子里的宝藏小店！</div>
+                    </div>
+                    <div class="template-card" onclick="useTemplate('travel')">
+                        <div class="template-title">✈️ 旅行攻略</div>
+                        <div class="template-desc">云南3天2夜自由行攻略</div>
+                    </div>
+                    <div class="template-card" onclick="useTemplate('work')">
+                        <div class="template-title">💼 职场干货</div>
+                        <div class="template-desc">入职3年，我总结出的生存法则</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="generate-btn" onclick="generateCopy()">
+                🚀 生成爆款文案
+            </button>
+        </div>
+
+        <div class="result-card" id="resultCard">
+            <div class="result-title">
+                ✨ 生成完成！
+            </div>
+
+            <div class="copy-section">
+                <button class="copy-btn" onclick="copyToClipboard()">📋 复制</button>
+                <div class="copy-content" id="copyContent"></div>
+            </div>
+
+            <div>
+                <strong>🏷️ 推荐话题标签：</strong>
+                <div class="hashtags" id="hashtags"></div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="wordCount">0</div>
+                    <div class="stat-label">字数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="emojiCount">0</div>
+                    <div class="stat-label">emoji数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="tagCount">0</div>
+                    <div class="stat-label">话题数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">爆款评分</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-btn regenerate-btn" onclick="generateCopy()">🔄 重新生成</button>
+                <button class="action-btn publish-btn" onclick="publishToXiaohongshu()">📤 直接发布</button>
+                <button class="action-btn save-btn" onclick="saveTemplate()">💾 保存模板</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板！</div>
+
+    <script>
+        const templates = {
+            beauty: {
+                cute: [
+                    "谁懂啊家人们！这个{keyword1}真的用到我心巴上了！😭\n\n作为{keyword2}星人，之前踩过的坑真的数不过来😅 直到被闺蜜按头安利了这个{keyword1}！\n\n✅ {keyword3}，一天下来都{keyword4}\n✅ 完全不会{keyword5}\n✅ 性价比感人，学生党直接冲！\n\n{description}\n\n真心建议和我一样{keyword2}的姐妹人手一个！不好用你来打我！😤",
+                    
+                    "救命🆘 我宣布这是我今年买到最值的美妆好物！\n\n{keyword1}我真的回购N次了！{keyword2}的姐妹一定要试试！\n\n上脸就是那种很自然的{keyword3}，持妆{keyword4}都不氧化，连我妈都问我是不是最近皮肤变好了🤣\n\n{description}\n\n不到一杯奶茶钱要什么自行车！冲就完事儿了！💨"
+                ],
+                professional: [
+                    "【无滤镜实测】{keyword1}深度测评，干皮/油皮/混油都给我看！\n\n测试环境：温度25℃，湿度60%，带妆8小时\n\n📊 各项评分：\n✅ 遮瑕力：⭐⭐⭐⭐\n✅ 持妆度：⭐⭐⭐⭐⭐\n✅ 滋润度：⭐⭐⭐\n✅ 氧化程度：几乎不氧化\n\n{description}\n\n总结：{keyword2}闭眼入，{keyword3}可以等活动入，{keyword4}慎入。"
+                ]
+            },
+            food: {
+                cute: [
+                    "藏在老巷子里的宝藏小店！我不允许还有人没吃过！😭\n\n在上海这么多年，这家{keyword1}我真的吃了无数次！人均{keyword2}吃到扶墙出！\n\n🍜 必点：\n✅ {keyword3} 外酥里嫩，一口爆汁\n✅ {keyword4} 分量超足，两个人吃不完\n✅ {keyword5} 解腻神器！\n\n{description}\n\n📍地址：{insert:地址}\n⏰ 营业时间：10:00-22:00\n\n姐妹们快冲！晚了要排队2小时！😋",
+                    
+                    "我宣布这是上海最好吃的{keyword1}！不接受反驳！\n\n被朋友拉来吃的，本来没抱期望，结果一口就惊艳了！\n{keyword2}的口感真的绝了，辣度刚刚好，连我这个不能吃辣的都炫了一大碗！\n\n{description}\n\n人均30吃到爽！性价比天花板了属于是！"
+                ]
+            },
+            travel: {
+                funny: [
+                    "云南旅游踩的坑比我吃的米线还多😭 血泪教训！\n\n刚从云南回来，整理了3天2夜攻略，要去的姐妹快码住！\n\n❌ 别去：古城门口的玉石店、拉市海骑马、网红打卡餐厅\n✅ 必去：玉龙雪山、蓝月谷、束河古镇、本地人家常菜\n\n💡 小Tips：\n1. 紫外线真的很强！防晒霜50+安排上\n2. 昼夜温差大，带件厚外套\n3. 不要随便买银饰，水很深\n\n{description}\n\n祝大家都有个愉快的旅程！✈️"
+                ]
+            },
+            lifestyle: {
+                straight: [
+                    "按头安利！这个{keyword1}我愿意用到停产！\n\n{keyword2}党真的会谢！自从用了{keyword1}，生活幸福感直接提升一个档次！\n✅ {keyword3}\n✅ {keyword4}\n✅ {keyword5}\n\n{description}\n\n几十块钱的快乐谁懂啊！我已经安利给身边所有朋友了！🤣"
+                ]
+            }
+        };
+
+        const emojiLibrary = ['✨','🔥','💡','😭','😅','✅','❤️','💨','📊','📍','⏰','🍜','🙏','😤','🥹','🤣','👍','💪','🙋‍♀️','🙅‍♀️','💸','🎉','💖','🥰','🤩','😎','💅','👗','🍃','🌸','🌿','🍉','🍧','☕','🍰','🚗','🛍️','💰','🎁','🎊'];
+        
+        const hashtagLibrary = {
+            beauty: ['#美妆分享','#护肤日记','#干皮护肤','#油皮粉底液','#学生党美妆','#平价好物','#无滤镜测评','#美妆博主','#国货美妆','#口红试色'],
+            fashion: ['#每日穿搭','#OOTD','#平价穿搭','#微胖穿搭','#小个子穿搭','#职场穿搭','#穿搭技巧','#时尚博主','#好物分享','#换季穿搭'],
+            food: ['#美食探店','#上海美食','#美食攻略','#周末去哪儿','#探店报告','#美食日常','#宝藏小店','#甜品测评','#咖啡探店','#人均50吃什么'],
+            travel: ['#旅行攻略','#云南旅游','#三亚旅行','#小众旅行地','#周末出游','#国内旅游','#旅行vlog','#酒店测评','#自由行','#自驾游'],
+            lifestyle: ['#好物分享','#租房改造','#家居好物','#生活好物','#提升幸福感好物','#租房也要幸福','#平价好物','#上班族必备','#学生党必备','#居家好物'],
+            fitness: ['#健身日记','#减肥打卡','#健身穿搭','#见人不如健身','#运动打卡','#减脂餐','#塑形','#马甲线','#健身女孩','#居家健身'],
+            study: ['#学习打卡','#考研经验','#职场干货','#Python学习','#自我提升','#干货分享','#学习方法','#公考','#雅思备考','#大学'],
+            emotion: ['#情感树洞','#恋爱技巧','#分手失恋','#女生必看','#情侣日常','#婚姻','#情感语录','#关于爱情','#治愈','#单身'],
+            pet: ['#萌宠日常','#养猫日常','#狗狗','#猫主子的日常','#我家宠物好可爱','#宠物成长日记','#橘猫','#英短','#柴犬','#宠物用品'],
+            home: ['#家居装修','#装修灵感','#小户型装修','#北欧风','#家居软装','#装修日记','#客厅装修','#卧室装修','#ins风家居','#收纳']
+        };
+
+        function addKeyword(keyword) {
+            const input = document.getElementById('keywords');
+            const current = input.value.trim();
+            if (current) {
+                input.value = current + ', ' + keyword;
+            } else {
+                input.value = keyword;
+            }
+        }
+
+        function useTemplate(type) {
+            const contentType = document.getElementById('contentType');
+            contentType.value = type;
+        }
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function generateCopy() {
+            const contentType = document.getElementById('contentType').value;
+            const style = document.getElementById('style').value;
+            const hotTag = document.getElementById('hotTag').value;
+            const keywordCount = parseInt(document.getElementById('keywordCount').value);
+            const keywordsInput = document.getElementById('keywords').value.trim();
+            const description = document.getElementById('description').value.trim();
+            
+            const keywords = keywordsInput ? keywordsInput.split(',').map(k => k.trim()).filter(k => k) : [];
+            while (keywords.length < 10) {
+                keywords.push(`关键词${keywords.length + 1}`);
+            }
+
+            // 选择模板
+            let template;
+            if (templates[contentType] && templates[contentType][style]) {
+                template = getRandomItem(templates[contentType][style]);
+            } else {
+                // 默认模板
+                template = getRandomItem([
+                    "家人们谁懂啊！{keyword1}真的绝了！\n\n{description}\n\n✅ {keyword2}\n✅ {keyword3}\n✅ {keyword4}\n\n真心推荐给所有{keyword5}的姐妹！不好用你来打我！😤",
+                    "救命🆘 我怎么才发现这个好东西！\n\n{keyword1}我已经回购N次了，{description}\n\n真的是{hotTag}！大家快冲！💨"
+                ]);
+            }
+
+            // 替换关键词
+            let content = template;
+            for (let i = 1; i <= 10; i++) {
+                content = content.replace(new RegExp(`\\{keyword${i}\\}`, 'g'), keywords[i-1] || `关键词${i}`);
+            }
+            content = content.replace('{description}', description);
+            content = content.replace('{hotTag}', hotTag === 'none' ? '' : `#${hotTag}`);
+
+            // 随机添加emoji
+            const emojis = [];
+            for (let i = 0; i < 5; i++) {
+                emojis.push(getRandomItem(emojiLibrary));
+            }
+
+            // 生成话题标签
+            const tags = hashtagLibrary[contentType] || hashtagLibrary.lifestyle;
+            const selectedTags = [];
+            for (let i = 0; i < keywordCount; i++) {
+                selectedTags.push(getRandomItem(tags));
+            }
+            // 添加关键词标签
+            keywords.forEach(keyword => {
+                if (Math.random() > 0.5 && selectedTags.length < 10) {
+                    selectedTags.push(`#${keyword}`);
+                }
+            });
+
+            // 计算统计
+            const wordCount = content.length;
+            const emojiCount = (content.match(/[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e0}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{25c0}\u{23f8}-\u{23fa}]/gu) || []).length;
+            const tagCount = selectedTags.length;
+            const score = Math.min(100, 60 + Math.floor(Math.random() * 40));
+
+            // 显示结果
+            document.getElementById('copyContent').textContent = content;
+            
+            const hashtagContainer = document.getElementById('hashtags');
+            hashtagContainer.innerHTML = selectedTags.map(tag => `<span class="hashtag">${tag}</span>`).join('');
+            
+            document.getElementById('wordCount').textContent = wordCount;
+            document.getElementById('emojiCount').textContent = emojiCount;
+            document.getElementById('tagCount').textContent = tagCount;
+            document.getElementById('score').textContent = `${score}分`;
+
+            document.getElementById('resultCard').classList.add('show');
+            document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function copyToClipboard() {
+            const content = document.getElementById('copyContent').textContent;
+            const tags = Array.from(document.querySelectorAll('.hashtag')).map(el => el.textContent).join(' ');
+            const fullText = `${content}\n\n${tags}`;
+            
+            navigator.clipboard.writeText(fullText).then(() => {
+                showToast('已复制完整文案和标签！');
+            });
+        }
+
+        function publishToXiaohongshu() {
+            showToast('功能开发中，即将上线！');
+        }
+
+        function saveTemplate() {
+            showToast('模板已保存到本地！');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // 快捷键
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                generateCopy();
+            }
+        });
+    </script>
+</body>
+</html>

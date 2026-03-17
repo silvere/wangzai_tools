@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux 权限计算器 (chmod) 🔐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0ea5e9',
+                        secondary: '#0284c7',
+                        accent: '#d97706',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .permission-toggle {
+                @apply w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold cursor-pointer transition-all duration-200;
+            }
+            .permission-toggle.active {
+                @apply bg-primary text-white shadow-lg;
+            }
+            .permission-toggle.inactive {
+                @apply bg-slate-100 text-slate-400;
+            }
+            .permission-toggle:hover {
+                @apply scale-105;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-sky-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg">
+                        <i class="fa fa-key text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">Linux 权限计算器 (chmod) 🔐</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">完全本地运行 · 实时计算</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 权限值显示卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="text-center">
+                    <p class="text-sm text-slate-500 mb-2">数字权限 (八进制)</p>
+                    <p id="numericValue" class="text-4xl font-bold text-slate-800 font-mono">755</p>
+                    <button id="copyNumeric" class="mt-3 px-3 py-1.5 bg-sky-50 text-primary rounded-lg text-sm hover:bg-sky-100 transition btn-hover">
+                        <i class="fa fa-copy mr-1"></i>复制
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="text-center">
+                    <p class="text-sm text-slate-500 mb-2">符号权限</p>
+                    <p id="symbolicValue" class="text-4xl font-bold text-slate-800 font-mono">rwxr-xr-x</p>
+                    <button id="copySymbolic" class="mt-3 px-3 py-1.5 bg-sky-50 text-primary rounded-lg text-sm hover:bg-sky-100 transition btn-hover">
+                        <i class="fa fa-copy mr-1"></i>复制
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="text-center">
+                    <p class="text-sm text-slate-500 mb-2">完整命令</p>
+                    <p id="commandValue" class="text-lg font-semibold text-slate-800 font-mono break-all">chmod 755 filename</p>
+                    <button id="copyCommand" class="mt-3 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm hover:bg-green-100 transition btn-hover">
+                        <i class="fa fa-terminal mr-1"></i>复制命令
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 权限设置区域 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8">
+            <h2 class="text-xl font-semibold text-slate-800 mb-6 text-center">权限设置</h2>
+            
+            <!-- 表头 -->
+            <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center font-semibold text-slate-700">用户类型</div>
+                <div class="text-center font-semibold text-slate-700">读 (r) <span class="text-xs text-slate-500">4</span></div>
+                <div class="text-center font-semibold text-slate-700">写 (w) <span class="text-xs text-slate-500">2</span></div>
+                <div class="text-center font-semibold text-slate-700">执行 (x) <span class="text-xs text-slate-500">1</span></div>
+            </div>
+
+            <!-- 所有者 -->
+            <div class="grid grid-cols-4 gap-4 mb-6 items-center">
+                <div class="text-lg font-semibold text-slate-800">
+                    <i class="fa fa-user mr-2 text-primary"></i>所有者 (User)
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="user" data-perm="read" data-value="4">R</div>
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="user" data-perm="write" data-value="2">W</div>
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="user" data-perm="execute" data-value="1">X</div>
+                </div>
+            </div>
+
+            <!-- 用户组 -->
+            <div class="grid grid-cols-4 gap-4 mb-6 items-center">
+                <div class="text-lg font-semibold text-slate-800">
+                    <i class="fa fa-users mr-2 text-accent"></i>用户组 (Group)
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="group" data-perm="read" data-value="4">R</div>
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle inactive" data-type="group" data-perm="write" data-value="2">W</div>
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="group" data-perm="execute" data-value="1">X</div>
+                </div>
+            </div>
+
+            <!-- 其他用户 -->
+            <div class="grid grid-cols-4 gap-4 items-center">
+                <div class="text-lg font-semibold text-slate-800">
+                    <i class="fa fa-globe mr-2 text-secondary"></i>其他用户 (Other)
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="other" data-perm="read" data-value="4">R</div>
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle inactive" data-type="other" data-perm="write" data-value="2">W</div>
+                </div>
+                <div class="flex justify-center">
+                    <div class="permission-toggle active" data-type="other" data-perm="execute" data-value="1">X</div>
+                </div>
+            </div>
+
+            <!-- 特殊权限 -->
+            <div class="mt-8 pt-6 border-t border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">特殊权限 (可选)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label class="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                        <input type="checkbox" id="suid" class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded">
+                        <div>
+                            <p class="font-medium text-slate-800">SUID <span class="text-xs text-slate-500">4000</span></p>
+                            <p class="text-xs text-slate-500">执行时继承文件所有者权限</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                        <input type="checkbox" id="sgid" class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded">
+                        <div>
+                            <p class="font-medium text-slate-800">SGID <span class="text-xs text-slate-500">2000</span></p>
+                            <p class="text-xs text-slate-500">执行时继承文件所属组权限</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                        <input type="checkbox" id="sticky" class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded">
+                        <div>
+                            <p class="font-medium text-slate-800">Sticky Bit <span class="text-xs text-slate-500">1000</span></p>
+                            <p class="text-xs text-slate-500">仅所有者可删除/修改 (目录常用)</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 文件名输入 -->
+            <div class="mt-8 pt-6 border-t border-slate-200">
+                <label class="block text-sm font-medium text-slate-700 mb-2">文件名/目录名 (可选)</label>
+                <div class="flex space-x-2">
+                    <input 
+                        id="filenameInput" 
+                        type="text" 
+                        class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                        placeholder="输入文件名或目录名，如：file.sh、/var/www"
+                        value="filename"
+                    >
+                    <button id="resetBtn" class="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition btn-hover">
+                        <i class="fa fa-refresh mr-1"></i>重置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速预设 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fa fa-bookmark mr-2 text-primary"></i>常用权限预设
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="777">
+                    <p class="font-medium text-slate-800">777</p>
+                    <p class="text-xs text-slate-500 mt-1">rwxrwxrwx</p>
+                    <p class="text-xs text-slate-500">所有用户完全权限</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="755">
+                    <p class="font-medium text-slate-800">755</p>
+                    <p class="text-xs text-slate-500 mt-1">rwxr-xr-x</p>
+                    <p class="text-xs text-slate-500">可执行文件/目录默认</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="644">
+                    <p class="font-medium text-slate-800">644</p>
+                    <p class="text-xs text-slate-500 mt-1">rw-r--r--</p>
+                    <p class="text-xs text-slate-500">普通文件默认</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="600">
+                    <p class="font-medium text-slate-800">600</p>
+                    <p class="text-xs text-slate-500 mt-1">rw-------</p>
+                    <p class="text-xs text-slate-500">SSH密钥、敏感文件</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="700">
+                    <p class="font-medium text-slate-800">700</p>
+                    <p class="text-xs text-slate-500 mt-1">rwx------</p>
+                    <p class="text-xs text-slate-500">仅所有者可读写执行</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="750">
+                    <p class="font-medium text-slate-800">750</p>
+                    <p class="text-xs text-slate-500 mt-1">rwxr-x---</p>
+                    <p class="text-xs text-slate-500">所有者和组可读执行</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="664">
+                    <p class="font-medium text-slate-800">664</p>
+                    <p class="text-xs text-slate-500 mt-1">rw-rw-r--</p>
+                    <p class="text-xs text-slate-500">共享文件，组可写</p>
+                </button>
+                <button class="preset-btn p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-sky-50 hover:border-sky-300 transition text-left" data-preset="1777">
+                    <p class="font-medium text-slate-800">1777</p>
+                    <p class="text-xs text-slate-500 mt-1">rwxrwxrwt</p>
+                    <p class="text-xs text-slate-500">临时目录，粘滞位</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- 权限说明 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fa fa-info-circle mr-2 text-primary"></i>权限说明
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
+                <div>
+                    <h3 class="font-medium text-slate-800 mb-2">文件权限</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-start">
+                            <span class="text-primary font-semibold mr-2">r (读):</span>
+                            <span>可以读取文件内容，查看文件信息</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-primary font-semibold mr-2">w (写):</span>
+                            <span>可以修改文件内容，重命名、删除文件</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-primary font-semibold mr-2">x (执行):</span>
+                            <span>可以执行文件（脚本、二进制程序）</span>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-medium text-slate-800 mb-2">目录权限</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-start">
+                            <span class="text-primary font-semibold mr-2">r (读):</span>
+                            <span>可以列出目录下的文件列表</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-primary font-semibold mr-2">w (写):</span>
+                            <span>可以在目录中创建、删除、重命名文件</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-primary font-semibold mr-2">x (执行):</span>
+                            <span>可以进入目录，访问目录下的文件</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-6 pt-6 border-t border-slate-200">
+                <h3 class="font-medium text-slate-800 mb-2">特殊权限说明</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600">
+                    <div>
+                        <p class="font-semibold text-slate-700">SUID (Set User ID)</p>
+                        <p class="mt-1">文件执行时，进程的有效用户ID变为文件所有者的ID，而非执行者的ID。常用于passwd等需要特殊权限的程序。</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-700">SGID (Set Group ID)</p>
+                        <p class="mt-1">文件执行时继承所属组权限；目录中创建的文件会自动继承目录的组权限，常用于共享目录。</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-700">Sticky Bit (粘滞位)</p>
+                        <p class="mt-1">设置在目录上时，仅目录所有者、文件所有者和root可以删除或移动目录中的文件，常用于/tmp等公共目录。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示信息 -->
+        <div id="successAlert" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-check-circle mr-2"></i>
+                <span id="successMessage">复制成功！</span>
+            </div>
+        </div>
+
+        <div id="errorAlert" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                <span id="errorMessage">操作失败，请重试。</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>💡 旺仔工具百宝箱 - Linux 权限计算器 | 完全本地运行，无需网络</p>
+            <p class="mt-2">运维工程师、后端开发者必备神器，再也不用死记硬背权限数字了！</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM 元素
+        const permissionToggles = document.querySelectorAll('.permission-toggle');
+        const numericValueEl = document.getElementById('numericValue');
+        const symbolicValueEl = document.getElementById('symbolicValue');
+        const commandValueEl = document.getElementById('commandValue');
+        const copyNumericBtn = document.getElementById('copyNumeric');
+        const copySymbolicBtn = document.getElementById('copySymbolic');
+        const copyCommandBtn = document.getElementById('copyCommand');
+        const suidCheckbox = document.getElementById('suid');
+        const sgidCheckbox = document.getElementById('sgid');
+        const stickyCheckbox = document.getElementById('sticky');
+        const filenameInput = document.getElementById('filenameInput');
+        const resetBtn = document.getElementById('resetBtn');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // 权限状态
+        let permissions = {
+            user: { read: true, write: true, execute: true },
+            group: { read: true, write: false, execute: true },
+            other: { read: true, write: false, execute: true }
+        };
+
+        // 显示成功提示
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successAlert.classList.remove('hidden');
+            setTimeout(() => {
+                successAlert.classList.add('hidden');
+            }, 2000);
+        }
+
+        // 显示错误提示
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => {
+                errorAlert.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 计算权限值
+        function calculatePermissions() {
+            // 计算基础权限
+            let userValue = (permissions.user.read ? 4 : 0) + (permissions.user.write ? 2 : 0) + (permissions.user.execute ? 1 : 0);
+            let groupValue = (permissions.group.read ? 4 : 0) + (permissions.group.write ? 2 : 0) + (permissions.group.execute ? 1 : 0);
+            let otherValue = (permissions.other.read ? 4 : 0) + (permissions.other.write ? 2 : 0) + (permissions.other.execute ? 1 : 0);
+            
+            // 计算特殊权限
+            let specialValue = 0;
+            if (suidCheckbox.checked) specialValue += 4;
+            if (sgidCheckbox.checked) specialValue += 2;
+            if (stickyCheckbox.checked) specialValue += 1;
+
+            // 生成八进制值
+            let numericValue;
+            if (specialValue > 0) {
+                numericValue = `${specialValue}${userValue}${groupValue}${otherValue}`;
+            } else {
+                numericValue = `${userValue}${groupValue}${otherValue}`;
+            }
+
+            // 生成符号权限
+            const userSymbol = `${permissions.user.read ? 'r' : '-'}${permissions.user.write ? 'w' : '-'}${getExecuteSymbol('user')}`;
+            const groupSymbol = `${permissions.group.read ? 'r' : '-'}${permissions.group.write ? 'w' : '-'}${getExecuteSymbol('group')}`;
+            const otherSymbol = `${permissions.other.read ? 'r' : '-'}${permissions.other.write ? 'w' : '-'}${getExecuteSymbol('other')}`;
+            const symbolicValue = `${userSymbol}${groupSymbol}${otherSymbol}`;
+
+            // 更新显示
+            numericValueEl.textContent = numericValue;
+            symbolicValueEl.textContent = symbolicValue;
+            
+            // 更新命令
+            const filename = filenameInput.value.trim() || 'filename';
+            commandValueEl.textContent = `chmod ${numericValue} ${filename}`;
+
+            return { numericValue, symbolicValue };
+        }
+
+        // 获取执行位符号（处理特殊权限）
+        function getExecuteSymbol(type) {
+            const hasExecute = permissions[type].execute;
+            if (type === 'user' && suidCheckbox.checked) {
+                return hasExecute ? 's' : 'S';
+            }
+            if (type === 'group' && sgidCheckbox.checked) {
+                return hasExecute ? 's' : 'S';
+            }
+            if (type === 'other' && stickyCheckbox.checked) {
+                return hasExecute ? 't' : 'T';
+            }
+            return hasExecute ? 'x' : '-';
+        }
+
+        // 切换权限
+        function togglePermission(type, perm) {
+            permissions[type][perm] = !permissions[type][perm];
+            
+            // 更新UI
+            const toggle = document.querySelector(`[data-type="${type}"][data-perm="${perm}"]`);
+            if (permissions[type][perm]) {
+                toggle.classList.remove('inactive');
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+                toggle.classList.add('inactive');
+            }
+
+            calculatePermissions();
+        }
+
+        // 应用预设权限
+        function applyPreset(presetValue) {
+            // 处理4位权限（包含特殊权限）
+            let numeric = presetValue.toString();
+            let special = 0;
+            let user, group, other;
+
+            if (numeric.length === 4) {
+                special = parseInt(numeric[0]);
+                user = parseInt(numeric[1]);
+                group = parseInt(numeric[2]);
+                other = parseInt(numeric[3]);
+            } else {
+                user = parseInt(numeric[0]);
+                group = parseInt(numeric[1]);
+                other = parseInt(numeric[2]);
+            }
+
+            // 设置特殊权限
+            suidCheckbox.checked = (special & 4) !== 0;
+            sgidCheckbox.checked = (special & 2) !== 0;
+            stickyCheckbox.checked = (special & 1) !== 0;
+
+            // 设置用户权限
+            permissions.user.read = (user & 4) !== 0;
+            permissions.user.write = (user & 2) !== 0;
+            permissions.user.execute = (user & 1) !== 0;
+
+            // 设置组权限
+            permissions.group.read = (group & 4) !== 0;
+            permissions.group.write = (group & 2) !== 0;
+            permissions.group.execute = (group & 1) !== 0;
+
+            // 设置其他用户权限
+            permissions.other.read = (other & 4) !== 0;
+            permissions.other.write = (other & 2) !== 0;
+            permissions.other.execute = (other & 1) !== 0;
+
+            // 更新所有toggle的UI
+            updateToggleUI();
+
+            calculatePermissions();
+            showSuccess(`已应用预设权限 ${presetValue}`);
+        }
+
+        // 更新所有toggle的UI状态
+        function updateToggleUI() {
+            for (const type in permissions) {
+                for (const perm in permissions[type]) {
+                    const toggle = document.querySelector(`[data-type="${type}"][data-perm="${perm}"]`);
+                    if (permissions[type][perm]) {
+                        toggle.classList.remove('inactive');
+                        toggle.classList.add('active');
+                    } else {
+                        toggle.classList.remove('active');
+                        toggle.classList.add('inactive');
+                    }
+                }
+            }
+        }
+
+        // 重置为默认值
+        function resetToDefault() {
+            applyPreset('755');
+            filenameInput.value = 'filename';
+            showSuccess('已重置为默认权限');
+        }
+
+        // 事件监听
+        permissionToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const type = toggle.getAttribute('data-type');
+                const perm = toggle.getAttribute('data-perm');
+                togglePermission(type, perm);
+            });
+        });
+
+        // 特殊权限变化
+        suidCheckbox.addEventListener('change', calculatePermissions);
+        sgidCheckbox.addEventListener('change', calculatePermissions);
+        stickyCheckbox.addEventListener('change', calculatePermissions);
+
+        // 文件名变化
+        filenameInput.addEventListener('input', calculatePermissions);
+
+        // 复制按钮
+        copyNumericBtn.addEventListener('click', () => {
+            const text = numericValueEl.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showSuccess('数字权限已复制到剪贴板');
+            });
+        });
+
+        copySymbolicBtn.addEventListener('click', () => {
+            const text = symbolicValueEl.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showSuccess('符号权限已复制到剪贴板');
+            });
+        });
+
+        copyCommandBtn.addEventListener('click', () => {
+            const text = commandValueEl.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showSuccess('命令已复制到剪贴板');
+            });
+        });
+
+        // 重置按钮
+        resetBtn.addEventListener('click', resetToDefault);
+
+        // 预设按钮
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.getAttribute('data-preset');
+                applyPreset(preset);
+            });
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            calculatePermissions();
+        });
+    </script>
+</body>
+</html>

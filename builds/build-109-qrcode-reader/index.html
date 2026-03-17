@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码扫描识别工具 📱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-reader@1.0.4/dist/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#3B82F6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scan-animation {
+                position: relative;
+                overflow: hidden;
+            }
+            .scan-animation::after {
+                content: '';
+                position: absolute;
+                top: -100%;
+                left: 0;
+                width: 100%;
+                height: 4px;
+                background: linear-gradient(90deg, transparent, #10B981, transparent);
+                animation: scan 2s linear infinite;
+            }
+            @keyframes scan {
+                0% { top: -5px; }
+                100% { top: 100%; }
+            }
+            .pulse {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-blue-50 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
+                二维码扫描识别工具 <span class="text-3xl">📱</span>
+            </h1>
+            <p class="text-gray-600 text-lg mb-6">完全本地运行，支持摄像头实时扫描、图片上传识别、二维码生成</p>
+            
+            <!-- 功能切换 -->
+            <div class="flex justify-center mb-6">
+                <div class="bg-white rounded-xl shadow-lg p-1 inline-flex">
+                    <button id="scanTab" class="px-6 py-3 rounded-lg font-medium bg-gradient-to-r from-green-500 to-green-600 text-white transition-all">
+                        <i class="fa fa-camera mr-2"></i>扫描二维码
+                    </button>
+                    <button id="uploadTab" class="px-6 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                        <i class="fa fa-upload mr-2"></i>上传图片识别
+                    </button>
+                    <button id="generateTab" class="px-6 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                        <i class="fa fa-qrcode mr-2"></i>生成二维码
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 扫描区域 -->
+        <div id="scanSection" class="mb-10">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- 摄像头区域 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-video-camera text-green-600"></i> 摄像头扫描
+                    </h3>
+                    <div id="cameraContainer" class="rounded-xl overflow-hidden bg-gray-900 relative scan-animation aspect-video mb-4">
+                        <video id="video" class="w-full h-full object-cover hidden" autoplay playsinline></video>
+                        <canvas id="canvas" class="hidden"></canvas>
+                        <div id="cameraPlaceholder" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <i class="fa fa-camera text-6xl mb-4"></i>
+                            <p class="text-lg">点击下方按钮启动摄像头</p>
+                            <p class="text-sm mt-2">需要您授权摄像头访问权限</p>
+                        </div>
+                        <div id="scanningIndicator" class="hidden absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                            <span class="w-2 h-2 bg-white rounded-full pulse"></span>
+                            扫描中...
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button id="startCameraBtn" class="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                            <i class="fa fa-play"></i> 启动摄像头
+                        </button>
+                        <button id="stopCameraBtn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50" disabled>
+                            <i class="fa fa-stop"></i> 停止扫描
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 结果区域 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <i class="fa fa-list-alt text-blue-600"></i> 扫描结果
+                        </span>
+                        <button id="clearResultsBtn" class="text-sm text-gray-500 hover:text-red-500 transition-all">
+                            清空历史
+                        </button>
+                    </h3>
+                    
+                    <div id="resultContainer" class="space-y-4 mb-4 max-h-[300px] overflow-y-auto">
+                        <div id="noResultPlaceholder" class="text-center py-12 text-gray-400">
+                            <i class="fa fa-barcode text-4xl mb-3"></i>
+                            <p>扫描二维码后结果将显示在这里</p>
+                        </div>
+                    </div>
+                    
+                    <div id="latestResult" class="hidden p-4 bg-green-50 border-2 border-green-200 rounded-xl mb-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="font-semibold text-green-800 flex items-center gap-2">
+                                <i class="fa fa-check-circle"></i> 最新识别结果
+                            </span>
+                            <div class="flex gap-2">
+                                <button id="copyLatestBtn" class="text-green-600 hover:text-green-800 transition-all" title="复制">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                                <button id="openLatestBtn" class="text-blue-600 hover:text-blue-800 transition-all" title="打开链接">
+                                    <i class="fa fa-external-link"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p id="latestResultText" class="text-gray-700 font-mono text-sm break-all"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 上传识别区域 -->
+        <div id="uploadSection" class="hidden mb-10">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- 上传区域 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-upload text-blue-600"></i> 上传二维码图片
+                    </h3>
+                    
+                    <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all mb-4">
+                        <input type="file" id="fileInput" class="hidden" accept="image/*">
+                        <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-4"></i>
+                        <p class="text-lg font-medium text-gray-700 mb-2">拖拽图片到这里，或点击选择</p>
+                        <p class="text-sm text-gray-500">支持 JPG、PNG、GIF 格式</p>
+                    </div>
+                    
+                    <div id="uploadPreview" class="hidden rounded-xl overflow-hidden mb-4">
+                        <img id="previewImage" class="w-full" src="" alt="预览图片">
+                    </div>
+                    
+                    <button id="processImageBtn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50" disabled>
+                        <i class="fa fa-magic"></i> 识别二维码
+                    </button>
+                </div>
+
+                <!-- 上传结果区域 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-list-alt text-blue-600"></i> 识别结果
+                    </h3>
+                    
+                    <div id="uploadResultContainer" class="space-y-4">
+                        <div id="uploadNoResultPlaceholder" class="text-center py-12 text-gray-400">
+                            <i class="fa fa-barcode text-4xl mb-3"></i>
+                            <p>上传图片后识别结果将显示在这里</p>
+                        </div>
+                        
+                        <div id="uploadResult" class="hidden">
+                            <div class="p-4 bg-green-50 border-2 border-green-200 rounded-xl mb-4">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="font-semibold text-green-800 flex items-center gap-2">
+                                        <i class="fa fa-check-circle"></i> 识别成功
+                                    </span>
+                                    <div class="flex gap-2">
+                                        <button id="copyUploadBtn" class="text-green-600 hover:text-green-800 transition-all" title="复制">
+                                            <i class="fa fa-copy"></i>
+                                        </button>
+                                        <button id="openUploadBtn" class="text-blue-600 hover:text-blue-800 transition-all" title="打开链接">
+                                            <i class="fa fa-external-link"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p id="uploadResultText" class="text-gray-700 font-mono text-sm break-all"></p>
+                            </div>
+                        </div>
+                        
+                        <div id="uploadError" class="hidden p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                            <div class="flex items-center gap-2">
+                                <i class="fa fa-exclamation-circle text-red-600"></i>
+                                <span class="font-medium text-red-800">识别失败</span>
+                            </div>
+                            <p class="text-sm text-red-700 mt-1">未能在图片中检测到二维码，请确保图片清晰且包含完整的二维码</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 生成二维码区域 -->
+        <div id="generateSection" class="hidden mb-10">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- 生成表单 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-qrcode text-purple-600"></i> 生成二维码
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">二维码内容</label>
+                            <textarea id="generateContent" rows="4" class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-purple-500 focus:outline-none resize-none" placeholder="输入要生成二维码的内容，支持文本、链接等..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">尺寸 (px)</label>
+                                <input type="range" id="generateSize" min="128" max="512" step="32" value="256" class="w-full">
+                                <div class="text-right text-sm text-gray-500" id="sizeValue">256px</div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">容错级别</label>
+                                <select id="errorLevel" class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-purple-500 focus:outline-none">
+                                    <option value="L">低 (7%)</option>
+                                    <option value="M" selected>中 (15%)</option>
+                                    <option value="Q">较高 (25%)</option>
+                                    <option value="H">高 (30%)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">前景色</label>
+                                <input type="color" id="foregroundColor" value="#000000" class="w-full h-12 rounded-lg border-2 border-gray-200 cursor-pointer">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">背景色</label>
+                                <input type="color" id="backgroundColor" value="#FFFFFF" class="w-full h-12 rounded-lg border-2 border-gray-200 cursor-pointer">
+                            </div>
+                        </div>
+                        
+                        <button id="generateBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                            <i class="fa fa-magic"></i> 生成二维码
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 生成结果区域 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <i class="fa fa-image text-purple-600"></i> 生成结果
+                    </h3>
+                    
+                    <div id="generateResultContainer" class="text-center">
+                        <div id="generatePlaceholder" class="py-12 text-gray-400">
+                            <i class="fa fa-qrcode text-6xl mb-4"></i>
+                            <p>输入内容后点击生成按钮</p>
+                        </div>
+                        
+                        <div id="generateResult" class="hidden">
+                            <div class="bg-white p-6 rounded-xl inline-block border-2 border-gray-200 mb-4">
+                                <canvas id="qrcodeCanvas" class="mx-auto"></canvas>
+                            </div>
+                            
+                            <div class="flex gap-3 justify-center">
+                                <button id="downloadPngBtn" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+                                    <i class="fa fa-download"></i> 下载 PNG
+                                </button>
+                                <button id="copyQrcodeBtn" class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+                                    <i class="fa fa-copy"></i> 复制图片
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-10">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa fa-history text-gray-600"></i> 识别历史
+                </span>
+                <button id="clearAllHistoryBtn" class="text-sm text-gray-500 hover:text-red-500 transition-all">
+                    清空全部
+                </button>
+            </h3>
+            <div id="historyContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <!-- 历史记录将通过JS动态生成 -->
+                <div class="text-center py-6 text-gray-400 col-span-full">
+                    暂无识别历史
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>💡 提示：所有识别和生成都在本地完成，数据绝不会上传到服务器，安全可靠</p>
+            <p class="mt-2">二维码工具 | Build #109 | 旺仔工具百宝箱 🥛</p>
+        </footer>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all transform translate-x-full opacity-0">
+        <i id="toastIcon" class="fa fa-check-circle"></i>
+        <span id="toastText"></span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script>
+        // 全局状态
+        let scanning = false;
+        let videoStream = null;
+        let scanHistory = JSON.parse(localStorage.getItem('qrcodeHistory') || '[]');
+
+        // DOM 元素
+        const scanTab = document.getElementById('scanTab');
+        const uploadTab = document.getElementById('uploadTab');
+        const generateTab = document.getElementById('generateTab');
+        const scanSection = document.getElementById('scanSection');
+        const uploadSection = document.getElementById('uploadSection');
+        const generateSection = document.getElementById('generateSection');
+        
+        // 扫描相关
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const scanningIndicator = document.getElementById('scanningIndicator');
+        const resultContainer = document.getElementById('resultContainer');
+        const noResultPlaceholder = document.getElementById('noResultPlaceholder');
+        const latestResult = document.getElementById('latestResult');
+        const latestResultText = document.getElementById('latestResultText');
+        const copyLatestBtn = document.getElementById('copyLatestBtn');
+        const openLatestBtn = document.getElementById('openLatestBtn');
+        const clearResultsBtn = document.getElementById('clearResultsBtn');
+        
+        // 上传相关
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const previewImage = document.getElementById('previewImage');
+        const processImageBtn = document.getElementById('processImageBtn');
+        const uploadNoResultPlaceholder = document.getElementById('uploadNoResultPlaceholder');
+        const uploadResult = document.getElementById('uploadResult');
+        const uploadResultText = document.getElementById('uploadResultText');
+        const copyUploadBtn = document.getElementById('copyUploadBtn');
+        const openUploadBtn = document.getElementById('openUploadBtn');
+        const uploadError = document.getElementById('uploadError');
+        
+        // 生成相关
+        const generateContent = document.getElementById('generateContent');
+        const generateSize = document.getElementById('generateSize');
+        const sizeValue = document.getElementById('sizeValue');
+        const errorLevel = document.getElementById('errorLevel');
+        const foregroundColor = document.getElementById('foregroundColor');
+        const backgroundColor = document.getElementById('backgroundColor');
+        const generateBtn = document.getElementById('generateBtn');
+        const generatePlaceholder = document.getElementById('generatePlaceholder');
+        const generateResult = document.getElementById('generateResult');
+        const qrcodeCanvas = document.getElementById('qrcodeCanvas');
+        const downloadPngBtn = document.getElementById('downloadPngBtn');
+        const copyQrcodeBtn = document.getElementById('copyQrcodeBtn');
+        
+        // 历史记录
+        const historyContainer = document.getElementById('historyContainer');
+        const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastText = document.getElementById('toastText');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
+            
+            // 标签切换
+            scanTab.addEventListener('click', () => switchTab('scan'));
+            uploadTab.addEventListener('click', () => switchTab('upload'));
+            generateTab.addEventListener('click', () => switchTab('generate'));
+            
+            // 扫描功能
+            startCameraBtn.addEventListener('click', startCamera);
+            stopCameraBtn.addEventListener('click', stopCamera);
+            copyLatestBtn.addEventListener('click', () => copyToClipboard(latestResultText.textContent));
+            openLatestBtn.addEventListener('click', () => openUrl(latestResultText.textContent));
+            clearResultsBtn.addEventListener('click', clearResults);
+            
+            // 上传功能
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+            processImageBtn.addEventListener('click', processUploadedImage);
+            copyUploadBtn.addEventListener('click', () => copyToClipboard(uploadResultText.textContent));
+            openUploadBtn.addEventListener('click', () => openUrl(uploadResultText.textContent));
+            
+            // 拖拽上传
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropZone.classList.add('border-blue-500', 'bg-blue-50');
+            }
+            
+            function unhighlight() {
+                dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            }
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length) {
+                    handleFiles(files);
+                }
+            }
+            
+            // 生成功能
+            generateSize.addEventListener('input', () => {
+                sizeValue.textContent = `${generateSize.value}px`;
+            });
+            
+            generateBtn.addEventListener('click', generateQrcode);
+            downloadPngBtn.addEventListener('click', downloadQrcode);
+            copyQrcodeBtn.addEventListener('click', copyQrcodeImage);
+            
+            // 历史记录
+            clearAllHistoryBtn.addEventListener('click', clearAllHistory);
+        });
+
+        // 切换标签
+        function switchTab(tab) {
+            // 停止扫描
+            if (scanning) {
+                stopCamera();
+            }
+            
+            // 重置样式
+            [scanTab, uploadTab, generateTab].forEach(t => {
+                t.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'text-white');
+                t.classList.add('text-gray-600', 'hover:bg-gray-50');
+            });
+            
+            // 隐藏所有区域
+            [scanSection, uploadSection, generateSection].forEach(s => s.classList.add('hidden'));
+            
+            // 显示选中的标签和区域
+            if (tab === 'scan') {
+                scanTab.classList.remove('text-gray-600', 'hover:bg-gray-50');
+                scanTab.classList.add('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'text-white');
+                scanSection.classList.remove('hidden');
+            } else if (tab === 'upload') {
+                uploadTab.classList.remove('text-gray-600', 'hover:bg-gray-50');
+                uploadTab.classList.add('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'text-white');
+                uploadSection.classList.remove('hidden');
+            } else if (tab === 'generate') {
+                generateTab.classList.remove('text-gray-600', 'hover:bg-gray-50');
+                generateTab.classList.add('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'text-white');
+                generateSection.classList.remove('hidden');
+            }
+        }
+
+        // 启动摄像头
+        async function startCamera() {
+            try {
+                startCameraBtn.disabled = true;
+                startCameraBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 启动中...';
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                
+                videoStream = stream;
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                cameraPlaceholder.classList.add('hidden');
+                scanningIndicator.classList.remove('hidden');
+                stopCameraBtn.disabled = false;
+                startCameraBtn.innerHTML = '<i class="fa fa-play"></i> 启动摄像头';
+                
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    scanning = true;
+                    scanLoop();
+                };
+            } catch (err) {
+                console.error('摄像头启动失败:', err);
+                showToast('无法访问摄像头，请确保已授权权限', 'error');
+                startCameraBtn.disabled = false;
+                startCameraBtn.innerHTML = '<i class="fa fa-play"></i> 启动摄像头';
+            }
+        }
+
+        // 停止摄像头
+        function stopCamera() {
+            scanning = false;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            video.classList.add('hidden');
+            cameraPlaceholder.classList.remove('hidden');
+            scanningIndicator.classList.add('hidden');
+            stopCameraBtn.disabled = true;
+            startCameraBtn.disabled = false;
+        }
+
+        // 扫描循环
+        function scanLoop() {
+            if (!scanning) return;
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    handleResult(code.data);
+                    // 扫描成功后暂停1秒
+                    setTimeout(scanLoop, 1000);
+                    return;
+                }
+            }
+            
+            requestAnimationFrame(scanLoop);
+        }
+
+        // 处理识别结果
+        function handleResult(result) {
+            // 避免重复识别相同内容
+            if (latestResultText.textContent === result) return;
+            
+            // 更新最新结果
+            noResultPlaceholder.classList.add('hidden');
+            latestResult.classList.remove('hidden');
+            latestResultText.textContent = result;
+            
+            // 添加到历史记录
+            addToHistory(result, 'scan');
+            
+            // 震动反馈（如果支持）
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            
+            showToast('二维码识别成功！', 'success');
+        }
+
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length) {
+                handleFiles(files);
+            }
+        }
+
+        function handleFiles(files) {
+            const file = files[0];
+            if (!file.type.match('image.*')) {
+                showToast('请选择图片文件', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                uploadPreview.classList.remove('hidden');
+                processImageBtn.disabled = false;
+                uploadResult.classList.add('hidden');
+                uploadError.classList.add('hidden');
+                uploadNoResultPlaceholder.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 处理上传图片
+        function processUploadedImage() {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    uploadNoResultPlaceholder.classList.add('hidden');
+                    uploadError.classList.add('hidden');
+                    uploadResult.classList.remove('hidden');
+                    uploadResultText.textContent = code.data;
+                    addToHistory(code.data, 'upload');
+                    showToast('图片识别成功！', 'success');
+                } else {
+                    uploadNoResultPlaceholder.classList.add('hidden');
+                    uploadResult.classList.add('hidden');
+                    uploadError.classList.remove('hidden');
+                    showToast('未能识别到二维码', 'error');
+                }
+            };
+            img.src = previewImage.src;
+        }
+
+        // 生成二维码
+        function generateQrcode() {
+            const content = generateContent.value.trim();
+            if (!content) {
+                showToast('请输入二维码内容', 'error');
+                return;
+            }
+            
+            const size = parseInt(generateSize.value);
+            const level = errorLevel.value.toLowerCase();
+            const fgColor = foregroundColor.value;
+            const bgColor = backgroundColor.value;
+            
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 生成中...';
+            
+            QRCode.toCanvas(qrcodeCanvas, content, {
+                width: size,
+                margin: 1,
+                color: {
+                    dark: fgColor,
+                    light: bgColor
+                },
+                errorCorrectionLevel: level
+            }, (error) => {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fa fa-magic"></i> 生成二维码';
+                
+                if (error) {
+                    console.error('生成失败:', error);
+                    showToast('生成失败，请重试', 'error');
+                    return;
+                }
+                
+                generatePlaceholder.classList.add('hidden');
+                generateResult.classList.remove('hidden');
+                showToast('二维码生成成功！', 'success');
+            });
+        }
+
+        // 下载二维码
+        function downloadQrcode() {
+            const link = document.createElement('a');
+            link.download = `qrcode-${Date.now()}.png`;
+            link.href = qrcodeCanvas.toDataURL();
+            link.click();
+            showToast('二维码已下载', 'success');
+        }
+
+        // 复制二维码图片
+        async function copyQrcodeImage() {
+            try {
+                const blob = await new Promise(resolve => qrcodeCanvas.toBlob(resolve));
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                showToast('二维码图片已复制到剪贴板', 'success');
+            } catch (err) {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动保存', 'error');
+            }
+        }
+
+        // 添加到历史记录
+        function addToHistory(content, type) {
+            const item = {
+                id: Date.now(),
+                content,
+                type,
+                timestamp: new Date().toISOString()
+            };
+            
+            scanHistory.unshift(item);
+            if (scanHistory.length > 20) {
+                scanHistory = scanHistory.slice(0, 20);
+            }
+            
+            localStorage.setItem('qrcodeHistory', JSON.stringify(scanHistory));
+            renderHistory();
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            if (scanHistory.length === 0) {
+                historyContainer.innerHTML = '<div class="text-center py-6 text-gray-400 col-span-full">暂无识别历史</div>';
+                return;
+            }
+            
+            historyContainer.innerHTML = '';
+            scanHistory.forEach(item => {
+                const isUrl = item.content.startsWith('http://') || item.content.startsWith('https://');
+                const date = new Date(item.timestamp);
+                const timeStr = date.toLocaleString('zh-CN');
+                
+                const historyItem = document.createElement('div');
+                historyItem.className = 'bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-all';
+                historyItem.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <span class="text-xs text-gray-500">
+                            <i class="fa ${item.type === 'scan' ? 'fa-camera' : 'fa-upload'} mr-1"></i>
+                            ${timeStr}
+                        </span>
+                        <div class="flex gap-2">
+                            <button class="text-gray-500 hover:text-green-600 transition-all copy-btn" data-content="${item.content}">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                            ${isUrl ? `<button class="text-gray-500 hover:text-blue-600 transition-all open-btn" data-url="${item.content}">
+                                <i class="fa fa-external-link"></i>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <p class="text-sm font-mono text-gray-700 break-all line-clamp-2">${item.content}</p>
+                `;
+                
+                // 绑定事件
+                historyItem.querySelector('.copy-btn').addEventListener('click', () => {
+                    copyToClipboard(item.content);
+                });
+                
+                if (isUrl) {
+                    historyItem.querySelector('.open-btn').addEventListener('click', () => {
+                        openUrl(item.content);
+                    });
+                }
+                
+                historyContainer.appendChild(historyItem);
+            });
+        }
+
+        // 清空当前结果
+        function clearResults() {
+            latestResult.classList.add('hidden');
+            latestResultText.textContent = '';
+            noResultPlaceholder.classList.remove('hidden');
+        }
+
+        // 清空全部历史
+        function clearAllHistory() {
+            if (confirm('确定要清空所有识别历史吗？')) {
+                scanHistory = [];
+                localStorage.removeItem('qrcodeHistory');
+                renderHistory();
+                showToast('历史记录已清空', 'success');
+            }
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板', 'success');
+            }).catch(() => {
+                showToast('复制失败', 'error');
+            });
+        }
+
+        // 打开链接
+        function openUrl(url) {
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                window.open(url, '_blank');
+            } else {
+                showToast('不是有效的链接', 'error');
+            }
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            if (type === 'success') {
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-check-circle';
+            } else {
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 transition-all';
+                toastIcon.className = 'fa fa-exclamation-circle';
+            }
+            
+            toastText.textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

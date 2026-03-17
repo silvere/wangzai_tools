@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Formatter 格式化工具</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--border:#475569;--text:#e2e8f0;--text2:#94a3b8;--accent:#3b82f6;--green:#22c55e;--orange:#f59e0b;--purple:#a78bfa;--red:#ef4444;--yellow:#fbbf24}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
+.container{max-width:1200px;margin:0 auto}
+.header{text-align:center;margin-bottom:32px}
+.header h1{font-size:28px;font-weight:700;margin-bottom:8px}
+.header p{color:var(--text2);font-size:14px}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column}
+.panel-title{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.panel-title .actions{display:flex;gap:8px}
+.btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2563eb}
+.input-area{flex:1;min-height:400px}
+.input-area textarea{width:100%;height:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:8px;font-family:'SF Mono',Monaco,Consolas,monospace;font-size:13px;line-height:1.6;resize:none}
+.input-area textarea:focus{outline:none;border-color:var(--accent)}
+.output-area{flex:1;min-height:400px;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px}
+.json-tree{font-family:'SF Mono',Monaco,Consolas,monospace;font-size:13px;line-height:1.8}
+.json-key{color:var(--purple);font-weight:600}
+.json-string{color:var(--green)}
+.json-number{color:var(--orange)}
+.json-boolean{color:var(--yellow)}
+.json-null{color:var(--red)}
+.json-bracket{color:var(--text2)}
+.json-line{display:flex;align-items:flex-start}
+.json-line:hover{background:var(--surface2)}
+.json-toggle{cursor:pointer;user-select:none;margin-right:4px;color:var(--text2);width:16px;display:inline-block}
+.json-toggle:hover{color:var(--accent)}
+.json-collapsed{display:none}
+.stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center}
+.stat .label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.stat .value{font-size:20px;font-weight:700;color:var(--accent)}
+.examples{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.example-btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px;transition:all .15s}
+.example-btn:hover{border-color:var(--accent);color:var(--accent)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--accent);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:1000}
+.toast.show{opacity:1}
+.error{color:var(--red);padding:12px;background:rgba(239,68,68,.1);border-radius:8px;font-size:13px}
+@media(max-width:768px){.main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>🎨 JSON Formatter</h1>
+<p>JSON 格式化 + 语法高亮 + 树形展示</p>
+</div>
+
+<div class="examples">
+<button class="example-btn" onclick="loadExample('simple')">简单对象</button>
+<button class="example-btn" onclick="loadExample('nested')">嵌套结构</button>
+<button class="example-btn" onclick="loadExample('array')">数组</button>
+<button class="example-btn" onclick="loadExample('api')">API 响应</button>
+<button class="example-btn" onclick="loadExample('llm')">LLM 响应</button>
+</div>
+
+<div class="stats" id="stats" style="display:none">
+<div class="stat">
+<div class="label">对象数</div>
+<div class="value" id="objectCount">0</div>
+</div>
+<div class="stat">
+<div class="label">数组数</div>
+<div class="value" id="arrayCount">0</div>
+</div>
+<div class="stat">
+<div class="label">键数</div>
+<div class="value" id="keyCount">0</div>
+</div>
+<div class="stat">
+<div class="label">深度</div>
+<div class="value" id="depth">0</div>
+</div>
+</div>
+
+<div class="main">
+<div class="panel">
+<div class="panel-title">
+输入
+<div class="actions">
+<button class="btn" onclick="clearInput()">清空</button>
+<button class="btn" onclick="minifyJson()">压缩</button>
+<button class="btn primary" onclick="formatJson()">格式化</button>
+</div>
+</div>
+<div class="input-area">
+<textarea id="input" placeholder='粘贴 JSON 数据...
+
+例如：
+{"name":"张三","age":25,"skills":["Python","JavaScript"]}'></textarea>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-title">
+输出
+<div class="actions">
+<button class="btn" onclick="copyOutput()">📋 复制</button>
+<button class="btn" onclick="downloadJson()">💾 下载</button>
+<button class="btn" onclick="toggleAll()">展开/折叠</button>
+</div>
+</div>
+<div class="output-area">
+<div class="json-tree" id="output"></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let parsedData=null;
+let allExpanded=true;
+
+const examples={
+  simple:'{"name":"张三","age":25,"email":"zhangsan@example.com","active":true}',
+  nested:'{"user":{"id":1,"name":"张三","profile":{"bio":"全栈开发者","location":"北京","skills":["Python","JavaScript","Go"]}},"timestamp":"2024-01-15T08:30:00Z"}',
+  array:'[{"id":1,"name":"GPT-4","provider":"OpenAI","cost":0.03},{"id":2,"name":"Claude","provider":"Anthropic","cost":0.015},{"id":3,"name":"Gemini","provider":"Google","cost":0.00125}]',
+  api:'{"status":"success","data":{"users":[{"id":1,"name":"Alice","role":"admin"},{"id":2,"name":"Bob","role":"user"}],"total":2,"page":1},"meta":{"timestamp":"2024-01-15T08:30:00Z","version":"1.0"}}',
+  llm:'{"id":"chatcmpl-123","object":"chat.completion","created":1677652288,"model":"gpt-4","choices":[{"index":0,"message":{"role":"assistant","content":"你好！我是 AI 助手，很高兴为你服务。"},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":15,"total_tokens":25}}'
+};
+
+function loadExample(name){
+  document.getElementById('input').value=examples[name];
+  formatJson();
+}
+
+function formatJson(){
+  const input=document.getElementById('input').value.trim();
+  if(!input){showToast('请输入 JSON 数据');return}
+  
+  try{
+    parsedData=JSON.parse(input);
+    renderTree(parsedData);
+    updateStats(parsedData);
+    document.getElementById('stats').style.display='flex';
+  }catch(e){
+    document.getElementById('output').innerHTML=`<div class="error">❌ JSON 解析错误：${e.message}</div>`;
+    document.getElementById('stats').style.display='none';
+  }
+}
+
+function renderTree(data,indent=0){
+  const output=document.getElementById('output');
+  output.innerHTML='';
+  output.appendChild(createNode(data,indent,'root'));
+}
+
+function createNode(value,indent,key,isLast=true){
+  const container=document.createElement('div');
+  const indentStr='  '.repeat(indent);
+  
+  if(value===null){
+    container.innerHTML=`<div class="json-line">${indentStr}<span class="json-key">"${key}"</span>: <span class="json-null">null</span>${isLast?'':','}</div>`;
+  }else if(typeof value==='boolean'){
+    container.innerHTML=`<div class="json-line">${indentStr}<span class="json-key">"${key}"</span>: <span class="json-boolean">${value}</span>${isLast?'':','}</div>`;
+  }else if(typeof value==='number'){
+    container.innerHTML=`<div class="json-line">${indentStr}<span class="json-key">"${key}"</span>: <span class="json-number">${value}</span>${isLast?'':','}</div>`;
+  }else if(typeof value==='string'){
+    container.innerHTML=`<div class="json-line">${indentStr}<span class="json-key">"${key}"</span>: <span class="json-string">"${escapeHtml(value)}"</span>${isLast?'':','}</div>`;
+  }else if(Array.isArray(value)){
+    const id='arr-'+Math.random().toString(36).substr(2,9);
+    const line=document.createElement('div');
+    line.className='json-line';
+    line.innerHTML=`${indentStr}<span class="json-toggle" onclick="toggle('${id}')">▼</span><span class="json-key">"${key}"</span>: <span class="json-bracket">[</span> <span class="json-comment">${value.length} items</span>`;
+    container.appendChild(line);
+    
+    const content=document.createElement('div');
+    content.id=id;
+    value.forEach((item,i)=>{
+      content.appendChild(createNode(item,indent+1,i,i===value.length-1));
+    });
+    container.appendChild(content);
+    
+    const closeLine=document.createElement('div');
+    closeLine.className='json-line';
+    closeLine.innerHTML=`${indentStr}<span class="json-bracket">]</span>${isLast?'':','}`;
+    container.appendChild(closeLine);
+  }else if(typeof value==='object'){
+    const id='obj-'+Math.random().toString(36).substr(2,9);
+    const keys=Object.keys(value);
+    const line=document.createElement('div');
+    line.className='json-line';
+    line.innerHTML=`${indentStr}<span class="json-toggle" onclick="toggle('${id}')">▼</span><span class="json-key">"${key}"</span>: <span class="json-bracket">{</span> <span class="json-comment">${keys.length} keys</span>`;
+    container.appendChild(line);
+    
+    const content=document.createElement('div');
+    content.id=id;
+    keys.forEach((k,i)=>{
+      content.appendChild(createNode(value[k],indent+1,k,i===keys.length-1));
+    });
+    container.appendChild(content);
+    
+    const closeLine=document.createElement('div');
+    closeLine.className='json-line';
+    closeLine.innerHTML=`${indentStr}<span class="json-bracket">}</span>${isLast?'':','}`;
+    container.appendChild(closeLine);
+  }
+  
+  return container;
+}
+
+function toggle(id){
+  const el=document.getElementById(id);
+  const toggle=event.target;
+  if(el.classList.contains('json-collapsed')){
+    el.classList.remove('json-collapsed');
+    toggle.textContent='▼';
+  }else{
+    el.classList.add('json-collapsed');
+    toggle.textContent='▶';
+  }
+}
+
+function toggleAll(){
+  const toggles=document.querySelectorAll('.json-toggle');
+  allExpanded=!allExpanded;
+  toggles.forEach(t=>{
+    const id=t.getAttribute('onclick').match(/'([^']+)'/)[1];
+    const el=document.getElementById(id);
+    if(allExpanded){
+      el.classList.remove('json-collapsed');
+      t.textContent='▼';
+    }else{
+      el.classList.add('json-collapsed');
+      t.textContent='▶';
+    }
+  });
+}
+
+function updateStats(data){
+  let objects=0,arrays=0,keys=0,maxDepth=0;
+  
+  function analyze(val,depth=0){
+    maxDepth=Math.max(maxDepth,depth);
+    if(Array.isArray(val)){
+      arrays++;
+      val.forEach(item=>analyze(item,depth+1));
+    }else if(val&&typeof val==='object'){
+      objects++;
+      Object.keys(val).forEach(k=>{
+        keys++;
+        analyze(val[k],depth+1);
+      });
+    }
+  }
+  
+  analyze(data);
+  
+  document.getElementById('objectCount').textContent=objects;
+  document.getElementById('arrayCount').textContent=arrays;
+  document.getElementById('keyCount').textContent=keys;
+  document.getElementById('depth').textContent=maxDepth;
+}
+
+function minifyJson(){
+  const input=document.getElementById('input').value.trim();
+  if(!input)return;
+  try{
+    const data=JSON.parse(input);
+    document.getElementById('input').value=JSON.stringify(data);
+    showToast('✅ 已压缩');
+  }catch(e){
+    showToast('❌ JSON 格式错误');
+  }
+}
+
+function clearInput(){
+  document.getElementById('input').value='';
+  document.getElementById('output').innerHTML='';
+  document.getElementById('stats').style.display='none';
+}
+
+function copyOutput(){
+  if(!parsedData){showToast('请先格式化');return}
+  const text=JSON.stringify(parsedData,null,2);
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('✅ 已复制');
+  });
+}
+
+function downloadJson(){
+  if(!parsedData){showToast('请先格式化');return}
+  const text=JSON.stringify(parsedData,null,2);
+  const blob=new Blob([text],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='formatted.json';
+  a.click();
+  showToast('✅ 已下载');
+}
+
+function escapeHtml(text){
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// Auto-format on paste
+document.getElementById('input').addEventListener('paste',()=>{
+  setTimeout(formatJson,100);
+});
+</script>
+</body>
+</html>

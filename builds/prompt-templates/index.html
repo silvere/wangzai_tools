@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Templates - Prompt模板库</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        .preview-textarea {
+            min-height: 250px;
+            background: #f8f9fa;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid white;
+            border-radius: 20px;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: white;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        }
+
+        .templates-grid {
+            display: grid;
+            gap: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .template-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .template-card.selected {
+            border-color: #667eea;
+            background: #e8eaf6;
+        }
+
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .template-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-use {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-use:hover {
+            background: #218838;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .template-preview {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            max-height: 60px;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+
+        .template-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 3px 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .variables-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .variables-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .variable-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .variable-name {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .variable-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Prompt Templates</h1>
+            <p>管理你的Prompt模板库，快速测试和复用</p>
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div class="filters" id="filters"></div>
+
+        <div class="main-layout">
+            <div class="panel">
+                <div class="panel-title">
+                    <span>📚 模板库</span>
+                    <button class="btn btn-secondary" onclick="exportTemplates()">📤 导出</button>
+                </div>
+                <div class="templates-grid" id="templatesGrid"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    <span id="editorTitle">✏️ 新建模板</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模板名称</label>
+                    <input type="text" id="templateName" class="form-input" placeholder="例如：代码评测Prompt">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">分类标签</label>
+                    <input type="text" id="templateTags" class="form-input" placeholder="用空格分隔，例如：#评测 #代码 #Python">
+                    <div class="hint">💡 使用 #标签 来分类管理</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Prompt模板</label>
+                    <textarea id="templateContent" class="form-input form-textarea" placeholder="输入你的Prompt模板...
+
+使用 {{变量名}} 来定义变量，例如：
+请评测 {{model_name}} 在 {{task}} 任务上的表现。
+
+变量会在使用时自动提取并可填充。"></textarea>
+                    <div class="hint">💡 使用 {{变量名}} 定义可替换的变量</div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="saveTemplate()">💾 保存模板</button>
+                    <button class="btn btn-secondary" onclick="clearEditor()">🗑️ 清空</button>
+                </div>
+
+                <hr style="margin: 25px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+                <div class="panel-title">
+                    <span>🔧 使用模板</span>
+                </div>
+
+                <div id="variablesSection" style="display: none;">
+                    <div class="variables-list">
+                        <div class="variables-title">填充变量</div>
+                        <div id="variablesList"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">生成的Prompt</label>
+                    <textarea id="previewContent" class="form-input form-textarea preview-textarea" readonly></textarea>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-success" onclick="copyPrompt()">📋 复制Prompt</button>
+                    <button class="btn btn-secondary" onclick="clearPreview()">🔄 重置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let templates = JSON.parse(localStorage.getItem('promptTemplates') || '[]');
+        let currentFilter = 'all';
+        let selectedTemplate = null;
+        let editingId = null;
+
+        function saveTemplate() {
+            const name = document.getElementById('templateName').value.trim();
+            const tags = document.getElementById('templateTags').value.trim();
+            const content = document.getElementById('templateContent').value.trim();
+
+            if (!name || !content) {
+                alert('请填写模板名称和内容！');
+                return;
+            }
+
+            const tagList = tags.split(/\s+/).filter(t => t.startsWith('#'));
+            const variables = extractVariables(content);
+
+            if (editingId) {
+                // 更新现有模板
+                const index = templates.findIndex(t => t.id === editingId);
+                if (index !== -1) {
+                    templates[index] = {
+                        ...templates[index],
+                        name: name,
+                        tags: tagList,
+                        content: content,
+                        variables: variables,
+                        updatedAt: new Date().toISOString()
+                    };
+                }
+                editingId = null;
+            } else {
+                // 新建模板
+                const template = {
+                    id: Date.now(),
+                    name: name,
+                    tags: tagList,
+                    content: content,
+                    variables: variables,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                templates.unshift(template);
+            }
+
+            localStorage.setItem('promptTemplates', JSON.stringify(templates));
+            clearEditor();
+            renderAll();
+        }
+
+        function extractVariables(content) {
+            const regex = /\{\{([^}]+)\}\}/g;
+            const variables = new Set();
+            let match;
+            while ((match = regex.exec(content)) !== null) {
+                variables.add(match[1].trim());
+            }
+            return Array.from(variables);
+        }
+
+        function clearEditor() {
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateTags').value = '';
+            document.getElementById('templateContent').value = '';
+            document.getElementById('editorTitle').textContent = '✏️ 新建模板';
+            editingId = null;
+            selectedTemplate = null;
+            renderTemplates();
+        }
+
+        function useTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            selectedTemplate = template;
+            document.getElementById('previewContent').value = template.content;
+
+            if (template.variables.length > 0) {
+                document.getElementById('variablesSection').style.display = 'block';
+                renderVariables(template.variables);
+            } else {
+                document.getElementById('variablesSection').style.display = 'none';
+            }
+
+            renderTemplates();
+        }
+
+        function editTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            document.getElementById('templateName').value = template.name;
+            document.getElementById('templateTags').value = template.tags.join(' ');
+            document.getElementById('templateContent').value = template.content;
+            document.getElementById('editorTitle').textContent = '✏️ 编辑模板';
+            editingId = id;
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteTemplate(id) {
+            if (confirm('确定要删除这个模板吗？')) {
+                templates = templates.filter(t => t.id !== id);
+                localStorage.setItem('promptTemplates', JSON.stringify(templates));
+                if (selectedTemplate && selectedTemplate.id === id) {
+                    clearPreview();
+                }
+                renderAll();
+            }
+        }
+
+        function renderVariables(variables) {
+            const html = variables.map(v => `
+                <div class="variable-item">
+                    <span class="variable-name">{{${v}}}</span>
+                    <input 
+                        type="text" 
+                        class="variable-input" 
+                        placeholder="输入${v}的值"
+                        oninput="updatePreview()"
+                        data-var="${v}"
+                    >
+                </div>
+            `).join('');
+            document.getElementById('variablesList').innerHTML = html;
+            updatePreview();
+        }
+
+        function updatePreview() {
+            if (!selectedTemplate) return;
+
+            let content = selectedTemplate.content;
+            const inputs = document.querySelectorAll('.variable-input');
+            
+            inputs.forEach(input => {
+                const varName = input.dataset.var;
+                const value = input.value || `{{${varName}}}`;
+                content = content.replace(new RegExp(`\\{\\{${varName}\\}\\}`, 'g'), value);
+            });
+
+            document.getElementById('previewContent').value = content;
+        }
+
+        function copyPrompt() {
+            const content = document.getElementById('previewContent').value;
+            if (!content) {
+                alert('没有可复制的内容！');
+                return;
+            }
+
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Prompt已复制到剪贴板！');
+            }).catch(() => {
+                alert('复制失败，请手动复制');
+            });
+        }
+
+        function clearPreview() {
+            document.getElementById('previewContent').value = '';
+            document.getElementById('variablesSection').style.display = 'none';
+            selectedTemplate = null;
+            renderTemplates();
+        }
+
+        function getAllTags() {
+            const allTags = new Set();
+            templates.forEach(t => {
+                t.tags.forEach(tag => allTags.add(tag));
+            });
+            return Array.from(allTags).sort();
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            renderAll();
+        }
+
+        function getFilteredTemplates() {
+            if (currentFilter === 'all') {
+                return templates;
+            }
+            return templates.filter(t => t.tags.includes(currentFilter));
+        }
+
+        function renderStats() {
+            const allTags = getAllTags();
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-value">${templates.length}</div>
+                    <div class="stat-label">模板总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${allTags.length}</div>
+                    <div class="stat-label">分类数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${templates.filter(t => t.variables.length > 0).length}</div>
+                    <div class="stat-label">带变量</div>
+                </div>
+            `;
+            document.getElementById('stats').innerHTML = statsHtml;
+        }
+
+        function renderFilters() {
+            const allTags = getAllTags();
+            let filtersHtml = `
+                <button class="filter-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
+                    📋 全部 (${templates.length})
+                </button>
+            `;
+
+            allTags.forEach(tag => {
+                const count = templates.filter(t => t.tags.includes(tag)).length;
+                filtersHtml += `
+                    <button class="filter-btn ${currentFilter === tag ? 'active' : ''}" onclick="setFilter('${tag}')">
+                        ${tag} (${count})
+                    </button>
+                `;
+            });
+
+            document.getElementById('filters').innerHTML = filtersHtml;
+        }
+
+        function renderTemplates() {
+            const filtered = getFilteredTemplates();
+            const container = document.getElementById('templatesGrid');
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">还没有模板，创建你的第一个Prompt模板吧！</div>';
+                return;
+            }
+
+            const templatesHtml = filtered.map(template => {
+                const preview = template.content.substring(0, 100) + (template.content.length > 100 ? '...' : '');
+                const isSelected = selectedTemplate && selectedTemplate.id === template.id;
+                
+                return `
+                    <div class="template-card ${isSelected ? 'selected' : ''}" onclick="useTemplate(${template.id})">
+                        <div class="template-header">
+                            <div class="template-title">${escapeHtml(template.name)}</div>
+                            <div class="template-actions">
+                                <button class="action-btn btn-use" onclick="event.stopPropagation(); useTemplate(${template.id})">使用</button>
+                                <button class="action-btn btn-use" onclick="event.stopPropagation(); editTemplate(${template.id})" style="background: #ffc107;">编辑</button>
+                                <button class="action-btn btn-delete" onclick="event.stopPropagation(); deleteTemplate(${template.id})">删除</button>
+                            </div>
+                        </div>
+                        <div class="template-preview">${escapeHtml(preview)}</div>
+                        <div class="template-tags">
+                            ${template.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            ${template.variables.length > 0 ? `<span class="tag" style="background: #28a745;">${template.variables.length} 个变量</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = templatesHtml;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function exportTemplates() {
+            if (templates.length === 0) {
+                alert('没有可导出的模板！');
+                return;
+            }
+
+            const dataStr = JSON.stringify(templates, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prompt-templates-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function renderAll() {
+            renderStats();
+            renderFilters();
+            renderTemplates();
+        }
+
+        // 初始化
+        renderAll();
+
+        // 添加一些示例模板（仅首次）
+        if (templates.length === 0) {
+            templates = [
+                {
+                    id: Date.now(),
+                    name: "代码能力评测",
+                    tags: ["#评测", "#代码"],
+                    content: "请评测 {{model_name}} 在 {{programming_language}} 编程任务上的表现。\n\n评测维度：\n1. 代码正确性\n2. 代码效率\n3. 代码可读性\n4. 边界情况处理\n\n请给出详细的评分和建议。",
+                    variables: ["model_name", "programming_language"],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: Date.now() + 1,
+                    name: "推理能力测试",
+                    tags: ["#评测", "#推理"],
+                    content: "测试 {{model_name}} 的逻辑推理能力：\n\n问题：{{reasoning_question}}\n\n请模型：\n1. 分析问题\n2. 列出推理步骤\n3. 给出最终答案\n4. 解释推理过程",
+                    variables: ["model_name", "reasoning_question"],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: Date.now() + 2,
+                    name: "创意写作Prompt",
+                    tags: ["#创意", "#写作"],
+                    content: "写一篇关于 {{topic}} 的 {{style}} 风格文章。\n\n要求：\n- 字数：{{word_count}} 字左右\n- 包含：{{key_points}}\n- 语气：{{tone}}",
+                    variables: ["topic", "style", "word_count", "key_points", "tone"],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem('promptTemplates', JSON.stringify(templates));
+            renderAll();
+        }
+    </script>
+</body>
+</html>

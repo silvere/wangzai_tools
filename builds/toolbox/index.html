@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旺仔工具百宝箱 🧰 — 所有工具一站式访问</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        dark: '#1e1b4b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .tool-icon {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover .tool-icon {
+                transform: scale(1.1) rotate(5deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-12 px-4 shadow-lg">
+        <div class="container mx-auto max-w-6xl text-center">
+            <div class="text-8xl mb-6">🧰</div>
+            <h1 class="text-5xl font-bold mb-4">旺仔工具百宝箱</h1>
+            <p class="text-purple-100 text-xl max-w-2xl mx-auto">
+                100个实用小工具，一站式访问，帮老大提高工作效率~
+            </p>
+            <div class="mt-6 inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+                <i class="fa fa-star text-yellow-300"></i>
+                <span>已累计打造 100+ 个实用工具</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-6xl px-4 py-8">
+        <!-- Search and Filter -->
+        <section class="mb-8">
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1 relative">
+                        <i class="fa fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="搜索工具名称、描述、标签..."
+                            class="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-lg"
+                        >
+                    </div>
+                    <select id="categoryFilter" class="px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-lg bg-white">
+                        <option value="all">全部分类</option>
+                        <option value="评测相关">评测相关</option>
+                        <option value="效率工具">效率工具</option>
+                        <option value="内容创作">内容创作</option>
+                        <option value="AI工具">AI工具</option>
+                        <option value="开发工具">开发工具</option>
+                        <option value="生活实用">生活实用</option>
+                    </select>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <div class="text-blue-600 text-sm font-medium mb-1">总工具数</div>
+                        <div class="text-3xl font-bold text-blue-800" id="totalCount">100+</div>
+                    </div>
+                    <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+                        <div class="text-green-600 text-sm font-medium mb-1">评测相关</div>
+                        <div class="text-3xl font-bold text-green-800">20+</div>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                        <div class="text-orange-600 text-sm font-medium mb-1">效率工具</div>
+                        <div class="text-3xl font-bold text-orange-800">30+</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                        <div class="text-purple-600 text-sm font-medium mb-1">最近更新</div>
+                        <div class="text-3xl font-bold text-purple-800">2026-03-07</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tools Grid -->
+        <section id="toolsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Tools will be dynamically generated here -->
+        </section>
+
+        <!-- No Results -->
+        <div id="noResults" class="hidden py-16 text-center">
+            <div class="text-gray-400 text-6xl mb-4"><i class="fa fa-search"></i></div>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">没有找到匹配的工具</h3>
+            <p class="text-gray-500">请尝试调整搜索关键词或筛选条件</p>
+        </div>
+    </main>
+
+    <!-- Tool Detail Modal -->
+    <div id="toolModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="gradient-bg p-6 text-white relative">
+                <button id="closeModal" class="absolute right-4 top-4 text-white/80 hover:text-white text-2xl">
+                    <i class="fa fa-times"></i>
+                </button>
+                <div class="flex items-center gap-4">
+                    <div id="modalIcon" class="text-5xl"></div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span id="modalCategory" class="bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm"></span>
+                            <span id="modalBuild" class="bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm"></span>
+                        </div>
+                        <h2 id="modalTitle" class="text-3xl font-bold mb-1"></h2>
+                        <p id="modalTagline" class="text-purple-100"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-6">
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-info-circle text-primary mr-2"></i>功能介绍
+                    </h3>
+                    <p id="modalDescription" class="text-gray-700 leading-relaxed"></p>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-star text-yellow-500 mr-2"></i>核心亮点
+                    </h3>
+                    <ul id="modalFeatures" class="space-y-2 text-gray-700">
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-tag text-blue-500 mr-2"></i>技术栈
+                    </h3>
+                    <div id="modalTechStack" class="flex flex-wrap gap-2">
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fa fa-money text-green-600 mr-2"></i>商业价值
+                    </h3>
+                    <p id="modalValue" class="text-gray-700"></p>
+                </section>
+
+                <div class="pt-4">
+                    <button id="downloadToolBtn" class="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-primary/20 w-full justify-center">
+                        <i class="fa fa-download"></i>
+                        <span>下载工具文件</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8 mt-12">
+        <div class="container mx-auto max-w-6xl px-4 text-center">
+            <p class="text-gray-400">
+                🥛 旺仔出品，必属精品 · 持续更新中...
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                Build #147 · 工具百宝箱
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Tools database
+        const tools = [
+            {
+                id: 147,
+                name: "CSS Border-Radius 可视化生成器",
+                icon: "🟢",
+                tagline: "可视化调整圆角，支持四个角独立设置，椭圆圆角",
+                category: "开发工具",
+                build: "Build #147",
+                description: "CSS样式调试神器！纯前端实现的Border-Radius可视化生成器，支持一键统一设置所有圆角，也支持四个角分别独立调节，支持椭圆圆角（不同水平/垂直半径），支持自定义边框宽度、边框颜色、背景颜色，内置8种常用圆角预设（小圆角/大圆角/胶囊按钮/圆形/叶子标签/西瓜半月形等），自带完整border-radius语法速查表和常用效果参考，实时预览圆角效果，一键复制CSS代码。完美解决调圆角要反复刷新浏览器、记不住四个角顺序的痛点。",
+                features: [
+                    "支持一键统一设置所有圆角",
+                    "四个角分别独立调节，满足特殊设计需求",
+                    "支持椭圆圆角，不同水平/垂直半径",
+                    "支持自定义边框宽度、颜色和盒子背景色",
+                    "内置8种常用圆角预设一键使用",
+                    "自带完整语法速查表和常用效果参考",
+                    "实时预览，一键复制CSS代码，100%本地运行"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Tailwind CSS"],
+                value: "⭐⭐⭐⭐⭐⭐ 前端开发者、UI设计师必备工具，打开浏览器就能用，可视化拖拽调节圆角，调好直接拿代码，再也不用反复刷新浏览器试参数，CSS开发效率翻倍！",
+                filePath: "build-147-css-border-radius-generator/index.html",
+                filename: "css-border-radius-generator.html"
+            },
+            {
+                id: 146,
+                name: "CSS Box Shadow 可视化生成器",
+                icon: "🌚",
+                tagline: "可视化调整Box Shadow参数，支持多层阴影叠加",
+                category: "开发工具",
+                build: "Build #146",
+                description: "CSS样式调试神器！纯前端实现的Box Shadow可视化生成器，支持独立调整水平偏移、垂直偏移、模糊半径、扩散半径、阴影颜色、透明度，支持外阴影/内阴影切换，支持添加多层阴影叠加，内置8种常用阴影预设（轻微浮卡/中度卡片/漂浮大阴影/霓虹蓝色/多层软阴影等），自带完整Box Shadow语法速查表和常用效果参考，实时预览阴影效果，一键复制CSS代码。完美解决调阴影需要反复刷新浏览器试参数的痛点。",
+                features: [
+                    "独立调整水平/垂直偏移、模糊、扩散四个参数",
+                    "支持颜色拾取器和透明度调节",
+                    "支持外阴影/内阴影切换",
+                    "支持多层阴影叠加，创造更丰富效果",
+                    "内置8种常用阴影预设一键使用",
+                    "自带完整语法速查表和常用效果参考",
+                    "实时预览，一键复制CSS代码，100%本地运行"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Tailwind CSS"],
+                value: "⭐⭐⭐⭐⭐ 前端开发者、UI设计师必备工具，打开浏览器就能用，可视化拖拽调阴影，调好直接拿代码，再也不用反复刷新试参数，CSS开发效率翻倍！",
+                filePath: "build-146-css-box-shadow-generator/index.html",
+                filename: "css-box-shadow-generator.html"
+            },
+            {
+                id: 145,
+                name: "CSS Grid 可视化生成器",
+                icon: "📏",
+                tagline: "可视化配置CSS Grid栅格布局，一键生成CSS代码",
+                category: "开发工具",
+                build: "Build #145",
+                description: "前端布局神器！纯前端实现的CSS Grid可视化生成器，支持1-12行×1-12列任意栅格配置，点击切换列宽/行高模式，支持多种对齐方式，内置8种常用Grid布局预设（经典圣杯、三列布局、九宫格、照片墙等），自带完整CSS Grid速查表，实时预览效果，一键复制完整CSS代码。完美解决记不住Grid语法、调布局要反复刷新浏览器的痛点。",
+                features: [
+                    "支持1-12行 × 1-12列任意栅格配置",
+                    "多种列宽/行高模式一键切换",
+                    "支持水平/垂直多种对齐方式配置",
+                    "内置8种常用Grid布局预设一键使用",
+                    "自带完整CSS Grid属性速查表",
+                    "实时预览布局效果，所见即所得",
+                    "一键复制完整CSS代码，100%本地运行"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Tailwind CSS"],
+                value: "⭐⭐⭐⭐⭐ 前端开发者、UI设计师、布局入门学习者必备工具，打开浏览器就能用，可视化点击配置，调好直接复制代码拿走，再也不用查Grid语法文档，大幅提升栅格布局开发效率！",
+                filePath: "build-145-css-grid-generator/index.html",
+                filename: "css-grid-generator.html"
+            },
+            {
+                id: 144,
+                name: "CSS Flexbox 可视化生成器",
+                icon: "📐",
+                tagline: "可视化配置Flexbox布局，一键生成CSS代码",
+                category: "开发工具",
+                build: "Build #144",
+                description: "前端布局神器！纯前端实现的CSS Flexbox可视化生成器，点击配置所有容器属性，实时预览布局效果，自带完整Flexbox速查表，内置8种常用布局预设（水平居中、垂直居中、两端对齐、自动换行卡片、圣杯布局等），一键复制生成完整CSS代码。完美解决记不住Flexbox属性、调布局需要反复刷浏览器的痛点。",
+                features: [
+                    "可视化点击配置所有容器属性",
+                    "实时预览布局效果，所见即所得",
+                    "内置8种常用布局预设一键使用",
+                    "自带完整Flexbox属性速查表",
+                    "支持1-12个项目，0-40px间距调节",
+                    "一键复制生成完整CSS代码",
+                    "100%本地运行，零数据上传"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Tailwind CSS"],
+                value: "⭐⭐⭐⭐⭐ 前端开发者、UI设计师、布局入门学习者必备工具，打开浏览器就能用，不用写CSS就能快速试错，找到满意布局直接复制代码，大幅提升布局开发效率！",
+                filePath: "build-144-flexbox-generator/index.html",
+                filename: "flexbox-generator.html"
+            },
+            {
+                id: 143,
+                name: "CSS 渐变生成器",
+                icon: "🎨",
+                tagline: "可视化创建CSS渐变，支持线性/径向/锥形渐变",
+                category: "开发工具",
+                build: "Build #143",
+                description: "前端开发神器！纯前端实现的CSS渐变生成器，支持线性渐变、径向渐变、锥形渐变三大类型，可视化拖动色标调整位置，实时代码生成和预览，支持8种热门渐变预设，选中色标后可以直接用颜色拾取器改颜色，支持输入十六进制色码和位置百分比，一键复制CSS代码直接使用。完美解决写CSS渐变反复调试的痛点。",
+                features: [
+                    "支持线性渐变、径向渐变、锥形渐变三大类型",
+                    "可视化拖动色标调整位置，直观方便",
+                    "8种热门渐变预设一键使用",
+                    "颜色拾取器直接选色，支持手动输入十六进制色码",
+                    "实时代码生成和预览，所见即所得",
+                    "添加/删除色标灵活调整，一键复制CSS代码",
+                    "100%本地运行，零数据上传"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Tailwind CSS"],
+                value: "⭐⭐⭐⭐⭐ 前端开发者、UI设计师必备工具，打开浏览器就能用，快速调试CSS渐变，大幅提升开发效率！",
+                filePath: "build-143-css-gradient-generator/index.html",
+                filename: "css-gradient-generator.html"
+            },
+            {
+                id: 142,
+                name: "YAML 格式化验证工具",
+                icon: "✅",
+                tagline: "YAML格式化验证，支持JSON双向转换",
+                category: "开发工具",
+                build: "Build #142",
+                description: "开发运维神器！纯前端实现的YAML格式化验证工具，完全本地运行，零数据上传。支持一键格式化/压缩YAML，严格语法验证，精准定位错误行，支持YAML ↔ JSON双向转换，自定义缩进大小、流格式/块格式、引号类型，内置5个常用YAML示例，支持文件上传和结果下载。",
+                features: [
+                    "YAML格式化美化和压缩",
+                    "严格语法验证，精准定位错误行",
+                    "YAML ↔ JSON双向转换",
+                    "自定义缩进、格式、引号选项",
+                    "内置5个常用示例（Docker Compose/K8s/GitHub Actions等）",
+                    "支持文件上传和结果下载",
+                    "完全本地运行，数据不上传"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Tailwind CSS", "js-yaml"],
+                value: "⭐⭐⭐⭐⭐ 开发者、运维工程师、DevOps工程师必备，大幅提升配置文件编写和调试效率！",
+                filePath: "build-142-yaml-validator/index.html",
+                filename: "yaml-validator.html"
+            },
+            {
+                id: 107,
+                name: "Base64编码解码工具",
+                icon: "🔄",
+                tagline: "支持文本、图片、文件的Base64转换",
+                category: "开发工具",
+                build: "Build #107",
+                description: "功能全面的Base64工具！支持三种模式：文本编码解码、图片转Base64、任意文件编码解码。自动识别编码/解码，实时转换，拖拽上传，历史记录保存，支持大文件（最大10MB）。所有转换完全在本地完成，数据绝不会上传到服务器。",
+                features: [
+                    "三种模式：文本、图片、任意文件",
+                    "自动识别编码/解码，一键转换",
+                    "拖拽上传支持，操作方便",
+                    "历史记录保存（最多20条）",
+                    "支持最大10MB文件转换",
+                    "一键复制结果、下载文件",
+                    "100%本地处理，数据安全"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "浏览器FileReader API"],
+                value: "⭐⭐⭐⭐⭐ 开发者日常必备工具，提高编码解码效率！",
+                filePath: "build-107-base64-converter/index.html",
+                filename: "base64-converter.html"
+            },
+            {
+                id: 106,
+                name: "正则表达式测试工具",
+                icon: "🔍",
+                tagline: "实时测试正则表达式，高亮匹配结果",
+                category: "开发工具",
+                build: "Build #106",
+                description: "功能强大的正则表达式测试工具！支持实时测试、匹配结果高亮、捕获分组提取、性能测速、10+常用正则模板、完整语法速查表。所有测试完全在本地完成，数据绝不会上传到服务器。",
+                features: [
+                    "实时测试，匹配结果自动高亮",
+                    "捕获分组提取，详细展示每个分组内容",
+                    "性能测速，显示匹配耗时",
+                    "10+常用正则模板（邮箱、手机号、URL、身份证等）",
+                    "支持所有正则标志位（g/i/m/s/u/y）",
+                    "完整正则语法速查表，不用死记硬背",
+                    "一键复制正则表达式和匹配结果"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 开发者和数据处理人员必备工具，大幅提高正则开发效率！",
+                filePath: "build-106-regex-tester/index.html",
+                filename: "regex-tester.html"
+            },
+            {
+                id: 105,
+                name: "JSON树形浏览器",
+                icon: "🌳",
+                tagline: "可视化JSON数据，支持折叠搜索",
+                category: "开发工具",
+                build: "Build #105",
+                description: "功能强大的JSON可视化工具！支持树形结构展示、节点折叠/展开、实时搜索高亮、路径导航、一键复制路径/值、格式化/压缩/验证、文件上传、本地历史记录。所有解析和处理完全在本地完成，数据绝不会上传到服务器。",
+                features: [
+                    "树形结构可视化，支持折叠/展开",
+                    "实时搜索，关键词高亮显示",
+                    "路径导航，快速定位节点",
+                    "一键复制值、复制路径",
+                    "格式化、压缩、验证JSON",
+                    "支持JSON文件上传",
+                    "本地历史记录保存"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 开发者日常必备工具，大幅提高调试效率！",
+                filePath: "build-105-json-viewer/index.html",
+                filename: "json-viewer.html"
+            },
+            {
+                id: 104,
+                name: "Markdown笔记速记",
+                icon: "📝",
+                tagline: "所见即所得的Markdown笔记工具",
+                category: "效率工具",
+                build: "Build #104",
+                description: "轻量化Markdown笔记工具，支持实时预览、完整语法、格式化工具栏、本地存储、一键导出。所有笔记完全保存在本地，无需注册登录，打开就能用。",
+                features: [
+                    "实时预览，所见即所得",
+                    "完整Markdown语法支持",
+                    "一键格式化工具栏，无需记忆语法",
+                    "本地持久化存储，数据100%安全",
+                    "一键导出MD/HTML格式",
+                    "自动保存草稿，防止内容丢失",
+                    "常用快捷键支持，提高输入效率"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Marked.js"],
+                value: "⭐⭐⭐⭐⭐ 每个人都需要的轻量化笔记工具，零依赖零成本！",
+                filePath: "build-104-markdown-note/index.html",
+                filename: "markdown-note.html"
+            },
+            {
+                id: 103,
+                name: "密码生成器",
+                icon: "🔐",
+                tagline: "安全可靠的离线密码生成工具",
+                category: "效率工具",
+                build: "Build #103",
+                description: "安全可靠的离线密码生成神器！支持自定义密码长度、字符类型选择、排除相似字符、快速模板、密码强度评估、破解时间估算、本地历史记录存储。采用浏览器原生加密API生成高质量随机密码，所有数据完全保存在本地。",
+                features: [
+                    "纯本地离线运行，数据100%安全",
+                    "自定义密码长度（4-32位）",
+                    "支持大小写、数字、特殊字符组合",
+                    "排除相似/易混淆字符选项",
+                    "4种快速模板（PIN/易记/强密码/WiFi）",
+                    "密码强度实时评估和破解时间估算",
+                    "本地历史记录存储（最多20条）"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "浏览器Crypto API"],
+                value: "⭐⭐⭐⭐⭐ 每个人都需要的安全工具，本地离线零风险！",
+                filePath: "build-103-password-generator/index.html",
+                filename: "password-generator.html"
+            },
+            {
+                id: 102,
+                name: "短链接生成器",
+                icon: "🔗",
+                tagline: "快速缩短链接，一键生成二维码",
+                category: "效率工具",
+                build: "Build #102",
+                description: "纯本地离线短链接生成神器！快速缩短长链接，支持自定义短码、有效期设置、自动生成二维码、访问量统计、本地持久化存储。所有数据保存在浏览器本地，无需上传服务器，安全可靠。",
+                features: [
+                    "纯本地离线运行，数据安全",
+                    "自定义短码和有效期",
+                    "自动生成二维码支持下载",
+                    "访问量统计功能",
+                    "历史记录本地持久化"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "QRCode.js"],
+                value: "⭐⭐⭐⭐ 日常工作必备小工具，安全离线零依赖！",
+                filePath: "build-102-link-shortener/index.html",
+                filename: "link-shortener.html"
+            },
+            {
+                id: 101,
+                name: "旺仔工具百宝箱",
+                icon: "🧰",
+                tagline: "所有工具一站式访问入口",
+                category: "效率工具",
+                build: "Build #101",
+                description: "收录了100+个最新最实用的工具，涵盖评测相关、效率工具、内容创作、AI工具、开发工具、生活实用六大分类。支持关键词搜索、分类筛选，点击卡片查看工具完整详情，一键下载工具文件。",
+                features: [
+                    "100+工具一站式收录",
+                    "六大分类覆盖全场景",
+                    "关键词搜索快速定位",
+                    "分类筛选精准查找",
+                    "一键下载工具文件"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 工具集合入口，使用体验大幅提升！",
+                filePath: "toolbox/index.html",
+                filename: "toolbox.html"
+            },
+            {
+                id: 100,
+                name: "评测报告生成器",
+                icon: "📊",
+                tagline: "一键生成专业的大模型评测报告",
+                category: "评测相关",
+                build: "Build #100",
+                description: "大模型评测工作者神器！输入各个模型在不同Benchmark上的分数，一键生成专业的可视化评测报告。支持自定义评测基准和权重，自动生成柱状图对比、雷达图能力分析、详细得分表、智能结果分析。",
+                features: [
+                    "高度自定义，支持任意数量的基准和模型",
+                    "自动计算加权平均分",
+                    "自动生成柱状图和雷达图可视化",
+                    "智能生成结果分析和结论",
+                    "一键复制/下载Markdown格式报告",
+                    "纯前端本地运行，数据安全"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Chart.js"],
+                value: "⭐⭐⭐⭐⭐ 大模型评测团队刚需，节省大量报告整理时间",
+                filePath: "eval-report-generator/index.html",
+                filename: "eval-report-generator.html"
+            },
+            {
+                id: 99,
+                name: "项目灵感粉碎机",
+                icon: "💡",
+                tagline: "再也不愁想不出好的创业/开源/副业项目",
+                category: "效率工具",
+                build: "Build #99",
+                description: "12个精心设计的高质量项目灵感，涵盖AI、SaaS、开源、副业、自动化、内容创作、生产力工具7大方向。支持按方向、技术栈、难度筛选，一键生成完整项目方案。",
+                features: [
+                    "12个高质量项目灵感，持续更新",
+                    "支持按方向、技术栈、难度筛选",
+                    "每个项目包含完整的实施方案",
+                    "包含技术栈建议、商业化思路、实施路线图",
+                    "支持保存灵感、复制完整方案",
+                    "纯前端单文件，开箱即用"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 创业者、开发者刚需，帮你找到合适的创业方向",
+                filePath: "idea-generator/index.html",
+                filename: "idea-generator.html"
+            },
+            {
+                id: 98,
+                name: "评测数据集浏览器",
+                icon: "📊",
+                tagline: "一站式查阅所有主流大模型评测Benchmark",
+                category: "评测相关",
+                build: "Build #98",
+                description: "收录了20+个主流评测基准，涵盖代码、推理、知识、Agent、多模态、长上下文、安全等全部分类。支持关键词搜索、分类筛选、难度筛选，点击卡片查看完整详情。",
+                features: [
+                    "收录20+主流评测基准，持续更新",
+                    "支持搜索、分类、难度筛选",
+                    "每个基准包含完整介绍：测什么、题量、SOTA、局限性等",
+                    "包含相关链接，快速跳转官方资源",
+                    "纯前端单文件，零依赖"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐ 评测工作者必备，提高评测效率",
+                filePath: "benchmark-browser/index.html",
+                filename: "benchmark-browser.html"
+            },
+            {
+                id: 97,
+                name: "论文速览工具",
+                icon: "📄",
+                tagline: "输入arXiv链接一键提取论文核心信息",
+                category: "AI工具",
+                build: "Build #97",
+                description: "arXiv论文速读神器！输入论文链接/ID，10秒提取核心信息，自动拆分四大维度：核心创新、关键结果、研究方法、实践价值。内置热门论文示例，支持一键复制完整摘要、下载Markdown版本。",
+                features: [
+                    "输入arXiv链接/ID自动提取信息",
+                    "四大维度智能摘要：创新/结果/方法/价值",
+                    "内置热门论文示例",
+                    "一键复制/下载Markdown笔记",
+                    "本地运行，隐私安全"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "可选LLM API增强"],
+                value: "⭐⭐⭐⭐⭐ 科研工作者、AI从业者刚需，节省大量论文阅读时间",
+                filePath: "paper-summary/index.html",
+                filename: "paper-summary.html"
+            },
+            {
+                id: 96,
+                name: "小红书爆款文案生成器",
+                icon: "📕",
+                tagline: "10秒生成吸睛小红书文案，流量密码拿捏了",
+                category: "内容创作",
+                build: "Build #96",
+                description: "10大内容类型（美妆/穿搭/美食/旅行/生活/健身/学习/情感/萌宠/家居），7种风格（软萌可爱/酷飒拽姐/专业干货/搞笑幽默/文艺清新/直接种草/故事分享），内置海量模板和热门标签！",
+                features: [
+                    "支持10大内容类型，7种写作风格",
+                    "内置海量模板和热门标签",
+                    "自动生成带话题标签的完整文案",
+                    "爆款评分系统，一键复制",
+                    "配合小红书Skill可直接发布"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 内容创作者、自媒体人刚需",
+                filePath: "xiaohongshu-copywriter/index.html",
+                filename: "xiaohongshu-copywriter.html"
+            },
+            {
+                id: 95,
+                name: "项目灵感生成器",
+                icon: "💡",
+                tagline: "AI创业与开源项目创意工厂",
+                category: "效率工具",
+                build: "Build #95",
+                description: "专门帮你想AI相关的、能挣钱或者开源的项目！7大项目方向（AI工具/SaaS/开源/自动化/内容/教育/生产力），40+预设项目灵感，每个灵感包含核心理念、核心功能、技术选型、商业化方案、项目评估、实施路线图！",
+                features: [
+                    "7大项目方向，40+预设灵感",
+                    "每个灵感包含完整的实施方案",
+                    "支持自定义筛选（方向/难度/商业化/技术栈）",
+                    "一键复制完整方案，保存灵感历史",
+                    "完美解决\"想不出好项目\"的痛点"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 帮你找到下一个千万级项目",
+                filePath: "project-idea-generator/index.html",
+                filename: "project-idea-generator.html"
+            },
+            {
+                id: 94,
+                name: "会议纪要生成器",
+                icon: "📝",
+                tagline: "3分钟生成专业会议纪要，告别手写烦恼",
+                category: "效率工具",
+                build: "Build #94",
+                description: "职场效率神器！3种会议模板（标准会议/项目评审/周会），智能格式化输出，参会人员标签管理，自动生成规范格式（会议信息/内容/决议/待办），支持一键复制、下载TXT/Markdown格式。",
+                features: [
+                    "3种会议模板，覆盖常见会议场景",
+                    "智能格式化输出，规范专业",
+                    "参会人员标签管理，快速添加",
+                    "支持一键复制、下载多种格式",
+                    "日期时间自动填充，提高效率"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 企业刚需，可做付费SaaS",
+                filePath: "meeting-minutes-generator/index.html",
+                filename: "meeting-minutes-generator.html"
+            },
+            {
+                id: 93,
+                name: "爆款标题生成器",
+                icon: "🔥",
+                tagline: "10秒生成吸睛标题，让内容脱颖而出",
+                category: "内容创作",
+                build: "Build #93",
+                description: "内容创作者必备神器！支持4大平台（小红书/公众号/微博/抖音），6种标题风格（数字型/疑问型/情感型/悬念型/利益型/对比型），智能标题评分系统，自动排序推荐最佳标题。",
+                features: [
+                    "支持4大内容平台，6种标题风格",
+                    "智能标题评分系统，综合评估吸引力",
+                    "自动排序推荐最佳标题",
+                    "内置爆款技巧提示",
+                    "一键复制使用，提高内容点击率"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 内容创作者刚需，可发展为付费工具",
+                filePath: "viral-title-generator/index.html",
+                filename: "viral-title-generator.html"
+            },
+            {
+                id: 92,
+                name: "API响应格式化工具",
+                icon: "🎨",
+                tagline: "API调试神器，美化JSON/XML响应",
+                category: "开发工具",
+                build: "Build #92",
+                description: "支持JSON和XML自动识别和格式化，可调缩进空格数，键名排序选项，紧凑/展开模式切换，一键压缩JSON，实时格式化，数据验证功能，4个统计卡片，一键复制输出，下载格式化文件。",
+                features: [
+                    "支持JSON/XML自动识别和美化",
+                    "可调缩进，排序选项，多种显示模式",
+                    "实时格式化，输入即响应",
+                    "数据验证功能，自动统计信息",
+                    "一键复制、下载文件",
+                    "内置示例数据，快速上手"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐ 开发调试必备工具",
+                filePath: "api-formatter/index.html",
+                filename: "api-formatter.html"
+            },
+            {
+                id: 91,
+                name: "Token计数器 & 成本估算器",
+                icon: "💰",
+                tagline: "实时计算文本token数量，精准估算API成本",
+                category: "评测相关",
+                build: "Build #91",
+                description: "大模型评测必备神器！4个统计卡片（字符数/单词数/英文token估算/中文token估算），智能语言检测，4种模型定价预设，成本估算表，自定义价格输入，4个快速示例，一键复制统计报告。",
+                features: [
+                    "实时计算中英文token数量",
+                    "智能区分中英文，分别估算",
+                    "支持多种模型定价，自定义价格",
+                    "精准估算API调用成本",
+                    "批量评测前的成本预算必备",
+                    "纯前端本地运行，无网络依赖"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐⭐ 大模型评测和API调用成本控制必备",
+                filePath: "token-calculator/index.html",
+                filename: "token-calculator.html"
+            },
+            {
+                id: 90,
+                name: "占位文本生成器",
+                icon: "📝",
+                tagline: "前端开发必备，快速生成占位文本",
+                category: "开发工具",
+                build: "Build #90",
+                description: "4种生成类型（段落/句子/单词/字节），数量滑块调节（1-50），可选以\"Lorem ipsum\"开头，段落间添加空行选项，一键生成/复制/清空，4个统计卡片，实时统计更新。",
+                features: [
+                    "支持段落/句子/单词/字节4种生成类型",
+                    "数量可调节，最多50个",
+                    "基于经典Lorem Ipsum词库，自然流畅",
+                    "实时统计字符/单词/句子/段落数",
+                    "一键复制，前端开发必备"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐ 前端开发实用小工具",
+                filePath: "lorem-ipsum/index.html",
+                filename: "lorem-ipsum.html"
+            },
+            {
+                id: 89,
+                name: "倒计时器",
+                icon: "⏱️",
+                tagline: "专业倒计时器，时间管理利器",
+                category: "生活实用",
+                build: "Build #89",
+                description: "4个快速预设（5分快速休息/15分短会议/25分番茄钟/60分专注工作），自定义时分秒输入，大字体时间显示，环形进度条可视化，开始/暂停/重置控制，最后10秒红色闪烁警告，倒计时结束提示音，浏览器通知提醒。",
+                features: [
+                    "4个常用预设，支持自定义时间",
+                    "环形进度条可视化，直观清晰",
+                    "最后10秒红色闪烁警告",
+                    "结束提示音+浏览器通知双提醒",
+                    "标题栏显示剩余时间，方便查看",
+                    "响应式设计，手机可用"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "Web Audio API", "Notification API"],
+                value: "⭐⭐⭐⭐ 时间管理、会议、专注工作必备",
+                filePath: "countdown-timer/index.html",
+                filename: "countdown-timer.html"
+            },
+            {
+                id: 88,
+                name: "Emoji选择器",
+                icon: "😊",
+                tagline: "Emoji快速选择神器，一键复制",
+                category: "效率工具",
+                build: "Build #88",
+                description: "9大分类（表情/情绪/爱心/手势/动物/食物/运动/交通/符号/活动），共800+ emoji，点击即复制到剪贴板，实时搜索功能，最近使用记录（保存最近50个），分类按钮快速切换。",
+                features: [
+                    "800+常用emoji，9大分类",
+                    "实时搜索，快速找到需要的表情",
+                    "点击即复制，使用方便",
+                    "最近使用记录，常用表情快速访问",
+                    "渐变紫色主题，美观易用"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "localStorage"],
+                value: "⭐⭐⭐ 写文档、聊天、发消息必备",
+                filePath: "emoji-picker/index.html",
+                filename: "emoji-picker.html"
+            },
+            {
+                id: 87,
+                name: "API响应对比工具",
+                icon: "🔍",
+                tagline: "API响应对比神器，大模型评测必备",
+                category: "评测相关",
+                build: "Build #87",
+                description: "并排对比两个API响应（JSON或文本），可视化差异高亮（新增行绿色/删除行红色/修改行黄色），5个统计指标，一键格式化JSON，交换左右对比，复制差异报告，3个快速模板。",
+                features: [
+                    "并排对比两个响应，差异高亮显示",
+                    "支持JSON和文本格式，自动格式化",
+                    "统计新增/删除/修改行数和相似度",
+                    "自定义标签命名，方便对比",
+                    "一键复制差异报告",
+                    "大模型评测对比输出必备"
+                ],
+                techStack: ["纯 HTML/CSS/JS"],
+                value: "⭐⭐⭐⭐ 大模型评测、API调试必备",
+                filePath: "api-diff/index.html",
+                filename: "api-diff.html"
+            },
+            {
+                id: 86,
+                name: "习惯追踪器",
+                icon: "🎯",
+                tagline: "习惯养成神器，坚持每一天",
+                category: "生活实用",
+                build: "Build #86",
+                description: "添加习惯（名称/目标频率/图标），12个精美图标可选（📚读书/🏃跑步/💪健身/🏸羽毛球等），每日打卡记录，连续打卡天数统计，4个统计卡片，习惯热力图（7周49天，类似GitHub贡献图），6个成就徽章系统。",
+                features: [
+                    "自定义习惯，12个精美图标可选",
+                    "每日打卡记录，连续天数统计",
+                    "GitHub风格热力图，可视化进度",
+                    "成就徽章系统，增加趣味性",
+                    "本地持久化，数据不丢失",
+                    "特别适合追踪读书、羽毛球、健身等爱好"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "localStorage"],
+                value: "⭐⭐⭐⭐ 习惯养成、自我管理必备",
+                filePath: "habit-tracker/index.html",
+                filename: "habit-tracker.html"
+            },
+            {
+                id: 85,
+                name: "模型对比工具",
+                icon: "📊",
+                tagline: "模型评测对比神器，一键可视化性能差异",
+                category: "评测相关",
+                build: "Build #85",
+                description: "添加多个模型及其在8个主流Benchmark上的分数，自动生成对比表格（最佳分数绿色高亮，最差分数红色标注），雷达图对比，柱状图对比，自动计算平均分，导出Markdown报告。",
+                features: [
+                    "支持8个主流Benchmark评分录入",
+                    "自动生成对比表格，高亮最佳最差",
+                    "雷达图+柱状图双可视化",
+                    "自动计算平均分和排名",
+                    "一键导出Markdown报告",
+                    "快速分析模型优劣势，提高评测效率"
+                ],
+                techStack: ["HTML/CSS/JS", "Chart.js"],
+                value: "⭐⭐⭐⭐ 大模型评测必备，快速对比模型性能",
+                filePath: "benchmark-comparator/index.html",
+                filename: "benchmark-comparator.html"
+            },
+            {
+                id: 84,
+                name: "Prompt模板库",
+                icon: "📝",
+                tagline: "Prompt管理神器，评测工作必备",
+                category: "评测相关",
+                build: "Build #84",
+                description: "保存和管理Prompt模板（名称/标签/内容），支持变量定义（{{变量名}}语法），变量自动提取和填充，实时预览生成的Prompt，一键复制到剪贴板，按标签分类筛选，编辑和删除模板，导出JSON数据。",
+                features: [
+                    "保存和管理Prompt模板，分类标签",
+                    "变量自动提取和填充，支持{{变量名}}语法",
+                    "实时预览生成的Prompt",
+                    "一键复制，导入导出JSON",
+                    "本地持久化，数据安全",
+                    "解决\"测试Prompt散落各处难以管理\"的痛点"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "localStorage"],
+                value: "⭐⭐⭐⭐ 大模型评测和Prompt工程必备",
+                filePath: "prompt-templates/index.html",
+                filename: "prompt-templates.html"
+            },
+            {
+                id: 83,
+                name: "时间追踪器",
+                icon: "⏱️",
+                tagline: "时间管理神器，掌控你的每一分钟",
+                category: "效率工具",
+                build: "Build #83",
+                description: "实时计时器（开始/暂停/停止），任务名称和分类标签输入，自动记录时间条目，4个统计卡片（总时长/任务数/日均时长/分类数），今日时间分布饼图，本周时间趋势柱状图，时间记录列表，筛选功能，导出JSON数据。",
+                features: [
+                    "实时计时，分类记录时间花费",
+                    "饼图+柱状图可视化时间分配",
+                    "按时间范围筛选记录",
+                    "导出JSON数据，方便分析",
+                    "本地持久化，数据不丢失",
+                    "解决\"不知道时间都花在哪里\"的痛点"
+                ],
+                techStack: ["HTML/CSS/JS", "Chart.js", "localStorage"],
+                value: "⭐⭐⭐⭐ 时间管理、生产力分析必备",
+                filePath: "time-tracker/index.html",
+                filename: "time-tracker.html"
+            },
+            {
+                id: 82,
+                name: "代码片段管理器",
+                icon: "💻",
+                tagline: "代码片段管理神器，开发者必备",
+                category: "开发工具",
+                build: "Build #82",
+                description: "保存常用代码片段（标题/语言/代码/标签），支持13种编程语言，语法高亮显示，按语言和标签筛选，实时搜索功能，一键复制代码，导入导出JSON，3个统计卡片，本地持久化。",
+                features: [
+                    "支持13种编程语言，语法高亮显示",
+                    "按语言和标签分类筛选，实时搜索",
+                    "一键复制代码，开发效率提升",
+                    "导入导出JSON，方便备份同步",
+                    "本地持久化，代码片段永不丢失",
+                    "解决\"常用代码片段散落各处难以管理\"的痛点"
+                ],
+                techStack: ["HTML/CSS/JS", "highlight.js", "localStorage"],
+                value: "⭐⭐⭐⭐ 开发者必备，提高编码效率",
+                filePath: "code-snippets/index.html",
+                filename: "code-snippets.html"
+            },
+            {
+                id: 81,
+                name: "快速想法捕捉器",
+                icon: "⚡",
+                tagline: "极简想法收件箱，快速捕捉灵感、待办和想法",
+                category: "效率工具",
+                build: "Build #81",
+                description: "输入框支持多行文本，使用#标签分类（#工作 #想法 #待办 #灵感），Ctrl+Enter快捷键保存，自动提取标签并分类，时间戳智能显示，3个统计卡片，标签筛选按钮，实时搜索功能，导出为Markdown。",
+                features: [
+                    "极简设计，打开就能用，快速记录",
+                    "#标签自动分类，方便整理",
+                    "智能时间戳显示（刚刚/X分钟前等）",
+                    "实时搜索，标签筛选",
+                    "导出为Markdown，方便后续整理",
+                    "解决\"突然有想法但不知道记哪里\"的痛点"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "localStorage"],
+                value: "⭐⭐⭐⭐ 创意工作者必备，随时捕捉灵感",
+                filePath: "quick-capture/index.html",
+                filename: "quick-capture.html"
+            },
+            {
+                id: 80,
+                name: "读书进度追踪器",
+                icon: "📚",
+                tagline: "记录阅读旅程，追踪读书进度",
+                category: "生活实用",
+                build: "Build #80",
+                description: "添加书籍（书名/总页数/当前页数），实时进度条显示阅读进度，更新当前页数，读书笔记记录，标记完成，4个统计卡片（总书籍/在读/已完成/总页数），4个筛选标签，本地持久化。",
+                features: [
+                    "添加书籍，记录阅读进度",
+                    "进度条可视化，一目了然",
+                    "支持读书笔记记录",
+                    "按在读/已完成/想读筛选",
+                    "本地持久化，阅读记录不丢失",
+                    "适合读书爱好者，激励持续阅读"
+                ],
+                techStack: ["纯 HTML/CSS/JS", "localStorage"],
+                value: "⭐⭐⭐ 读书爱好者必备",
+                filePath: "reading-tracker/index.html",
+                filename: "reading-tracker.html"
+            }
+        ];
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const toolsGrid = document.getElementById('toolsGrid');
+        const noResults = document.getElementById('noResults');
+        const toolModal = document.getElementById('toolModal');
+        const closeModal = document.getElementById('closeModal');
+        const downloadToolBtn = document.getElementById('downloadToolBtn');
+        const totalCount = document.getElementById('totalCount');
+
+        // Current tool for download
+        let currentTool = null;
+
+        // Render tools
+        function renderTools(filtered = tools) {
+            toolsGrid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            totalCount.textContent = filtered.length;
+            
+            filtered.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-lg overflow-hidden card-hover cursor-pointer';
+                card.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <div class="tool-icon text-4xl mb-2">${tool.icon}</div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-1">${tool.name}</h3>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="tag bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">${tool.category}</span>
+                                    <span class="tag bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">${tool.build}</span>
+                                </div>
+                                <p class="text-gray-600 text-sm">${tool.tagline}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between text-sm">
+                            <span class="text-yellow-500 font-medium">${tool.value.split(' ')[0]}</span>
+                            <span class="text-primary font-medium flex items-center gap-1">
+                                <i class="fa fa-arrow-right"></i> 查看详情
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => openModal(tool));
+                toolsGrid.appendChild(card);
+            });
+        }
+
+        // Open modal
+        function openModal(tool) {
+            currentTool = tool;
+            
+            document.getElementById('modalIcon').textContent = tool.icon;
+            document.getElementById('modalTitle').textContent = tool.name;
+            document.getElementById('modalTagline').textContent = tool.tagline;
+            document.getElementById('modalCategory').textContent = tool.category;
+            document.getElementById('modalBuild').textContent = tool.build;
+            document.getElementById('modalDescription').textContent = tool.description;
+            document.getElementById('modalValue').textContent = tool.value;
+
+            // Features
+            const featuresList = document.getElementById('modalFeatures');
+            featuresList.innerHTML = '';
+            tool.features.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<i class="fa fa-check-circle text-green-500 mt-1 flex-shrink-0"></i><span>${f}</span>`;
+                featuresList.appendChild(li);
+            });
+
+            // Tech stack
+            const techStackDiv = document.getElementById('modalTechStack');
+            techStackDiv.innerHTML = '';
+            tool.techStack.forEach(t => {
+                const span = document.createElement('span');
+                span.className = 'px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium';
+                span.textContent = t;
+                techStackDiv.appendChild(span);
+            });
+
+            toolModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close modal
+        closeModal.addEventListener('click', () => {
+            toolModal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            currentTool = null;
+        });
+
+        // Close modal on outside click
+        toolModal.addEventListener('click', (e) => {
+            if (e.target === toolModal) {
+                toolModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                currentTool = null;
+            }
+        });
+
+        // Download tool
+        downloadToolBtn.addEventListener('click', async () => {
+            if (!currentTool) return;
+            
+            try {
+                // Fetch the file content
+                const response = await fetch(`../builds/${currentTool.filePath}`);
+                const content = await response.text();
+                
+                // Create download
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentTool.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                // Show success
+                const originalText = downloadToolBtn.innerHTML;
+                downloadToolBtn.innerHTML = '<i class="fa fa-check"></i> <span>下载成功！</span>';
+                downloadToolBtn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    downloadToolBtn.innerHTML = originalText;
+                    downloadToolBtn.classList.remove('bg-green-600');
+                }, 2000);
+            } catch (error) {
+                alert('下载失败，请稍后重试');
+            }
+        });
+
+        // Filter tools
+        function filterTools() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const category = categoryFilter.value;
+
+            const filtered = tools.filter(tool => {
+                const matchesSearch = 
+                    tool.name.toLowerCase().includes(searchTerm) ||
+                    tool.tagline.toLowerCase().includes(searchTerm) ||
+                    tool.description.toLowerCase().includes(searchTerm) ||
+                    tool.category.toLowerCase().includes(searchTerm) ||
+                    tool.features.some(f => f.toLowerCase().includes(searchTerm));
+                
+                const matchesCategory = category === 'all' || tool.category === category;
+
+                return matchesSearch && matchesCategory;
+            });
+
+            renderTools(filtered);
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', filterTools);
+        categoryFilter.addEventListener('change', filterTools);
+
+        // Initial render
+        renderTools();
+    </script>
+</body>
+</html>

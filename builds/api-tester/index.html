@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚀 API 调试台 - API Tester</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--card:#12122a;--border:#1e1e40;--accent:#7c83ff;--accent2:#4ade80;--text:#e0e0e0;--dim:#888;--input:#0d0d20;--red:#f87171;--yellow:#fbbf24;--green:#4ade80}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:16px}
+.header{text-align:center;padding:24px 0 16px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.header h1{font-size:1.5em;color:#fff}
+.header .sub{color:var(--dim);font-size:0.85em;margin-top:4px}
+
+/* URL Bar */
+.url-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.method-select{background:var(--input);border:1px solid var(--border);color:var(--accent);padding:10px 12px;border-radius:8px;font-size:0.9em;font-weight:600;outline:none;min-width:90px}
+.method-select option{background:var(--input)}
+.url-input{flex:1;min-width:200px;background:var(--input);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-family:monospace;font-size:0.9em;outline:none}
+.url-input:focus{border-color:var(--accent)}
+.send-btn{background:var(--accent);color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:0.9em;font-weight:600;cursor:pointer;transition:all 0.2s}
+.send-btn:hover{opacity:0.85;transform:translateY(-1px)}
+.send-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:0}
+.tab{padding:10px 20px;cursor:pointer;color:var(--dim);font-size:0.85em;border-bottom:2px solid transparent;transition:all 0.2s}
+.tab:hover{color:#fff}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none;padding:16px 0}
+.tab-panel.active{display:block}
+
+/* KV Editor */
+.kv-list{margin-bottom:8px}
+.kv-row{display:flex;gap:8px;margin-bottom:6px;align-items:center}
+.kv-row input{flex:1;background:var(--input);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:0.85em;font-family:monospace;outline:none}
+.kv-row input:focus{border-color:var(--accent)}
+.kv-row .del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1em;padding:4px 8px;opacity:0.5}
+.kv-row .del-btn:hover{opacity:1}
+.kv-row .toggle{width:18px;height:18px;accent-color:var(--accent)}
+.add-btn{background:none;border:1px dashed var(--border);color:var(--dim);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:0.8em;width:100%}
+.add-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Body editor */
+.body-type{display:flex;gap:12px;margin-bottom:12px}
+.body-type label{display:flex;align-items:center;gap:4px;color:var(--dim);font-size:0.85em;cursor:pointer}
+.body-type input[type=radio]{accent-color:var(--accent)}
+textarea.body-editor{width:100%;min-height:180px;background:var(--input);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:8px;font-family:'SF Mono',Monaco,Consolas,monospace;font-size:0.85em;resize:vertical;outline:none;line-height:1.5}
+textarea.body-editor:focus{border-color:var(--accent)}
+
+/* Response */
+.response-area{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:16px;overflow:hidden}
+.resp-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.status-badge{padding:4px 12px;border-radius:6px;font-size:0.85em;font-weight:600}
+.status-2xx{background:#14532d;color:var(--green)}
+.status-3xx{background:#422006;color:var(--yellow)}
+.status-4xx{background:#450a0a;color:var(--red)}
+.status-5xx{background:#450a0a;color:var(--red)}
+.resp-meta{color:var(--dim);font-size:0.8em}
+.resp-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.resp-tab{padding:8px 16px;cursor:pointer;color:var(--dim);font-size:0.8em;border-bottom:2px solid transparent}
+.resp-tab:hover{color:#fff}
+.resp-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.resp-body{padding:16px;max-height:400px;overflow:auto}
+.resp-body pre{font-family:'SF Mono',Monaco,Consolas,monospace;font-size:0.85em;white-space:pre-wrap;word-break:break-all;line-height:1.5}
+.resp-body table{width:100%;font-size:0.85em}
+.resp-body td{padding:4px 8px;border-bottom:1px solid var(--border);font-family:monospace;vertical-align:top}
+.resp-body td:first-child{color:var(--accent);white-space:nowrap;width:30%}
+.empty-state{text-align:center;padding:48px;color:var(--dim)}
+
+/* History */
+.history{margin-top:16px}
+.history h3{color:#fff;font-size:0.95em;margin-bottom:8px}
+.hist-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:border-color 0.2s;font-size:0.85em}
+.hist-item:hover{border-color:var(--accent)}
+.hist-method{font-weight:600;min-width:50px}
+.hist-method.GET{color:var(--green)}.hist-method.POST{color:var(--yellow)}.hist-method.PUT{color:#60a5fa}.hist-method.DELETE{color:var(--red)}.hist-method.PATCH{color:#c084fc}
+.hist-url{flex:1;color:var(--dim);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-status{font-size:0.8em}
+.hist-time{color:#555;font-size:0.75em}
+.clear-hist{background:none;border:none;color:var(--dim);cursor:pointer;font-size:0.8em;float:right}
+.clear-hist:hover{color:var(--red)}
+
+.two-col{display:flex;gap:16px}
+.two-col .left{flex:1;min-width:0}
+.two-col .right{width:280px;flex-shrink:0}
+@media(max-width:768px){.two-col{flex-direction:column}.two-col .right{width:100%}}
+.footer{text-align:center;padding:24px;color:#444;font-size:0.8em}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <h1>🚀 API 调试台</h1>
+  <div class="sub">Lightweight API Tester · 浏览器里的 Postman</div>
+</div>
+
+<div class="url-bar">
+  <select class="method-select" id="method">
+    <option value="GET">GET</option>
+    <option value="POST">POST</option>
+    <option value="PUT">PUT</option>
+    <option value="PATCH">PATCH</option>
+    <option value="DELETE">DELETE</option>
+    <option value="HEAD">HEAD</option>
+    <option value="OPTIONS">OPTIONS</option>
+  </select>
+  <input class="url-input" id="urlInput" placeholder="https://httpbin.org/get" value="https://httpbin.org/get">
+  <button class="send-btn" id="sendBtn" onclick="sendRequest()">发送 ▶</button>
+</div>
+
+<div class="two-col">
+<div class="left">
+
+<!-- Request Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchReqTab('params',this)">Params</div>
+  <div class="tab" onclick="switchReqTab('headers',this)">Headers</div>
+  <div class="tab" onclick="switchReqTab('body',this)">Body</div>
+  <div class="tab" onclick="switchReqTab('auth',this)">Auth</div>
+</div>
+
+<div class="tab-panel active" id="tab-params">
+  <div class="kv-list" id="paramsList"></div>
+  <button class="add-btn" onclick="addKV('paramsList')">+ 添加参数</button>
+</div>
+
+<div class="tab-panel" id="tab-headers">
+  <div class="kv-list" id="headersList"></div>
+  <button class="add-btn" onclick="addKV('headersList')">+ 添加 Header</button>
+</div>
+
+<div class="tab-panel" id="tab-body">
+  <div class="body-type">
+    <label><input type="radio" name="bodyType" value="none" checked onchange="updateBodyType()"> none</label>
+    <label><input type="radio" name="bodyType" value="json" onchange="updateBodyType()"> JSON</label>
+    <label><input type="radio" name="bodyType" value="text" onchange="updateBodyType()"> Text</label>
+    <label><input type="radio" name="bodyType" value="form" onchange="updateBodyType()"> Form</label>
+  </div>
+  <textarea class="body-editor" id="bodyEditor" placeholder='{"key": "value"}' style="display:none"></textarea>
+  <div class="kv-list" id="formList" style="display:none"></div>
+  <button class="add-btn" id="formAddBtn" onclick="addKV('formList')" style="display:none">+ 添加字段</button>
+</div>
+
+<div class="tab-panel" id="tab-auth">
+  <div style="margin-bottom:8px">
+    <select id="authType" onchange="updateAuthType()" style="background:var(--input);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:0.85em">
+      <option value="none">无认证</option>
+      <option value="bearer">Bearer Token</option>
+      <option value="basic">Basic Auth</option>
+    </select>
+  </div>
+  <div id="authBearer" style="display:none">
+    <input class="url-input" id="bearerToken" placeholder="输入 Token" style="width:100%;margin-top:8px">
+  </div>
+  <div id="authBasic" style="display:none">
+    <input class="url-input" id="basicUser" placeholder="Username" style="width:100%;margin-top:8px;margin-bottom:6px">
+    <input class="url-input" id="basicPass" placeholder="Password" type="password" style="width:100%">
+  </div>
+</div>
+
+<!-- Response -->
+<div class="response-area" id="responseArea">
+  <div class="empty-state" id="emptyState">
+    <div style="font-size:2em;margin-bottom:8px">📡</div>
+    <div>点击「发送」查看响应</div>
+    <div style="font-size:0.8em;margin-top:4px">试试 https://httpbin.org/get</div>
+  </div>
+  <div id="responseContent" style="display:none">
+    <div class="resp-header">
+      <span class="status-badge" id="respStatus"></span>
+      <span class="resp-meta" id="respTime"></span>
+      <span class="resp-meta" id="respSize"></span>
+    </div>
+    <div class="resp-tabs">
+      <div class="resp-tab active" onclick="switchRespTab('respBody',this)">Body</div>
+      <div class="resp-tab" onclick="switchRespTab('respHeaders',this)">Headers</div>
+    </div>
+    <div class="resp-body" id="respBody"></div>
+    <div class="resp-body" id="respHeaders" style="display:none"></div>
+  </div>
+</div>
+
+</div>
+<div class="right">
+  <div class="history">
+    <h3>📜 历史记录 <button class="clear-hist" onclick="clearHistory()">清空</button></h3>
+    <div id="historyList"></div>
+  </div>
+</div>
+</div>
+
+<div class="footer">🥛 旺仔 · Build #10 · Made for 老大</div>
+</div>
+
+<script>
+let history = JSON.parse(localStorage.getItem('apiHistory') || '[]');
+
+function addKV(listId, key='', val='') {
+  const list = document.getElementById(listId);
+  const row = document.createElement('div');
+  row.className = 'kv-row';
+  row.innerHTML = '<input type="checkbox" class="toggle" checked><input placeholder="Key" value="'+key+'"><input placeholder="Value" value="'+val+'"><button class="del-btn" onclick="this.parentElement.remove()">×</button>';
+  list.appendChild(row);
+}
+
+function getKVPairs(listId) {
+  const rows = document.querySelectorAll('#'+listId+' .kv-row');
+  const pairs = {};
+  rows.forEach(r => {
+    const inputs = r.querySelectorAll('input');
+    if (inputs[0].checked && inputs[1].value) {
+      pairs[inputs[1].value] = inputs[2].value;
+    }
+  });
+  return pairs;
+}
+
+function switchReqTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+function switchRespTab(id, el) {
+  document.querySelectorAll('.resp-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('respBody').style.display = id === 'respBody' ? 'block' : 'none';
+  document.getElementById('respHeaders').style.display = id === 'respHeaders' ? 'block' : 'none';
+}
+
+function updateBodyType() {
+  const type = document.querySelector('input[name=bodyType]:checked').value;
+  document.getElementById('bodyEditor').style.display = (type === 'json' || type === 'text') ? 'block' : 'none';
+  document.getElementById('formList').style.display = type === 'form' ? 'block' : 'none';
+  document.getElementById('formAddBtn').style.display = type === 'form' ? 'block' : 'none';
+  if (type === 'json') document.getElementById('bodyEditor').placeholder = '{"key": "value"}';
+  if (type === 'text') document.getElementById('bodyEditor').placeholder = 'Plain text body...';
+}
+
+function updateAuthType() {
+  const type = document.getElementById('authType').value;
+  document.getElementById('authBearer').style.display = type === 'bearer' ? 'block' : 'none';
+  document.getElementById('authBasic').style.display = type === 'basic' ? 'block' : 'none';
+}
+
+async function sendRequest() {
+  const method = document.getElementById('method').value;
+  let url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+
+  // Add params
+  const params = getKVPairs('paramsList');
+  if (Object.keys(params).length) {
+    const sp = new URLSearchParams(params);
+    url += (url.includes('?') ? '&' : '?') + sp.toString();
+  }
+
+  // Headers
+  const headers = getKVPairs('headersList');
+
+  // Auth
+  const authType = document.getElementById('authType').value;
+  if (authType === 'bearer') {
+    const token = document.getElementById('bearerToken').value;
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+  } else if (authType === 'basic') {
+    const user = document.getElementById('basicUser').value;
+    const pass = document.getElementById('basicPass').value;
+    if (user) headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
+  }
+
+  // Body
+  const bodyType = document.querySelector('input[name=bodyType]:checked').value;
+  let body = undefined;
+  if (method !== 'GET' && method !== 'HEAD') {
+    if (bodyType === 'json') {
+      body = document.getElementById('bodyEditor').value;
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    } else if (bodyType === 'text') {
+      body = document.getElementById('bodyEditor').value;
+      headers['Content-Type'] = headers['Content-Type'] || 'text/plain';
+    } else if (bodyType === 'form') {
+      const formData = getKVPairs('formList');
+      body = new URLSearchParams(formData).toString();
+      headers['Content-Type'] = headers['Content-Type'] || 'application/x-www-form-urlencoded';
+    }
+  }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = '发送中...';
+
+  const startTime = performance.now();
+  try {
+    const resp = await fetch(url, { method, headers, body, mode: 'cors' });
+    const elapsed = Math.round(performance.now() - startTime);
+    const respHeaders = {};
+    resp.headers.forEach((v, k) => respHeaders[k] = v);
+
+    let respText = await resp.text();
+    const size = new Blob([respText]).size;
+
+    // Try parse JSON
+    let isJSON = false;
+    try { JSON.parse(respText); isJSON = true; } catch(e) {}
+    if (isJSON) respText = JSON.stringify(JSON.parse(respText), null, 2);
+
+    showResponse(resp.status, resp.statusText, elapsed, size, respText, respHeaders);
+    addHistory(method, url, resp.status, elapsed);
+  } catch(e) {
+    showResponse(0, 'Error', Math.round(performance.now() - startTime), 0, e.message, {});
+    addHistory(method, url, 'ERR', 0);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '发送 ▶';
+}
+
+function showResponse(status, statusText, time, size, body, headers) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('responseContent').style.display = 'block';
+
+  const badge = document.getElementById('respStatus');
+  badge.textContent = status + ' ' + statusText;
+  badge.className = 'status-badge status-' + (status >= 500 ? '5xx' : status >= 400 ? '4xx' : status >= 300 ? '3xx' : status >= 200 ? '2xx' : '5xx');
+
+  document.getElementById('respTime').textContent = '⏱ ' + time + 'ms';
+  document.getElementById('respSize').textContent = '📦 ' + formatSize(size);
+
+  document.getElementById('respBody').innerHTML = '<pre>' + escHtml(body) + '</pre>';
+
+  let headerHTML = '<table>';
+  Object.entries(headers).forEach(([k,v]) => {
+    headerHTML += '<tr><td>' + escHtml(k) + '</td><td>' + escHtml(v) + '</td></tr>';
+  });
+  headerHTML += '</table>';
+  document.getElementById('respHeaders').innerHTML = headerHTML;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function addHistory(method, url, status, time) {
+  history.unshift({ method, url, status, time, ts: Date.now() });
+  if (history.length > 30) history = history.slice(0, 30);
+  localStorage.setItem('apiHistory', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!history.length) { list.innerHTML = '<div style="color:var(--dim);font-size:0.8em;padding:8px">暂无记录</div>'; return; }
+  list.innerHTML = history.map((h, i) => {
+    const ago = timeAgo(h.ts);
+    return '<div class="hist-item" onclick="loadHistory('+i+')"><span class="hist-method '+h.method+'">'+h.method+'</span><span class="hist-url">'+escHtml(h.url)+'</span><span class="hist-status">'+(h.status||'')+'</span><span class="hist-time">'+ago+'</span></div>';
+  }).join('');
+}
+
+function loadHistory(idx) {
+  const h = history[idx];
+  document.getElementById('method').value = h.method;
+  document.getElementById('urlInput').value = h.url;
+}
+
+function clearHistory() {
+  history = [];
+  localStorage.removeItem('apiHistory');
+  renderHistory();
+}
+
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return '刚刚';
+  if (d < 3600000) return Math.floor(d/60000) + '分钟前';
+  if (d < 86400000) return Math.floor(d/3600000) + '小时前';
+  return Math.floor(d/86400000) + '天前';
+}
+
+// Init
+addKV('headersList', 'Accept', 'application/json');
+renderHistory();
+</script>
+</body>
+</html>

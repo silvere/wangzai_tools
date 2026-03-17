@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 对比分析 📊</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .models-list {
+            margin-top: 15px;
+        }
+        
+        .model-item {
+            background: #f9f9f9;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .model-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .model-scores {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+        
+        .chart-container {
+            grid-column: 1 / -1;
+            min-height: 400px;
+        }
+        
+        canvas {
+            max-height: 500px;
+        }
+        
+        .analysis {
+            grid-column: 1 / -1;
+        }
+        
+        .analysis-content {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.8;
+        }
+        
+        .analysis-content h3 {
+            color: #667eea;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .analysis-content ul {
+            margin-left: 20px;
+        }
+        
+        .templates {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .template-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .template-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Benchmark 对比分析</h1>
+            <p>多模型性能对比可视化工具</p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="card">
+                <h2>添加模型</h2>
+                <div class="templates">
+                    <button class="template-btn" onclick="loadTemplate('gpt4')">GPT-4</button>
+                    <button class="template-btn" onclick="loadTemplate('claude')">Claude 3.5</button>
+                    <button class="template-btn" onclick="loadTemplate('qwen')">Qwen2.5-72B</button>
+                    <button class="template-btn" onclick="loadTemplate('deepseek')">DeepSeek V3</button>
+                </div>
+                <div class="input-group">
+                    <label>模型名称</label>
+                    <input type="text" id="modelName" placeholder="例如: GPT-4o">
+                </div>
+                <div class="input-group">
+                    <label>MMLU 分数 (%)</label>
+                    <input type="number" id="mmlu" placeholder="0-100" min="0" max="100" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>GSM8K 分数 (%)</label>
+                    <input type="number" id="gsm8k" placeholder="0-100" min="0" max="100" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>HumanEval 分数 (%)</label>
+                    <input type="number" id="humaneval" placeholder="0-100" min="0" max="100" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>MATH 分数 (%)</label>
+                    <input type="number" id="math" placeholder="0-100" min="0" max="100" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>DROP 分数 (%)</label>
+                    <input type="number" id="drop" placeholder="0-100" min="0" max="100" step="0.1">
+                </div>
+                <div class="btn-group">
+                    <button class="btn-primary" onclick="addModel()">➕ 添加模型</button>
+                    <button class="btn-secondary" onclick="clearInputs()">清空</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>已添加模型</h2>
+                <div class="models-list" id="modelsList">
+                    <p style="color: #999; text-align: center; padding: 40px 0;">暂无模型，请添加</p>
+                </div>
+            </div>
+            
+            <div class="card chart-container">
+                <h2>雷达图对比</h2>
+                <canvas id="radarChart"></canvas>
+            </div>
+            
+            <div class="card chart-container">
+                <h2>柱状图对比</h2>
+                <canvas id="barChart"></canvas>
+            </div>
+            
+            <div class="card analysis">
+                <h2>智能分析</h2>
+                <div class="analysis-content" id="analysisContent">
+                    <p style="color: #999;">添加至少 2 个模型后，将自动生成分析报告</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        let models = [];
+        let radarChart = null;
+        let barChart = null;
+        
+        const templates = {
+            gpt4: { name: 'GPT-4o', mmlu: 88.7, gsm8k: 95.3, humaneval: 90.2, math: 76.6, drop: 88.0 },
+            claude: { name: 'Claude 3.5 Sonnet', mmlu: 88.3, gsm8k: 96.4, humaneval: 92.0, math: 78.3, drop: 86.0 },
+            qwen: { name: 'Qwen2.5-72B', mmlu: 86.1, gsm8k: 91.6, humaneval: 86.2, math: 83.1, drop: 82.0 },
+            deepseek: { name: 'DeepSeek V3', mmlu: 88.5, gsm8k: 90.2, humaneval: 89.0, math: 75.4, drop: 83.0 }
+        };
+        
+        function loadTemplate(type) {
+            const template = templates[type];
+            document.getElementById('modelName').value = template.name;
+            document.getElementById('mmlu').value = template.mmlu;
+            document.getElementById('gsm8k').value = template.gsm8k;
+            document.getElementById('humaneval').value = template.humaneval;
+            document.getElementById('math').value = template.math;
+            document.getElementById('drop').value = template.drop;
+        }
+        
+        function addModel() {
+            const name = document.getElementById('modelName').value.trim();
+            const mmlu = parseFloat(document.getElementById('mmlu').value);
+            const gsm8k = parseFloat(document.getElementById('gsm8k').value);
+            const humaneval = parseFloat(document.getElementById('humaneval').value);
+            const math = parseFloat(document.getElementById('math').value);
+            const drop = parseFloat(document.getElementById('drop').value);
+            
+            if (!name || isNaN(mmlu) || isNaN(gsm8k) || isNaN(humaneval) || isNaN(math) || isNaN(drop)) {
+                alert('请填写完整的模型信息！');
+                return;
+            }
+            
+            models.push({ name, mmlu, gsm8k, humaneval, math, drop });
+            renderModels();
+            updateCharts();
+            generateAnalysis();
+            clearInputs();
+        }
+        
+        function removeModel(index) {
+            models.splice(index, 1);
+            renderModels();
+            updateCharts();
+            generateAnalysis();
+        }
+        
+        function clearInputs() {
+            document.getElementById('modelName').value = '';
+            document.getElementById('mmlu').value = '';
+            document.getElementById('gsm8k').value = '';
+            document.getElementById('humaneval').value = '';
+            document.getElementById('math').value = '';
+            document.getElementById('drop').value = '';
+        }
+        
+        function renderModels() {
+            const list = document.getElementById('modelsList');
+            if (models.length === 0) {
+                list.innerHTML = '<p style="color: #999; text-align: center; padding: 40px 0;">暂无模型，请添加</p>';
+                return;
+            }
+            
+            list.innerHTML = models.map((model, index) => `
+                <div class="model-item">
+                    <div>
+                        <div class="model-name">${model.name}</div>
+                        <div class="model-scores">
+                            MMLU: ${model.mmlu}% | GSM8K: ${model.gsm8k}% | HumanEval: ${model.humaneval}% | MATH: ${model.math}% | DROP: ${model.drop}%
+                        </div>
+                    </div>
+                    <button class="btn-remove" onclick="removeModel(${index})">删除</button>
+                </div>
+            `).join('');
+        }
+        
+        function updateCharts() {
+            if (models.length === 0) return;
+            
+            const colors = [
+                'rgba(102, 126, 234, 0.6)',
+                'rgba(231, 76, 60, 0.6)',
+                'rgba(46, 204, 113, 0.6)',
+                'rgba(241, 196, 15, 0.6)',
+                'rgba(155, 89, 182, 0.6)',
+                'rgba(52, 152, 219, 0.6)'
+            ];
+            
+            const borderColors = colors.map(c => c.replace('0.6', '1'));
+            
+            // 雷达图
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            if (radarChart) radarChart.destroy();
+            
+            radarChart = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['MMLU', 'GSM8K', 'HumanEval', 'MATH', 'DROP'],
+                    datasets: models.map((model, i) => ({
+                        label: model.name,
+                        data: [model.mmlu, model.gsm8k, model.humaneval, model.math, model.drop],
+                        backgroundColor: colors[i % colors.length],
+                        borderColor: borderColors[i % borderColors.length],
+                        borderWidth: 2
+                    }))
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+            
+            // 柱状图
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            if (barChart) barChart.destroy();
+            
+            barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: models.map(m => m.name),
+                    datasets: [
+                        {
+                            label: 'MMLU',
+                            data: models.map(m => m.mmlu),
+                            backgroundColor: 'rgba(102, 126, 234, 0.6)'
+                        },
+                        {
+                            label: 'GSM8K',
+                            data: models.map(m => m.gsm8k),
+                            backgroundColor: 'rgba(231, 76, 60, 0.6)'
+                        },
+                        {
+                            label: 'HumanEval',
+                            data: models.map(m => m.humaneval),
+                            backgroundColor: 'rgba(46, 204, 113, 0.6)'
+                        },
+                        {
+                            label: 'MATH',
+                            data: models.map(m => m.math),
+                            backgroundColor: 'rgba(241, 196, 15, 0.6)'
+                        },
+                        {
+                            label: 'DROP',
+                            data: models.map(m => m.drop),
+                            backgroundColor: 'rgba(155, 89, 182, 0.6)'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function generateAnalysis() {
+            if (models.length < 2) {
+                document.getElementById('analysisContent').innerHTML = '<p style="color: #999;">添加至少 2 个模型后，将自动生成分析报告</p>';
+                return;
+            }
+            
+            // 计算平均分
+            const avgScores = models.map(m => ({
+                name: m.name,
+                avg: (m.mmlu + m.gsm8k + m.humaneval + m.math + m.drop) / 5
+            }));
+            avgScores.sort((a, b) => b.avg - a.avg);
+            
+            // 找出各项最强
+            const best = {
+                mmlu: models.reduce((a, b) => a.mmlu > b.mmlu ? a : b),
+                gsm8k: models.reduce((a, b) => a.gsm8k > b.gsm8k ? a : b),
+                humaneval: models.reduce((a, b) => a.humaneval > b.humaneval ? a : b),
+                math: models.reduce((a, b) => a.math > b.math ? a : b),
+                drop: models.reduce((a, b) => a.drop > b.drop ? a : b)
+            };
+            
+            // 生成分析
+            let html = '<h3>📊 综合排名</h3><ul>';
+            avgScores.forEach((m, i) => {
+                html += `<li><strong>${i + 1}. ${m.name}</strong> - 平均分: ${m.avg.toFixed(1)}%</li>`;
+            });
+            html += '</ul>';
+            
+            html += '<h3>🏆 单项最强</h3><ul>';
+            html += `<li><strong>知识理解 (MMLU):</strong> ${best.mmlu.name} (${best.mmlu.mmlu}%)</li>`;
+            html += `<li><strong>数学推理 (GSM8K):</strong> ${best.gsm8k.name} (${best.gsm8k.gsm8k}%)</li>`;
+            html += `<li><strong>代码生成 (HumanEval):</strong> ${best.humaneval.name} (${best.humaneval.humaneval}%)</li>`;
+            html += `<li><strong>高等数学 (MATH):</strong> ${best.math.name} (${best.math.math}%)</li>`;
+            html += `<li><strong>离散推理 (DROP):</strong> ${best.drop.name} (${best.drop.drop}%)</li>`;
+            html += '</ul>';
+            
+            html += '<h3>💡 关键洞察</h3><ul>';
+            
+            // 分析差距
+            const maxGap = Math.max(
+                Math.max(...models.map(m => m.mmlu)) - Math.min(...models.map(m => m.mmlu)),
+                Math.max(...models.map(m => m.gsm8k)) - Math.min(...models.map(m => m.gsm8k)),
+                Math.max(...models.map(m => m.humaneval)) - Math.min(...models.map(m => m.humaneval)),
+                Math.max(...models.map(m => m.math)) - Math.min(...models.map(m => m.math)),
+                Math.max(...models.map(m => m.drop)) - Math.min(...models.map(m => m.drop))
+            );
+            
+            if (maxGap > 20) {
+                html += '<li>模型间存在<strong>显著差距</strong>（最大差距 ' + maxGap.toFixed(1) + '%），能力分化明显</li>';
+            } else if (maxGap > 10) {
+                html += '<li>模型间存在<strong>中等差距</strong>（最大差距 ' + maxGap.toFixed(1) + '%），各有优势</li>';
+            } else {
+                html += '<li>模型间<strong>差距较小</strong>（最大差距 ' + maxGap.toFixed(1) + '%），整体水平接近</li>';
+            }
+            
+            // 分析均衡性
+            models.forEach(m => {
+                const scores = [m.mmlu, m.gsm8k, m.humaneval, m.math, m.drop];
+                const std = Math.sqrt(scores.reduce((sum, s) => sum + Math.pow(s - scores.reduce((a,b) => a+b)/5, 2), 0) / 5);
+                if (std < 5) {
+                    html += `<li><strong>${m.name}</strong> 表现<strong>非常均衡</strong>（标准差 ${std.toFixed(1)}）</li>`;
+                } else if (std > 10) {
+                    html += `<li><strong>${m.name}</strong> 表现<strong>不均衡</strong>（标准差 ${std.toFixed(1)}），存在明显短板</li>`;
+                }
+            });
+            
+            html += '</ul>';
+            
+            document.getElementById('analysisContent').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

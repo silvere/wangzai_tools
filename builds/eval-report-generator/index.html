@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大模型评测报告生成器 📊 — 一键生成专业评测报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        dark: '#1e1b4b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .input-focus {
+                @apply border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto max-w-7xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2 flex items-center">
+                        <i class="fa fa-bar-chart mr-3"></i>大模型评测报告生成器 📊
+                    </h1>
+                    <p class="text-purple-100 text-lg">输入模型评测分数，一键生成专业的可视化评测报告</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-white/20 px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+                        <i class="fa fa-rocket mr-1"></i> 专为大模型评测工作者打造
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-7xl px-4 py-8">
+        <!-- Tabs -->
+        <div class="mb-8 border-b border-gray-200">
+            <nav class="flex space-x-8">
+                <button id="tabInput" class="py-4 px-1 border-b-2 border-primary text-primary font-medium">
+                    输入评测数据
+                </button>
+                <button id="tabPreview" class="py-4 px-1 border-b-2 border-transparent text-gray-500 font-medium hover:text-gray-700">
+                    报告预览
+                </button>
+            </nav>
+        </div>
+
+        <!-- Input Section -->
+        <section id="inputSection" class="space-y-8">
+            <!-- Basic Info -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fa fa-info-circle text-primary mr-2"></i> 基本信息
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">评测名称</label>
+                        <input type="text" id="reportName" placeholder="例如：2026年Q1大模型评测" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">评测日期</label>
+                        <input type="date" id="reportDate" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">评测人员</label>
+                        <input type="text" id="reportAuthor" placeholder="评测负责人" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benchmarks -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fa fa-list-ul text-primary mr-2"></i> 评测基准
+                    </h3>
+                    <button id="addBenchmarkBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2">
+                        <i class="fa fa-plus"></i>
+                        <span>添加基准</span>
+                    </button>
+                </div>
+                <div id="benchmarksContainer" class="space-y-4">
+                    <!-- Benchmark rows will be added here -->
+                </div>
+            </div>
+
+            <!-- Models -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fa fa-robot text-primary mr-2"></i> 参与评测模型
+                    </h3>
+                    <button id="addModelBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2">
+                        <i class="fa fa-plus"></i>
+                        <span>添加模型</span>
+                    </button>
+                </div>
+                <div id="modelsContainer" class="space-y-4">
+                    <!-- Model rows will be added here -->
+                </div>
+            </div>
+
+            <!-- Scores Table -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fa fa-table text-primary mr-2"></i> 分数录入
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="scoresTable">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 bg-gray-50 rounded-tl-xl">模型 \ 基准</th>
+                                <th class="text-center py-3 px-4 bg-gray-50" id="scoresHeader">
+                                    <!-- Benchmark names will be added here -->
+                                </th>
+                                <th class="text-center py-3 px-4 bg-gray-50 rounded-tr-xl">综合得分</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoresBody">
+                            <!-- Score rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="text-center">
+                <button id="generateBtn" class="bg-primary hover:bg-primary/90 text-white px-12 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg shadow-primary/20 mx-auto">
+                    <i class="fa fa-magic text-xl"></i>
+                    <span>生成评测报告</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Preview Section -->
+        <section id="previewSection" class="hidden space-y-8">
+            <!-- Report Header -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 card-hover">
+                <div class="text-center mb-8">
+                    <h1 id="previewTitle" class="text-4xl font-bold text-gray-900 mb-2"></h1>
+                    <p class="text-gray-500">
+                        <span id="previewDate"></span> | 评测人：<span id="previewAuthor"></span>
+                    </p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 text-center">
+                        <div class="text-blue-600 text-sm font-medium mb-1">参与模型</div>
+                        <div class="text-3xl font-bold text-blue-800" id="statModels">0</div>
+                    </div>
+                    <div class="bg-green-50 rounded-xl p-4 border border-green-100 text-center">
+                        <div class="text-green-600 text-sm font-medium mb-1">评测基准</div>
+                        <div class="text-3xl font-bold text-green-800" id="statBenchmarks">0</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-xl p-4 border border-purple-100 text-center">
+                        <div class="text-purple-600 text-sm font-medium mb-1">最高分模型</div>
+                        <div class="text-3xl font-bold text-purple-800" id="statTopModel">-</div>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-4 border border-orange-100 text-center">
+                        <div class="text-orange-600 text-sm font-medium mb-1">最高平均分</div>
+                        <div class="text-3xl font-bold text-orange-800" id="statTopScore">0</div>
+                    </div>
+                </div>
+
+                <!-- Visualization -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">各模型综合得分对比</h3>
+                        <div class="h-80">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">模型能力雷达图</h3>
+                        <div class="h-80">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Table -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">详细得分表</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border border-gray-200 py-3 px-4 text-left rounded-tl-xl">模型</th>
+                                    <th class="border border-gray-200 py-3 px-4 text-center" id="previewTableHeader"></th>
+                                    <th class="border border-gray-200 py-3 px-4 text-center rounded-tr-xl">综合得分</th>
+                                    <th class="border border-gray-200 py-3 px-4 text-center">排名</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Analysis -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">结果分析</h3>
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <div id="analysisContent" class="text-gray-700 leading-relaxed space-y-4">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="backBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-gray-700/20">
+                    <i class="fa fa-arrow-left"></i>
+                    <span>返回修改</span>
+                </button>
+                <button id="copyMarkdownBtn" class="bg-secondary hover:bg-secondary/90 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-secondary/20">
+                    <i class="fa fa-copy"></i>
+                    <span>复制 Markdown 报告</span>
+                </button>
+                <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-green-600/20">
+                    <i class="fa fa-download"></i>
+                    <span>下载 Markdown 文件</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8 mt-12">
+        <div class="container mx-auto max-w-7xl px-4 text-center">
+            <p class="text-gray-400">
+                大模型评测工作者必备神器 | 快速生成专业评测报告
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+                Powered by 旺仔 🥛 | Build #100
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Default data
+        const defaultBenchmarks = [
+            { id: 1, name: "MMLU", weight: 0.2, description: "综合知识测试" },
+            { id: 2, name: "HumanEval", weight: 0.2, description: "代码生成能力" },
+            { id: 3, name: "GSM8K", weight: 0.15, description: "数学推理能力" },
+            { id: 4, name: "MATH", weight: 0.15, description: "高等数学能力" },
+            { id: 5, name: "IFEval", weight: 0.15, description: "指令遵循能力" },
+            { id: 6, name: "MT-Bench", weight: 0.15, description: "对话质量" }
+        ];
+
+        const defaultModels = [
+            { id: 1, name: "GPT-4o", color: "#6366f1" },
+            { id: 2, name: "Claude 3 Opus", color: "#8b5cf6" },
+            { id: 3, name: "Gemini 1.5 Pro", color: "#ec4899" },
+            { id: 4, name: "DeepSeek V3", color: "#10b981" },
+            { id: 5, name: "Qwen 2.5 72B", color: "#f59e0b" }
+        ];
+
+        // State
+        let benchmarks = [...defaultBenchmarks];
+        let models = [...defaultModels];
+        let scores = {};
+        let barChart = null;
+        let radarChart = null;
+
+        // DOM Elements
+        const tabInput = document.getElementById('tabInput');
+        const tabPreview = document.getElementById('tabPreview');
+        const inputSection = document.getElementById('inputSection');
+        const previewSection = document.getElementById('previewSection');
+        const benchmarksContainer = document.getElementById('benchmarksContainer');
+        const modelsContainer = document.getElementById('modelsContainer');
+        const scoresHeader = document.getElementById('scoresHeader');
+        const scoresBody = document.getElementById('scoresBody');
+        const addBenchmarkBtn = document.getElementById('addBenchmarkBtn');
+        const addModelBtn = document.getElementById('addModelBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const backBtn = document.getElementById('backBtn');
+        const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Set default date
+        document.getElementById('reportDate').valueAsDate = new Date();
+
+        // Initialize
+        function init() {
+            renderBenchmarks();
+            renderModels();
+            renderScoresTable();
+        }
+
+        // Render benchmarks
+        function renderBenchmarks() {
+            benchmarksContainer.innerHTML = '';
+            benchmarks.forEach((benchmark, index) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-4 items-center';
+                row.innerHTML = `
+                    <div class="col-span-4">
+                        <input type="text" placeholder="基准名称" value="${benchmark.name}" 
+                            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg input-focus benchmark-name" data-index="${index}">
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" min="0" max="1" step="0.01" placeholder="权重" value="${benchmark.weight}" 
+                            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg input-focus benchmark-weight" data-index="${index}">
+                    </div>
+                    <div class="col-span-5">
+                        <input type="text" placeholder="描述" value="${benchmark.description}" 
+                            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg input-focus benchmark-desc" data-index="${index}">
+                    </div>
+                    <div class="col-span-1">
+                        <button class="delete-benchmark text-red-500 hover:text-red-700 transition-all" data-index="${index}">
+                            <i class="fa fa-trash text-xl"></i>
+                        </button>
+                    </div>
+                `;
+                benchmarksContainer.appendChild(row);
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.benchmark-name').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    benchmarks[index].name = e.target.value;
+                    renderScoresTable();
+                });
+            });
+
+            document.querySelectorAll('.benchmark-weight').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    benchmarks[index].weight = parseFloat(e.target.value) || 0;
+                });
+            });
+
+            document.querySelectorAll('.benchmark-desc').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    benchmarks[index].description = e.target.value;
+                });
+            });
+
+            document.querySelectorAll('.delete-benchmark').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    benchmarks.splice(index, 1);
+                    renderBenchmarks();
+                    renderScoresTable();
+                });
+            });
+        }
+
+        // Render models
+        function renderModels() {
+            modelsContainer.innerHTML = '';
+            models.forEach((model, index) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-4 items-center';
+                row.innerHTML = `
+                    <div class="col-span-5">
+                        <input type="text" placeholder="模型名称" value="${model.name}" 
+                            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg input-focus model-name" data-index="${index}">
+                    </div>
+                    <div class="col-span-5">
+                        <input type="color" value="${model.color}" 
+                            class="w-full h-10 px-1 py-1 border-2 border-gray-200 rounded-lg input-focus model-color" data-index="${index}">
+                    </div>
+                    <div class="col-span-2">
+                        <button class="delete-model text-red-500 hover:text-red-700 transition-all" data-index="${index}">
+                            <i class="fa fa-trash text-xl"></i>
+                        </button>
+                    </div>
+                `;
+                modelsContainer.appendChild(row);
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.model-name').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    models[index].name = e.target.value;
+                    renderScoresTable();
+                });
+            });
+
+            document.querySelectorAll('.model-color').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    models[index].color = e.target.value;
+                });
+            });
+
+            document.querySelectorAll('.delete-model').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    models.splice(index, 1);
+                    renderModels();
+                    renderScoresTable();
+                });
+            });
+        }
+
+        // Render scores table
+        function renderScoresTable() {
+            // Render header
+            scoresHeader.innerHTML = '';
+            benchmarks.forEach(b => {
+                const th = document.createElement('th');
+                th.className = 'text-center py-3 px-4 bg-gray-50';
+                th.textContent = b.name;
+                scoresHeader.appendChild(th);
+            });
+
+            // Render body
+            scoresBody.innerHTML = '';
+            models.forEach(model => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-200 hover:bg-gray-50';
+                
+                // Model name cell
+                const nameTd = document.createElement('td');
+                nameTd.className = 'py-3 px-4 font-medium';
+                nameTd.innerHTML = `<span class="w-3 h-3 rounded-full inline-block mr-2" style="background-color: ${model.color}"></span>${model.name}`;
+                tr.appendChild(nameTd);
+
+                // Score cells
+                benchmarks.forEach(b => {
+                    const td = document.createElement('td');
+                    td.className = 'py-3 px-4 text-center';
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = '0';
+                    input.max = '100';
+                    input.step = '0.1';
+                    input.className = 'w-20 px-2 py-1 border border-gray-200 rounded text-center input-focus';
+                    input.value = scores[model.id]?.[b.id] || '';
+                    input.dataset.modelId = model.id;
+                    input.dataset.benchmarkId = b.id;
+                    
+                    input.addEventListener('input', (e) => {
+                        const modelId = parseInt(e.target.dataset.modelId);
+                        const benchmarkId = parseInt(e.target.dataset.benchmarkId);
+                        if (!scores[modelId]) scores[modelId] = {};
+                        scores[modelId][benchmarkId] = parseFloat(e.target.value) || 0;
+                        updateScoresTable();
+                    });
+                    
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
+
+                // Average score cell
+                const avgTd = document.createElement('td');
+                avgTd.className = 'py-3 px-4 text-center font-semibold';
+                avgTd.id = `avg-${model.id}`;
+                avgTd.textContent = calculateAverage(model.id).toFixed(1);
+                tr.appendChild(avgTd);
+
+                scoresBody.appendChild(tr);
+            });
+        }
+
+        // Calculate average score for a model
+        function calculateAverage(modelId) {
+            if (!scores[modelId]) return 0;
+            
+            let total = 0;
+            let totalWeight = 0;
+            
+            benchmarks.forEach(b => {
+                const score = scores[modelId][b.id] || 0;
+                total += score * b.weight;
+                totalWeight += b.weight;
+            });
+            
+            return totalWeight > 0 ? total / totalWeight : 0;
+        }
+
+        // Update scores table averages
+        function updateScoresTable() {
+            models.forEach(model => {
+                const avg = calculateAverage(model.id);
+                document.getElementById(`avg-${model.id}`).textContent = avg.toFixed(1);
+            });
+        }
+
+        // Add benchmark
+        addBenchmarkBtn.addEventListener('click', () => {
+            const newId = Math.max(...benchmarks.map(b => b.id), 0) + 1;
+            benchmarks.push({
+                id: newId,
+                name: `新基准${newId}`,
+                weight: 0.1,
+                description: ''
+            });
+            renderBenchmarks();
+            renderScoresTable();
+        });
+
+        // Add model
+        addModelBtn.addEventListener('click', () => {
+            const newId = Math.max(...models.map(m => m.id), 0) + 1;
+            const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16'];
+            models.push({
+                id: newId,
+                name: `新模型${newId}`,
+                color: colors[newId % colors.length]
+            });
+            renderModels();
+            renderScoresTable();
+        });
+
+        // Generate report
+        generateBtn.addEventListener('click', () => {
+            if (benchmarks.length === 0 || models.length === 0) {
+                alert('请至少添加一个评测基准和一个模型！');
+                return;
+            }
+
+            // Validate weights sum to ~1
+            const totalWeight = benchmarks.reduce((sum, b) => sum + b.weight, 0);
+            if (Math.abs(totalWeight - 1) > 0.01) {
+                if (!confirm(`权重总和为 ${totalWeight.toFixed(2)}，建议调整为 1。是否继续生成？`)) {
+                    return;
+                }
+            }
+
+            // Generate report
+            generateReport();
+            
+            // Switch to preview tab
+            tabInput.classList.remove('border-primary', 'text-primary');
+            tabInput.classList.add('border-transparent', 'text-gray-500');
+            tabPreview.classList.remove('border-transparent', 'text-gray-500');
+            tabPreview.classList.add('border-primary', 'text-primary');
+            inputSection.classList.add('hidden');
+            previewSection.classList.remove('hidden');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Generate report content
+        function generateReport() {
+            const reportName = document.getElementById('reportName').value || '大模型评测报告';
+            const reportDate = document.getElementById('reportDate').value;
+            const reportAuthor = document.getElementById('reportAuthor').value || '匿名';
+
+            // Fill header
+            document.getElementById('previewTitle').textContent = reportName;
+            document.getElementById('previewDate').textContent = reportDate;
+            document.getElementById('previewAuthor').textContent = reportAuthor;
+
+            // Calculate stats
+            const modelScores = models.map(model => ({
+                ...model,
+                average: calculateAverage(model.id)
+            })).sort((a, b) => b.average - a.average);
+
+            // Fill stats
+            document.getElementById('statModels').textContent = models.length;
+            document.getElementById('statBenchmarks').textContent = benchmarks.length;
+            document.getElementById('statTopModel').textContent = modelScores[0]?.name || '-';
+            document.getElementById('statTopScore').textContent = modelScores[0]?.average.toFixed(1) || '0';
+
+            // Render bar chart
+            renderBarChart(modelScores);
+
+            // Render radar chart
+            renderRadarChart(modelScores);
+
+            // Render results table
+            renderPreviewTable(modelScores);
+
+            // Generate analysis
+            generateAnalysis(modelScores);
+        }
+
+        // Render bar chart
+        function renderBarChart(modelScores) {
+            if (barChart) barChart.destroy();
+            
+            const ctx = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: modelScores.map(m => m.name),
+                    datasets: [{
+                        label: '综合得分',
+                        data: modelScores.map(m => m.average),
+                        backgroundColor: modelScores.map(m => m.color + '80'),
+                        borderColor: modelScores.map(m => m.color),
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `得分: ${context.raw.toFixed(1)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '得分'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render radar chart
+        function renderRadarChart(modelScores) {
+            if (radarChart) radarChart.destroy();
+            
+            const topModels = modelScores.slice(0, 3); // Show top 3 models in radar
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: benchmarks.map(b => b.name),
+                    datasets: topModels.map(model => ({
+                        label: model.name,
+                        data: benchmarks.map(b => scores[model.id]?.[b.id] || 0),
+                        backgroundColor: model.color + '20',
+                        borderColor: model.color,
+                        pointBackgroundColor: model.color,
+                        borderWidth: 2,
+                        pointRadius: 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render preview table
+        function renderPreviewTable(modelScores) {
+            // Header
+            const header = document.getElementById('previewTableHeader');
+            header.innerHTML = '';
+            benchmarks.forEach(b => {
+                const th = document.createElement('th');
+                th.className = 'border border-gray-200 py-3 px-4 text-center';
+                th.textContent = b.name;
+                header.appendChild(th);
+            });
+
+            // Body
+            const body = document.getElementById('previewTableBody');
+            body.innerHTML = '';
+            
+            modelScores.forEach((model, index) => {
+                const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                
+                // Model name
+                const nameTd = document.createElement('td');
+                nameTd.className = 'border border-gray-200 py-3 px-4 font-medium';
+                nameTd.innerHTML = `<span class="w-3 h-3 rounded-full inline-block mr-2" style="background-color: ${model.color}"></span>${model.name}`;
+                tr.appendChild(nameTd);
+
+                // Scores
+                benchmarks.forEach(b => {
+                    const td = document.createElement('td');
+                    td.className = 'border border-gray-200 py-3 px-4 text-center';
+                    const score = scores[model.id]?.[b.id] || 0;
+                    
+                    // Highlight best score
+                    const allScores = models.map(m => scores[m.id]?.[b.id] || 0);
+                    const maxScore = Math.max(...allScores);
+                    if (score === maxScore && score > 0) {
+                        td.className += ' bg-green-50 font-bold text-green-700';
+                    }
+                    
+                    td.textContent = score.toFixed(1);
+                    tr.appendChild(td);
+                });
+
+                // Average
+                const avgTd = document.createElement('td');
+                avgTd.className = 'border border-gray-200 py-3 px-4 text-center font-semibold';
+                avgTd.textContent = model.average.toFixed(1);
+                tr.appendChild(avgTd);
+
+                // Rank
+                const rankTd = document.createElement('td');
+                rankTd.className = 'border border-gray-200 py-3 px-4 text-center font-bold';
+                if (index === 0) rankTd.className += ' text-yellow-600';
+                else if (index === 1) rankTd.className += ' text-gray-500';
+                else if (index === 2) rankTd.className += ' text-amber-700';
+                rankTd.textContent = index + 1;
+                tr.appendChild(rankTd);
+
+                body.appendChild(tr);
+            });
+        }
+
+        // Generate analysis
+        function generateAnalysis(modelScores) {
+            const content = document.getElementById('analysisContent');
+            content.innerHTML = '';
+
+            if (modelScores.length === 0) return;
+
+            const topModel = modelScores[0];
+            const secondModel = modelScores[1];
+            const gap = topModel.average - (secondModel?.average || 0);
+
+            const p1 = document.createElement('p');
+            p1.innerHTML = `本次评测共有 <strong>${models.length}个模型</strong> 参与，覆盖 <strong>${benchmarks.length}个评测基准</strong>。
+            <strong>${topModel.name}</strong> 以 <strong>${topModel.average.toFixed(1)}分</strong> 的成绩获得第一名，领先第二名${gap > 0 ? ` <strong>${gap.toFixed(1)}分</strong>` : ''}。`;
+            content.appendChild(p1);
+
+            // Benchmark analysis
+            benchmarks.forEach(b => {
+                const allScores = models.map(m => scores[m.id]?.[b.id] || 0);
+                const maxScore = Math.max(...allScores);
+                const topModelForBenchmark = models.find(m => scores[m.id]?.[b.id] === maxScore);
+                const p = document.createElement('p');
+                p.innerHTML = `在 <strong>${b.name}</strong>（${b.description}）基准上，<strong>${topModelForBenchmark.name}</strong> 表现最佳，得分 <strong>${maxScore.toFixed(1)}分</strong>。`;
+                content.appendChild(p);
+            });
+
+            // Conclusion
+            const p2 = document.createElement('p');
+            p2.innerHTML = `<strong>综合结论</strong>：${topModel.name} 表现最为均衡全面，在多个基准上都取得了领先成绩。
+            建议在实际应用中根据具体场景选择合适的模型，如果侧重${benchmarks[0]?.name}能力可以优先考虑${topModel.name}。`;
+            content.appendChild(p2);
+        }
+
+        // Back button
+        backBtn.addEventListener('click', () => {
+            tabPreview.classList.remove('border-primary', 'text-primary');
+            tabPreview.classList.add('border-transparent', 'text-gray-500');
+            tabInput.classList.remove('border-transparent', 'text-gray-500');
+            tabInput.classList.add('border-primary', 'text-primary');
+            previewSection.classList.add('hidden');
+            inputSection.classList.remove('hidden');
+        });
+
+        // Copy Markdown
+        copyMarkdownBtn.addEventListener('click', () => {
+            const markdown = generateMarkdown();
+            navigator.clipboard.writeText(markdown).then(() => {
+                const originalText = copyMarkdownBtn.innerHTML;
+                copyMarkdownBtn.innerHTML = '<i class="fa fa-check"></i> <span>复制成功！</span>';
+                copyMarkdownBtn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    copyMarkdownBtn.innerHTML = originalText;
+                    copyMarkdownBtn.classList.remove('bg-green-600');
+                }, 2000);
+            });
+        });
+
+        // Download Markdown
+        downloadBtn.addEventListener('click', () => {
+            const markdown = generateMarkdown();
+            const reportName = document.getElementById('reportName').value || '评测报告';
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${reportName}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Generate Markdown report
+        function generateMarkdown() {
+            const reportName = document.getElementById('reportName').value || '大模型评测报告';
+            const reportDate = document.getElementById('reportDate').value;
+            const reportAuthor = document.getElementById('reportAuthor').value || '匿名';
+
+            const modelScores = models.map(model => ({
+                ...model,
+                average: calculateAverage(model.id)
+            })).sort((a, b) => b.average - a.average);
+
+            let markdown = `# ${reportName}
+**评测日期**: ${reportDate}  
+**评测人员**: ${reportAuthor}
+
+## 概览
+- 参与模型数量: ${models.length}
+- 评测基准数量: ${benchmarks.length}
+- 综合排名第一: ${modelScores[0]?.name || '-'} (${modelScores[0]?.average.toFixed(1) || 0}分)
+
+## 评测基准说明
+| 基准名称 | 权重 | 描述 |
+|----------|------|------|
+${benchmarks.map(b => `| ${b.name} | ${b.weight} | ${b.description} |`).join('\n')}
+
+## 综合得分排名
+| 排名 | 模型 | 综合得分 |
+|------|------|----------|
+${modelScores.map((m, i) => `| ${i+1} | ${m.name} | ${m.average.toFixed(1)} |`).join('\n')}
+
+## 详细得分表
+| 模型 | ${benchmarks.map(b => b.name).join(' | ')} | 综合得分 |
+|------|${benchmarks.map(() => '------').join('|')}|----------|
+${modelScores.map(m => `| ${m.name} | ${benchmarks.map(b => (scores[m.id]?.[b.id] || 0).toFixed(1)).join(' | ')} | ${m.average.toFixed(1)} |`).join('\n')}
+
+## 结果分析
+本次评测共有 ${models.length}个模型参与，覆盖 ${benchmarks.length}个评测基准。
+**${modelScores[0].name}** 以 **${modelScores[0].average.toFixed(1)}分** 的成绩获得第一名。
+
+${benchmarks.map(b => {
+    const allScores = models.map(m => scores[m.id]?.[b.id] || 0);
+    const maxScore = Math.max(...allScores);
+    const topModel = models.find(m => scores[m.id]?.[b.id] === maxScore);
+    return `在 **${b.name}** 基准上，**${topModel.name}** 表现最佳，得分 **${maxScore.toFixed(1)}分**。`;
+}).join('\n')}
+
+## 结论
+**${modelScores[0].name}** 表现最为均衡全面，在多个基准上都取得了领先成绩。建议在实际应用中根据具体场景选择合适的模型。
+`;
+
+            return markdown;
+        }
+
+        // Tab switching
+        tabInput.addEventListener('click', () => {
+            tabPreview.classList.remove('border-primary', 'text-primary');
+            tabPreview.classList.add('border-transparent', 'text-gray-500');
+            tabInput.classList.remove('border-transparent', 'text-gray-500');
+            tabInput.classList.add('border-primary', 'text-primary');
+            previewSection.classList.add('hidden');
+            inputSection.classList.remove('hidden');
+        });
+
+        tabPreview.addEventListener('click', () => {
+            if (benchmarks.length > 0 && models.length > 0) {
+                generateReport();
+                tabInput.classList.remove('border-primary', 'text-primary');
+                tabInput.classList.add('border-transparent', 'text-gray-500');
+                tabPreview.classList.remove('border-transparent', 'text-gray-500');
+                tabPreview.classList.add('border-primary', 'text-primary');
+                inputSection.classList.add('hidden');
+                previewSection.classList.remove('hidden');
+            } else {
+                alert('请先输入评测数据再预览！');
+            }
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

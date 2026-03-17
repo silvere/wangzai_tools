@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt 批量生成器 🚀</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .template-area {
+            min-height: 200px;
+        }
+        
+        .variables-detected {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .variables-detected strong {
+            color: #667eea;
+        }
+        
+        .variable-input {
+            margin-bottom: 20px;
+        }
+        
+        .variable-input label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .variable-input input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .variable-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .variable-input small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .results-card {
+            grid-column: 1 / -1;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: white;
+        }
+        
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .stat-item .number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .results-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .result-item {
+            background: #f9f9f9;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            position: relative;
+        }
+        
+        .result-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .result-number {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .templates {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .template-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .template-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Prompt 批量生成器</h1>
+            <p>用模板+变量快速生成大量测试用例，评测必备神器</p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="card">
+                <h2>📝 Prompt 模板</h2>
+                <div class="templates">
+                    <button class="template-btn" onclick="loadTemplate('translation')">翻译评测</button>
+                    <button class="template-btn" onclick="loadTemplate('qa')">问答评测</button>
+                    <button class="template-btn" onclick="loadTemplate('code')">代码生成</button>
+                    <button class="template-btn" onclick="loadTemplate('summary')">摘要评测</button>
+                </div>
+                <textarea class="template-area" id="template" placeholder="输入你的 Prompt 模板，用 {{变量名}} 标记变量
+
+示例：
+请将以下{{language}}文本翻译成{{target_language}}：
+{{text}}
+
+要求：{{requirement}}" oninput="detectVariables()"></textarea>
+                <div class="variables-detected" id="varsDetected">
+                    <strong>检测到的变量：</strong> 暂无
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>🎯 变量值设置</h2>
+                <div id="variableInputs">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <p>在左侧输入模板后，这里会自动显示变量输入框</p>
+                    </div>
+                </div>
+                <div class="btn-group" style="display: none;" id="actionButtons">
+                    <button class="btn-primary" onclick="generatePrompts()">🚀 生成 Prompts</button>
+                    <button class="btn-secondary" onclick="clearAll()">🗑️ 清空</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card results-card" id="resultsCard" style="display: none;">
+            <h2>✨ 生成结果</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="number" id="totalCount">0</span>
+                    <span class="label">生成数量</span>
+                </div>
+                <div class="stat-item">
+                    <span class="number" id="varCount">0</span>
+                    <span class="label">变量数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="number" id="avgLength">0</span>
+                    <span class="label">平均长度</span>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="copyAll()">📋 复制全部</button>
+                <button class="btn-primary" onclick="downloadJSON()">💾 导出 JSON</button>
+                <button class="btn-primary" onclick="downloadTXT()">📄 导出 TXT</button>
+                <button class="btn-primary" onclick="downloadCSV()">📊 导出 CSV</button>
+            </div>
+            <div class="results-list" id="resultsList"></div>
+        </div>
+    </div>
+    
+    <script>
+        let variables = [];
+        let results = [];
+        
+        const templates = {
+            translation: `请将以下{{source_lang}}文本翻译成{{target_lang}}：
+{{text}}
+
+要求：{{requirement}}`,
+            qa: `问题：{{question}}
+
+背景信息：{{context}}
+
+请用{{style}}的方式回答，字数控制在{{length}}字以内。`,
+            code: `请用{{language}}编写一个{{function_type}}函数，实现以下功能：
+{{description}}
+
+要求：
+- {{requirement1}}
+- {{requirement2}}`,
+            summary: `请对以下{{content_type}}进行摘要：
+
+{{content}}
+
+摘要要求：
+- 长度：{{length}}
+- 风格：{{style}}
+- 重点：{{focus}}`
+        };
+        
+        function loadTemplate(type) {
+            document.getElementById('template').value = templates[type];
+            detectVariables();
+        }
+        
+        function detectVariables() {
+            const template = document.getElementById('template').value;
+            const regex = /\{\{(\w+)\}\}/g;
+            const matches = [...template.matchAll(regex)];
+            variables = [...new Set(matches.map(m => m[1]))];
+            
+            const varsDetected = document.getElementById('varsDetected');
+            if (variables.length > 0) {
+                varsDetected.innerHTML = `<strong>检测到的变量：</strong> ${variables.map(v => `<code>{{${v}}}</code>`).join(', ')}`;
+                renderVariableInputs();
+                document.getElementById('actionButtons').style.display = 'flex';
+            } else {
+                varsDetected.innerHTML = '<strong>检测到的变量：</strong> 暂无';
+                document.getElementById('variableInputs').innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <p>在左侧输入模板后，这里会自动显示变量输入框</p>
+                    </div>
+                `;
+                document.getElementById('actionButtons').style.display = 'none';
+            }
+        }
+        
+        function renderVariableInputs() {
+            const container = document.getElementById('variableInputs');
+            container.innerHTML = variables.map(v => `
+                <div class="variable-input">
+                    <label>{{${v}}}</label>
+                    <input type="text" id="var_${v}" placeholder="输入多个值，用 | 分隔">
+                    <small>例如：中文|英文|日文 或 简洁|详细|专业</small>
+                </div>
+            `).join('');
+        }
+        
+        function generatePrompts() {
+            const template = document.getElementById('template').value;
+            if (!template.trim()) {
+                alert('请先输入 Prompt 模板！');
+                return;
+            }
+            
+            // 收集所有变量的值
+            const varValues = {};
+            let hasEmpty = false;
+            
+            variables.forEach(v => {
+                const input = document.getElementById(`var_${v}`);
+                const values = input.value.split('|').map(s => s.trim()).filter(s => s);
+                if (values.length === 0) {
+                    hasEmpty = true;
+                }
+                varValues[v] = values;
+            });
+            
+            if (hasEmpty) {
+                alert('请为所有变量至少输入一个值！');
+                return;
+            }
+            
+            // 生成所有组合
+            results = generateCombinations(template, varValues);
+            
+            // 显示结果
+            displayResults();
+        }
+        
+        function generateCombinations(template, varValues) {
+            const keys = Object.keys(varValues);
+            const combinations = [];
+            
+            function generate(index, current) {
+                if (index === keys.length) {
+                    let result = template;
+                    keys.forEach(key => {
+                        result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), current[key]);
+                    });
+                    combinations.push(result);
+                    return;
+                }
+                
+                const key = keys[index];
+                varValues[key].forEach(value => {
+                    generate(index + 1, { ...current, [key]: value });
+                });
+            }
+            
+            generate(0, {});
+            return combinations;
+        }
+        
+        function displayResults() {
+            const resultsCard = document.getElementById('resultsCard');
+            const resultsList = document.getElementById('resultsList');
+            
+            resultsCard.style.display = 'block';
+            
+            // 更新统计
+            document.getElementById('totalCount').textContent = results.length;
+            document.getElementById('varCount').textContent = variables.length;
+            const avgLen = Math.round(results.reduce((sum, r) => sum + r.length, 0) / results.length);
+            document.getElementById('avgLength').textContent = avgLen + ' 字符';
+            
+            // 渲染结果列表
+            resultsList.innerHTML = results.map((result, i) => `
+                <div class="result-item">
+                    <span class="result-number">#${i + 1}</span>
+                    ${result.replace(/\n/g, '<br>')}
+                </div>
+            `).join('');
+            
+            // 滚动到结果区域
+            resultsCard.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function copyAll() {
+            const text = results.join('\n\n---\n\n');
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 已复制全部 Prompts 到剪贴板！');
+            });
+        }
+        
+        function downloadJSON() {
+            const data = {
+                template: document.getElementById('template').value,
+                variables: variables,
+                generated_at: new Date().toISOString(),
+                count: results.length,
+                prompts: results
+            };
+            download('prompts.json', JSON.stringify(data, null, 2));
+        }
+        
+        function downloadTXT() {
+            const text = results.map((r, i) => `=== Prompt #${i + 1} ===\n${r}`).join('\n\n');
+            download('prompts.txt', text);
+        }
+        
+        function downloadCSV() {
+            const csv = 'ID,Prompt\n' + results.map((r, i) => `${i + 1},"${r.replace(/"/g, '""')}"`).join('\n');
+            download('prompts.csv', csv);
+        }
+        
+        function download(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function clearAll() {
+            if (confirm('确定要清空所有内容吗？')) {
+                document.getElementById('template').value = '';
+                detectVariables();
+                document.getElementById('resultsCard').style.display = 'none';
+                results = [];
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi K2 vs GLM 代码能力深度对比 | 旺仔洞察</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:#0a0a1a;color:#e0e0e0;min-height:100vh}
+.container{max-width:960px;margin:0 auto;padding:24px 16px}
+.hero{text-align:center;padding:48px 0 32px}
+.hero h1{font-size:1.8em;background:linear-gradient(135deg,#7c83ff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero .sub{color:#888;margin-top:8px;font-size:0.95em}
+.hero .date{color:#555;font-size:0.85em;margin-top:4px}
+.section{margin:32px 0}
+.section h2{font-size:1.2em;color:#7c83ff;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #1a1a3e}
+.card{background:#12122a;border:1px solid #1e1e40;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{color:#fff;font-size:1.05em;margin-bottom:12px}
+.vs-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start}
+.vs-card{background:#12122a;border:1px solid #1e1e40;border-radius:12px;padding:20px;text-align:center}
+.vs-card.kimi{border-color:#4f46e5}
+.vs-card.glm{border-color:#059669}
+.vs-divider{display:flex;align-items:center;justify-content:center;font-size:1.5em;color:#555;font-weight:700}
+.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a1a3e;font-size:0.9em}
+.stat:last-child{border-bottom:none}
+.stat .label{color:#888}
+.stat .val{color:#fff;font-weight:600}
+.bar-chart{margin:16px 0}
+.bar-row{display:flex;align-items:center;margin:8px 0;gap:12px}
+.bar-label{width:180px;text-align:right;font-size:0.85em;color:#aaa;flex-shrink:0}
+.bar-track{flex:1;height:28px;background:#1a1a3e;border-radius:6px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:0.8em;font-weight:600;color:#fff}
+.kimi-bar{background:linear-gradient(90deg,#4f46e5,#7c83ff)}
+.glm-bar{background:linear-gradient(90deg,#059669,#34d399)}
+.claude-bar{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.gpt-bar{background:linear-gradient(90deg,#dc2626,#f87171)}
+.ds-bar{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+.gemini-bar{background:linear-gradient(90deg,#0891b2,#67e8f9)}
+.qwen-bar{background:linear-gradient(90deg,#be185d,#f472b6)}
+.insight-box{background:#1a1a2e;border-left:3px solid #7c83ff;padding:16px;border-radius:0 8px 8px 0;margin:16px 0;font-size:0.95em;line-height:1.6}
+.insight-box .title{color:#7c83ff;font-weight:600;margin-bottom:8px}
+.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.8em;margin:2px}
+.tag-strong{background:#1e3a5f;color:#60a5fa}
+.tag-weak{background:#3b1f1f;color:#f87171}
+.tag-mid{background:#3b3b1f;color:#fbbf24}
+.tag-new{background:#1f3b2d;color:#4ade80}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0;font-size:0.85em}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-dot{width:12px;height:12px;border-radius:3px}
+.tech-table{width:100%;border-collapse:collapse;font-size:0.9em;margin:12px 0}
+.tech-table th{background:#1a1a3e;color:#7c83ff;padding:10px;text-align:left;border:1px solid #2a2a4a}
+.tech-table td{padding:10px;border:1px solid #2a2a4a}
+.tech-table tr:nth-child(even){background:#0f0f25}
+.tech-table .highlight{color:#4ade80;font-weight:600}
+.bench-table{width:100%;border-collapse:collapse;font-size:0.85em;margin:12px 0}
+.bench-table th{background:#1a1a3e;color:#7c83ff;padding:8px;text-align:center;border:1px solid #2a2a4a;font-size:0.85em}
+.bench-table td{padding:8px;border:1px solid #2a2a4a;text-align:center}
+.bench-table tr:nth-child(even){background:#0f0f25}
+.bench-table .best{color:#4ade80;font-weight:700}
+.bench-table .second{color:#60a5fa;font-weight:600}
+.bench-table .na{color:#555;font-style:italic}
+.note{color:#666;font-size:0.85em;margin-top:24px;text-align:center;line-height:1.6}
+.footer{text-align:center;padding:32px 0;color:#444;font-size:0.85em}
+.update-badge{display:inline-block;background:#7c3aed;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75em;margin-left:8px}
+@media(max-width:640px){.vs-grid{grid-template-columns:1fr}.vs-divider{padding:8px 0}.bar-label{width:120px;font-size:0.75em}.bench-table{font-size:0.75em}.tech-table{font-size:0.8em}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="hero">
+  <h1>Kimi K2 vs GLM 代码能力深度对比</h1>
+  <div class="sub">两大国产模型的编程实力 + 核心技术架构分析 <span class="update-badge">v2 更新</span></div>
+  <div class="date">旺仔洞察 · 2026-02-14 · 数据来源: Kimi K2 官方报告 / GLM-4 GitHub / Aider Leaderboard</div>
+</div>
+<div class="section">
+  <h2>📊 模型概览</h2>
+  <div class="vs-grid">
+    <div class="vs-card kimi">
+      <h3>🌙 Kimi K2</h3>
+      <div style="color:#888;font-size:0.85em;margin-bottom:12px">Moonshot AI (月之暗面)</div>
+      <div class="stat"><span class="label">产品名</span><span class="val">Kimi 2.5</span></div>
+      <div class="stat"><span class="label">架构</span><span class="val">MoE</span></div>
+      <div class="stat"><span class="label">总参数</span><span class="val">1T (1万亿)</span></div>
+      <div class="stat"><span class="label">激活参数</span><span class="val">32B</span></div>
+      <div class="stat"><span class="label">专家数</span><span class="val">384 + 1共享</span></div>
+      <div class="stat"><span class="label">每token激活专家</span><span class="val">8</span></div>
+      <div class="stat"><span class="label">注意力机制</span><span class="val">MLA</span></div>
+      <div class="stat"><span class="label">优化器</span><span class="val">MuonClip</span></div>
+      <div class="stat"><span class="label">训练数据</span><span class="val">15.5T tokens</span></div>
+      <div class="stat"><span class="label">上下文</span><span class="val">128K</span></div>
+      <div class="stat"><span class="label">开源</span><span class="val" style="color:#4ade80">✅ 完全开源</span></div>
+    </div>
+    <div class="vs-divider">VS</div>
+    <div class="vs-card glm">
+      <h3>🧠 GLM 系列</h3>
+      <div style="color:#888;font-size:0.85em;margin-bottom:12px">Zhipu AI (智谱)</div>
+      <div class="stat"><span class="label">商业版</span><span class="val">GLM-5 (闭源)</span></div>
+      <div class="stat"><span class="label">开源版</span><span class="val">GLM-4-32B-0414</span></div>
+      <div class="stat"><span class="label">架构</span><span class="val">Dense</span></div>
+      <div class="stat"><span class="label">总参数</span><span class="val">32B</span></div>
+      <div class="stat"><span class="label">激活参数</span><span class="val">32B (全量)</span></div>
+      <div class="stat"><span class="label">专家数</span><span class="val">N/A (Dense)</span></div>
+      <div class="stat"><span class="label">注意力机制</span><span class="val">标准 MHA</span></div>
+      <div class="stat"><span class="label">优化器</span><span class="val">AdamW (推测)</span></div>
+      <div class="stat"><span class="label">训练数据</span><span class="val">15T tokens</span></div>
+      <div class="stat"><span class="label">上下文</span><span class="val">128K</span></div>
+      <div class="stat"><span class="label">开源</span><span class="val" style="color:#fbbf24">⚠️ GLM-4开源 / GLM-5闭源</span></div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2>🏗️ 核心技术架构对比</h2>
+  <div class="card">
+    <h3>架构设计差异</h3>
+    <table class="tech-table">
+      <tr><th>维度</th><th>Kimi K2</th><th>GLM-4-32B / GLM-5</th></tr>
+      <tr>
+        <td>模型架构</td>
+        <td class="highlight">MoE (Mixture of Experts)</td>
+        <td>Dense Transformer</td>
+      </tr>
+      <tr>
+        <td>参数效率</td>
+        <td class="highlight">1T总参数，仅激活32B (3.2%)<br>推理成本极低</td>
+        <td>32B全量激活<br>推理成本与参数量成正比</td>
+      </tr>
+      <tr>
+        <td>注意力机制</td>
+        <td class="highlight">MLA (Multi-head Latent Attention)<br>源自DeepSeek，KV Cache压缩显著</td>
+        <td>标准 Multi-Head Attention<br>GLM-5架构未公开</td>
+      </tr>
+      <tr>
+        <td>优化器</td>
+        <td class="highlight">MuonClip (Muon变体)<br>首次将Muon扩展到1T规模，零训练不稳定</td>
+        <td>AdamW (推测)<br>业界标准优化器</td>
+      </tr>
+      <tr>
+        <td>训练规模</td>
+        <td>15.5T tokens</td>
+        <td>15T tokens (GLM-4-32B)</td>
+      </tr>
+      <tr>
+        <td>后训练</td>
+        <td>RL + 专门的Agent能力优化</td>
+        <td>拒绝采样 + RL + 人类偏好对齐</td>
+      </tr>
+      <tr>
+        <td>推理模式</td>
+        <td>Reflex (无长思考)<br>速度优先</td>
+        <td>GLM-Z1: 深度思考<br>GLM-Z1-Rumination: 沉思模式</td>
+      </tr>
+      <tr>
+        <td>Agent能力</td>
+        <td class="highlight">核心设计目标<br>Tool Use / 自主推理 / 问题解决</td>
+        <td>支持Function Calling<br>但非核心设计重点</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>💡 技术路线解读</h3>
+    <div class="insight-box">
+      <div class="title">MoE vs Dense — 两条不同的路</div>
+      <p style="margin-bottom:8px"><strong>Kimi K2</strong> 选择了 MoE 路线，用 1T 总参数但仅激活 32B 的方式，在保持推理成本可控的同时获得了远超 32B Dense 模型的知识容量。MLA 注意力机制进一步压缩了 KV Cache，降低了长上下文推理的显存占用。MuonClip 优化器是一个技术亮点 — 首次在万亿参数规模验证了 Muon 优化器的可行性。</p>
+      <p style="margin-bottom:8px"><strong>GLM 系列</strong> 走的是 Dense 路线，32B 参数全量激活。优势是架构简单、部署方便、推理延迟可预测。GLM 的特色在于推理模式的多样性 — Z1 支持深度思考，Z1-Rumination 支持沉思模式（类似 OpenAI Deep Research），可以在推理过程中调用搜索工具。</p>
+      <p><strong>核心差异：</strong>Kimi K2 追求的是"用更少的计算做更多的事"（效率优先），GLM 追求的是"用更深的思考解决更难的问题"（深度优先）。两者的设计哲学截然不同。</p>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2>📈 代码能力基准对比 (官方数据)</h2>
+  <p style="color:#888;font-size:0.9em;margin-bottom:16px">以下数据来自 Kimi K2 官方技术报告。GLM-4-32B 未提供对应基准数据，GLM-5 为闭源模型无公开基准。</p>
+
+  <div class="card">
+    <h3>编程任务基准 (Coding Benchmarks)</h3>
+    <table class="bench-table">
+      <tr>
+        <th>基准测试</th><th>Kimi K2</th><th>DeepSeek V3-0324</th><th>Qwen3-235B</th>
+        <th>Claude Sonnet 4</th><th>Claude Opus 4</th><th>GPT-4.1</th><th>Gemini 2.5 Flash</th>
+      </tr>
+      <tr>
+        <td style="text-align:left">LiveCodeBench v6</td>
+        <td class="best">53.7</td><td>46.9</td><td>37.0</td>
+        <td class="second">48.5</td><td>47.4</td><td>44.7</td><td>44.7</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">OJBench</td>
+        <td class="best">27.1</td><td class="second">24.0</td><td>11.3</td>
+        <td>15.3</td><td>19.6</td><td>19.5</td><td>19.5</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">MultiPL-E</td>
+        <td>85.7</td><td>83.1</td><td>78.2</td>
+        <td>88.6</td><td class="best">89.6</td><td>86.7</td><td class="second">85.6</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">SWE-bench Verified<br>(Agentless)</td>
+        <td class="second">51.8</td><td>36.6</td><td>39.4</td>
+        <td>50.2</td><td class="best">53.0</td><td>40.8</td><td>32.6</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">SWE-bench Verified<br>(Agentic, single)</td>
+        <td>65.8</td><td>38.8</td><td>34.4</td>
+        <td class="best">72.7</td><td class="second">72.5</td><td>54.6</td><td class="na">-</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">SWE-bench Multilingual<br>(Agentic)</td>
+        <td class="second">47.3</td><td>25.8</td><td>20.9</td>
+        <td class="best">51.0</td><td class="na">-</td><td>31.5</td><td class="na">-</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">Aider-Polyglot</td>
+        <td>60.0</td><td>55.1</td><td class="second">61.8</td>
+        <td>56.4</td><td class="best">70.7</td><td>52.4</td><td>44.0</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">TerminalBench</td>
+        <td>30.0</td><td class="na">-</td><td class="na">-</td>
+        <td class="second">35.5</td><td class="best">43.2</td><td>8.3</td><td class="na">-</td>
+      </tr>
+    </table>
+    <div style="font-size:0.8em;color:#666;margin-top:8px">
+      <span class="best">绿色</span> = 最佳 | <span class="second">蓝色</span> = 第二 | 数据来源: Kimi K2 官方技术报告
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Tool Use / Agent 能力</h3>
+    <table class="bench-table">
+      <tr>
+        <th>基准测试</th><th>Kimi K2</th><th>DeepSeek V3</th><th>Qwen3-235B</th>
+        <th>Claude Sonnet 4</th><th>Claude Opus 4</th><th>GPT-4.1</th>
+      </tr>
+      <tr>
+        <td style="text-align:left">Tau2 retail</td>
+        <td>70.6</td><td>69.1</td><td>57.0</td>
+        <td>75.0</td><td class="best">81.8</td><td class="second">74.8</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">Tau2 airline</td>
+        <td class="second">56.5</td><td>39.0</td><td>26.5</td>
+        <td>55.5</td><td class="best">60.0</td><td>54.5</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">Tau2 telecom</td>
+        <td class="second">65.8</td><td>32.5</td><td>22.1</td>
+        <td>45.2</td><td class="best">57.0</td><td>38.6</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">AceBench</td>
+        <td>76.5</td><td>72.7</td><td>70.5</td>
+        <td>76.2</td><td>75.6</td><td class="best">80.1</td>
+      </tr>
+    </table>
+  </div>
+</div>
+<div class="section">
+  <h2>📊 Aider Polyglot 排行榜可视化</h2>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div>OpenAI</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Anthropic</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#67e8f9"></div>Google</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>DeepSeek</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c83ff"></div>Moonshot (Kimi)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f472b6"></div>Qwen</div>
+  </div>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">GPT-5 (high)</div>
+      <div class="bar-track"><div class="bar-fill gpt-bar" style="width:88%">88.0%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Gemini 2.5 Pro (32k)</div>
+      <div class="bar-track"><div class="bar-fill gemini-bar" style="width:83.1%">83.1%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">o3 (high)</div>
+      <div class="bar-track"><div class="bar-fill gpt-bar" style="width:81.3%">81.3%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">DeepSeek V3.2 Reasoner</div>
+      <div class="bar-track"><div class="bar-fill ds-bar" style="width:74.2%">74.2%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Claude Opus 4 (32k)</div>
+      <div class="bar-track"><div class="bar-fill claude-bar" style="width:72%">72.0%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">DeepSeek V3.2 Chat</div>
+      <div class="bar-track"><div class="bar-fill ds-bar" style="width:70.2%">70.2%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Qwen3-235B</div>
+      <div class="bar-track"><div class="bar-fill qwen-bar" style="width:61.8%">61.8%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label" style="color:#7c83ff;font-weight:600">🌙 Kimi K2</div>
+      <div class="bar-track"><div class="bar-fill kimi-bar" style="width:60%">60.0%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">DeepSeek V3 (0324)</div>
+      <div class="bar-track"><div class="bar-fill ds-bar" style="width:55.1%">55.1%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">GPT-4.1</div>
+      <div class="bar-track"><div class="bar-fill gpt-bar" style="width:52.4%">52.4%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Claude 3.5 Sonnet</div>
+      <div class="bar-track"><div class="bar-fill claude-bar" style="width:51.6%">51.6%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label" style="color:#34d399">🧠 GLM-5 / GLM-4-32B</div>
+      <div class="bar-track" style="border:1px dashed #059669"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.8em;color:#34d399">未上榜 ⚠️</span></div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2>🔍 深度分析</h2>
+
+  <div class="card">
+    <h3>🌙 Kimi K2 — 编程能力总评</h3>
+    <div class="insight-box">
+      <div class="title">核心发现</div>
+      <p style="margin-bottom:8px">Kimi K2 在多个权威编程基准上表现出色：LiveCodeBench v6 得分 53.7（全场最高），OJBench 27.1（全场最高），SWE-bench Verified Agentic 65.8（仅次于 Claude 系列）。在 Agent/Tool Use 任务上，Tau2 telecom 得分 65.8 远超其他非 Claude 模型。</p>
+      <p>作为开源 MoE 模型，Kimi K2 的性价比极高 — Aider 测试成本仅 $1.24，是所有上榜模型中最低的之一。</p>
+    </div>
+    <div style="margin-top:12px">
+      <span class="tag tag-strong">✅ 开源 MoE 架构</span>
+      <span class="tag tag-strong">✅ LiveCodeBench SOTA</span>
+      <span class="tag tag-strong">✅ Agent 能力突出</span>
+      <span class="tag tag-strong">✅ 极致性价比</span>
+      <span class="tag tag-mid">⚡ MuonClip 优化器创新</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🧠 GLM 系列 — 编程能力总评</h3>
+    <div class="insight-box">
+      <div class="title">核心发现</div>
+      <p style="margin-bottom:8px"><strong>GLM-5（商业闭源版）：</strong>智谱官方宣称代码能力很强，但目前未出现在 Aider Polyglot、LiveCodeBench 等主流第三方编程基准上。缺乏独立验证数据，无法做定量对比。</p>
+      <p style="margin-bottom:8px"><strong>GLM-4-32B-0414（开源版）：</strong>官方称在工程代码、Artifact 生成、Function Calling 等方面达到了 GPT-4o 和 DeepSeek-V3-0324 (671B) 的水平，但同样缺少标准化基准数据。</p>
+      <p>GLM 系列的亮点在于推理模式多样性：Z1 深度思考 + Z1-Rumination 沉思模式，后者可在推理中调用搜索工具，适合复杂开放式问题。</p>
+    </div>
+    <div style="margin-top:12px">
+      <span class="tag tag-new">🆕 GLM-5 新发布</span>
+      <span class="tag tag-strong">✅ Z1 深度推理模式</span>
+      <span class="tag tag-strong">✅ Rumination 沉思模式</span>
+      <span class="tag tag-weak">⚠️ 缺乏第三方代码基准</span>
+      <span class="tag tag-weak">⚠️ GLM-5 闭源</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>⚖️ 选型建议</h3>
+    <div class="insight-box" style="border-color:#ff6b9d">
+      <div class="title" style="color:#ff6b9d">旺仔的判断</div>
+      <p style="margin-bottom:8px"><strong>选 Kimi K2 的场景：</strong>需要高性价比的代码生成、Agent/Tool Use 任务、开源可控部署、API 调用成本敏感。有实打实的第三方基准数据支撑。</p>
+      <p style="margin-bottom:8px"><strong>选 GLM 系列的场景：</strong>需要深度推理（Z1）、复杂开放式研究任务（Rumination）、中文生态偏好。但代码能力需要自行验证。</p>
+      <p style="margin-bottom:8px"><strong>追求极致代码能力：</strong>GPT-5 (88%) 或 Gemini 2.5 Pro (83.1%) 仍然是天花板，但成本高出一个数量级。</p>
+      <p><strong>性价比之王：</strong>DeepSeek V3.2 Chat 以 $0.88 达到 70.2%，综合性价比最高。Kimi K2 以 $1.24 达到 60%，是开源模型中的最佳选择。</p>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  数据来源：Kimi K2 官方技术报告 (arxiv.org/abs/2507.20534) · GLM-4 GitHub (github.com/THUDM/GLM-4) · Aider Polyglot Leaderboard (aider.chat)<br>
+  GLM-5 为闭源商业模型，暂无公开基准数据 · GLM-4-32B-0414 为最新开源版本<br>
+  截至 2026-02-14 · 本分析仅代表旺仔基于公开数据的独立判断
+</div>
+
+<div class="footer">
+  🥛 旺仔洞察 v2 · Built for 老大 · 2026-02-14
+</div>
+
+</div>
+</body>
+</html>

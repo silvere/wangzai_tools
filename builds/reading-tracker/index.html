@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading Progress Tracker - 读书进度追踪器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .add-book-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .add-book-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .form-row input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        
+        .form-row input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .btn-add {
+            background: #667eea;
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-add:hover {
+            background: #5568d3;
+        }
+        
+        .books-section {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .book-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .book-card:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .book-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        
+        .book-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+        }
+        
+        .book-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .status-reading { background: #4caf50; }
+        .status-finished { background: #2196F3; }
+        .status-wishlist { background: #ff9800; }
+        
+        .book-progress {
+            margin-bottom: 15px;
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .progress-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .progress-input input {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .progress-input button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .book-notes {
+            margin-top: 15px;
+        }
+        
+        .book-notes textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+        
+        .book-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+        
+        .btn-finish {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-tab {
+            padding: 10px 20px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .filter-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Reading Progress Tracker</h1>
+            <p>读书进度追踪器 - 记录你的阅读旅程</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalBooks">0</div>
+                <div class="label">总书籍</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="readingBooks">0</div>
+                <div class="label">在读</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="finishedBooks">0</div>
+                <div class="label">已完成</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalPages">0</div>
+                <div class="label">总页数</div>
+            </div>
+        </div>
+        
+        <div class="add-book-section">
+            <h3>📖 添加新书</h3>
+            <div class="form-row">
+                <input type="text" id="bookTitle" placeholder="书名">
+                <input type="number" id="bookPages" placeholder="总页数">
+                <input type="number" id="currentPage" placeholder="当前页数" value="0">
+            </div>
+            <button class="btn btn-add" onclick="addBook()">➕ 添加书籍</button>
+        </div>
+        
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterBooks('all')">全部</button>
+            <button class="filter-tab" onclick="filterBooks('reading')">在读</button>
+            <button class="filter-tab" onclick="filterBooks('finished')">已完成</button>
+            <button class="filter-tab" onclick="filterBooks('wishlist')">想读</button>
+        </div>
+        
+        <div class="books-section" id="booksSection"></div>
+    </div>
+    
+    <script>
+        let books = [];
+        let currentFilter = 'all';
+        
+        function init() {
+            loadBooks();
+            renderBooks();
+            updateStats();
+        }
+        
+        function loadBooks() {
+            const saved = localStorage.getItem('readingBooks');
+            if (saved) {
+                books = JSON.parse(saved);
+            }
+        }
+        
+        function saveBooks() {
+            localStorage.setItem('readingBooks', JSON.stringify(books));
+        }
+        
+        function addBook() {
+            const title = document.getElementById('bookTitle').value.trim();
+            const pages = parseInt(document.getElementById('bookPages').value) || 0;
+            const current = parseInt(document.getElementById('currentPage').value) || 0;
+            
+            if (!title || pages <= 0) {
+                alert('请输入书名和总页数');
+                return;
+            }
+            
+            const book = {
+                id: Date.now(),
+                title: title,
+                totalPages: pages,
+                currentPage: Math.min(current, pages),
+                status: current >= pages ? 'finished' : (current > 0 ? 'reading' : 'wishlist'),
+                notes: '',
+                addedAt: new Date().toISOString()
+            };
+            
+            books.unshift(book);
+            saveBooks();
+            renderBooks();
+            updateStats();
+            
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookPages').value = '';
+            document.getElementById('currentPage').value = '0';
+        }
+        
+        function updateProgress(id) {
+            const book = books.find(b => b.id === id);
+            const input = document.getElementById(`progress-${id}`);
+            const newPage = parseInt(input.value) || 0;
+            
+            book.currentPage = Math.min(newPage, book.totalPages);
+            book.status = book.currentPage >= book.totalPages ? 'finished' : (book.currentPage > 0 ? 'reading' : 'wishlist');
+            
+            saveBooks();
+            renderBooks();
+            updateStats();
+        }
+        
+        function updateNotes(id) {
+            const book = books.find(b => b.id === id);
+            const textarea = document.getElementById(`notes-${id}`);
+            book.notes = textarea.value;
+            saveBooks();
+        }
+        
+        function finishBook(id) {
+            const book = books.find(b => b.id === id);
+            book.currentPage = book.totalPages;
+            book.status = 'finished';
+            saveBooks();
+            renderBooks();
+            updateStats();
+        }
+        
+        function deleteBook(id) {
+            if (!confirm('确定要删除这本书吗？')) return;
+            books = books.filter(b => b.id !== id);
+            saveBooks();
+            renderBooks();
+            updateStats();
+        }
+        
+        function filterBooks(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            renderBooks();
+        }
+        
+        function renderBooks() {
+            const section = document.getElementById('booksSection');
+            const filtered = currentFilter === 'all' ? books : books.filter(b => b.status === currentFilter);
+            
+            if (filtered.length === 0) {
+                section.innerHTML = '<div class="empty-state">还没有添加书籍，快来添加第一本吧！📚</div>';
+                return;
+            }
+            
+            section.innerHTML = filtered.map(book => {
+                const progress = book.totalPages > 0 ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
+                const statusText = book.status === 'reading' ? '在读' : (book.status === 'finished' ? '已完成' : '想读');
+                
+                return `
+                    <div class="book-card">
+                        <div class="book-header">
+                            <div class="book-title">${book.title}</div>
+                            <div class="book-status status-${book.status}">${statusText}</div>
+                        </div>
+                        
+                        <div class="book-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%">${progress}%</div>
+                            </div>
+                            <div class="progress-input">
+                                <input type="number" id="progress-${book.id}" value="${book.currentPage}" 
+                                       min="0" max="${book.totalPages}" placeholder="当前页数">
+                                <span>/ ${book.totalPages} 页</span>
+                                <button onclick="updateProgress(${book.id})">更新</button>
+                            </div>
+                        </div>
+                        
+                        <div class="book-notes">
+                            <textarea id="notes-${book.id}" placeholder="读书笔记..." 
+                                      onblur="updateNotes(${book.id})">${book.notes}</textarea>
+                        </div>
+                        
+                        <div class="book-actions">
+                            ${book.status !== 'finished' ? `<button class="btn btn-small btn-finish" onclick="finishBook(${book.id})">✅ 标记完成</button>` : ''}
+                            <button class="btn btn-small btn-delete" onclick="deleteBook(${book.id})">🗑️ 删除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateStats() {
+            const reading = books.filter(b => b.status === 'reading').length;
+            const finished = books.filter(b => b.status === 'finished').length;
+            const totalPages = books.reduce((sum, b) => sum + b.currentPage, 0);
+            
+            document.getElementById('totalBooks').textContent = books.length;
+            document.getElementById('readingBooks').textContent = reading;
+            document.getElementById('finishedBooks').textContent = finished;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+        
+        // 回车添加书籍
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('bookTitle').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addBook();
+            });
+            document.getElementById('bookPages').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addBook();
+            });
+            document.getElementById('currentPage').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addBook();
+            });
+        });
+        
+        init();
+    </script>
+</body>
+</html>

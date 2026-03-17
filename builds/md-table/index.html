@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown 表格生成器 📊</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e4e4e7;--dim:#6b7084;--accent:#6c5ce7;--green:#00b894;--red:#ff6b6b;--blue:#74b9ff;--orange:#fdcb6e}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:24px;margin-bottom:4px}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--dim);font-size:13px;margin-bottom:20px}
+.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.tb{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer;transition:.2s}
+.tb:hover{border-color:var(--accent);background:rgba(108,92,231,.1)}
+.tb.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tb.green{background:var(--green);color:#fff;border-color:var(--green)}
+.tb.red{background:var(--red);color:#fff;border-color:var(--red)}
+.container{display:flex;gap:20px;max-width:1200px;width:100%;flex-wrap:wrap}
+.panel{flex:1;min-width:400px}
+.panel-title{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;margin-bottom:12px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--border);padding:0;position:relative}
+th{background:rgba(108,92,231,.1)}
+.cell-input{width:100%;padding:8px 10px;background:transparent;border:none;color:var(--text);font-size:14px;outline:none;min-width:80px}
+.cell-input:focus{background:rgba(108,92,231,.08)}
+th .cell-input{font-weight:600}
+.align-row{display:flex;gap:2px;padding:2px 4px;background:var(--bg);border-top:1px solid var(--border)}
+.align-btn{flex:1;padding:2px;background:transparent;border:1px solid transparent;color:var(--dim);font-size:10px;cursor:pointer;border-radius:3px;text-align:center}
+.align-btn.active{background:var(--accent);color:#fff}
+.align-btn:hover{border-color:var(--accent)}
+.col-actions{display:flex;justify-content:center;gap:4px;padding:4px}
+.col-del{background:transparent;border:none;color:var(--red);cursor:pointer;font-size:12px;opacity:.5;padding:2px 6px;border-radius:4px}
+.col-del:hover{opacity:1;background:rgba(255,107,107,.1)}
+.row-del{position:absolute;right:-28px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;opacity:.3;padding:2px 6px}
+.row-del:hover{opacity:1}
+.md-output{width:100%;min-height:200px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--green);font-size:13px;font-family:'SF Mono',Monaco,Consolas,monospace;line-height:1.6;resize:vertical;outline:none}
+.md-output:focus{border-color:var(--accent)}
+.preview-table{width:100%;border-collapse:collapse;font-size:14px}
+.preview-table th{background:rgba(108,92,231,.15);padding:8px 12px;border:1px solid var(--border);font-weight:600}
+.preview-table td{padding:8px 12px;border:1px solid var(--border)}
+.preview-table tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;justify-content:center}
+.preset-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:11px;cursor:pointer;transition:.2s}
+.preset-btn:hover{border-color:var(--accent);color:var(--text)}
+.toast{position:fixed;top:20px;right:20px;padding:10px 20px;background:var(--green);color:#fff;border-radius:8px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+.import-area{display:none;margin-bottom:12px}
+.import-area textarea{width:100%;height:80px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none}
+.import-area .tb{margin-top:6px}
+@media(max-width:860px){.panel{min-width:100%}}
+</style>
+</head>
+<body>
+<h1>📊 <span>Markdown 表格生成器</span></h1>
+<p class="subtitle">可视化编辑，实时生成 Markdown 表格</p>
+<div class="presets">
+  <span style="color:var(--dim);font-size:11px">预设:</span>
+  <button class="preset-btn" onclick="loadPreset('empty')">空白 3×3</button>
+  <button class="preset-btn" onclick="loadPreset('compare')">模型对比</button>
+  <button class="preset-btn" onclick="loadPreset('api')">API 价格</button>
+  <button class="preset-btn" onclick="loadPreset('schedule')">项目排期</button>
+  <button class="preset-btn" onclick="loadPreset('eval')">评测结果</button>
+</div>
+<div class="toolbar">
+  <button class="tb" onclick="addCol()">+ 列</button>
+  <button class="tb" onclick="addRow()">+ 行</button>
+  <button class="tb" onclick="toggleImport()">📥 导入 CSV</button>
+  <button class="tb accent" onclick="copyMd()">📋 复制 Markdown</button>
+  <button class="tb green" onclick="copyHtml()">🌐 复制 HTML</button>
+</div>
+<div class="import-area" id="importArea">
+  <textarea id="csvInput" placeholder="粘贴 CSV 数据，逗号分隔...&#10;名称,分数,排名&#10;GPT-4o,87.2,1&#10;Claude 3.5,85.1,2"></textarea>
+  <button class="tb accent" onclick="importCsv()">导入</button>
+</div>
+<div class="container">
+  <div class="panel">
+    <div class="panel-title">✏️ 编辑区</div>
+    <div class="table-wrap" id="editWrap"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">📝 Markdown</div>
+    <textarea class="md-output" id="mdOutput" readonly></textarea>
+    <div class="panel-title" style="margin-top:12px">👁️ 预览</div>
+    <div class="table-wrap" id="previewWrap"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let headers=[['模型','分数','排名']];
+let aligns=['left','center','center'];
+let rows=[['GPT-4o','87.2','1'],['Claude 3.5','85.1','2'],['Gemini Pro','83.7','3']];
+
+function render(){
+  renderEdit();renderMd();renderPreview();
+}
+
+function renderEdit(){
+  const w=document.getElementById('editWrap');
+  const cols=headers[0].length;
+  let h='<table>';
+  // Column delete buttons
+  h+='<tr>';
+  for(let c=0;c<cols;c++){
+    h+=`<td style="border:none;padding:0"><div class="col-actions">`;
+    if(cols>1)h+=`<button class="col-del" onclick="delCol(${c})" title="删除列">✕</button>`;
+    h+=`</div></td>`;
+  }
+  h+='</tr>';
+  // Headers
+  h+='<tr>';
+  for(let c=0;c<cols;c++){
+    h+=`<th><input class="cell-input" value="${esc(headers[0][c])}" onchange="headers[0][${c}]=this.value;renderMd();renderPreview()">`;
+    h+=`<div class="align-row">`;
+    ['left','center','right'].forEach(a=>{
+      const label=a==='left'?'←':a==='center'?'↔':'→';
+      h+=`<button class="align-btn${aligns[c]===a?' active':''}" onclick="aligns[${c}]='${a}';render()">${label}</button>`;
+    });
+    h+=`</div></th>`;
+  }
+  h+='</tr>';
+  // Rows
+  rows.forEach((row,r)=>{
+    h+=`<tr style="position:relative">`;
+    for(let c=0;c<cols;c++){
+      h+=`<td><input class="cell-input" value="${esc(row[c]||'')}" onchange="rows[${r}][${c}]=this.value;renderMd();renderPreview()"></td>`;
+    }
+    if(rows.length>1)h+=`<td style="border:none;padding:0"><button class="row-del" onclick="delRow(${r})" title="删除行">✕</button></td>`;
+    h+='</tr>';
+  });
+  h+='</table>';
+  w.innerHTML=h;
+}
+
+function renderMd(){
+  const cols=headers[0].length;
+  let lines=[];
+  // Header
+  lines.push('| '+headers[0].map(h=>h||' ').join(' | ')+' |');
+  // Separator
+  lines.push('| '+aligns.map(a=>{
+    if(a==='center')return ':---:';
+    if(a==='right')return '---:';
+    return ':---';
+  }).join(' | ')+' |');
+  // Rows
+  rows.forEach(row=>{
+    const cells=[];
+    for(let c=0;c<cols;c++)cells.push(row[c]||' ');
+    lines.push('| '+cells.join(' | ')+' |');
+  });
+  document.getElementById('mdOutput').value=lines.join('\n');
+}
+
+function renderPreview(){
+  const cols=headers[0].length;
+  let h='<table class="preview-table"><thead><tr>';
+  headers[0].forEach((hd,c)=>{
+    h+=`<th style="text-align:${aligns[c]}">${escH(hd)}</th>`;
+  });
+  h+='</tr></thead><tbody>';
+  rows.forEach(row=>{
+    h+='<tr>';
+    for(let c=0;c<cols;c++){
+      h+=`<td style="text-align:${aligns[c]}">${escH(row[c]||'')}</td>`;
+    }
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('previewWrap').innerHTML=h;
+}
+
+function esc(s){return(s||'').replace(/"/g,'&quot;')}
+function escH(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function addCol(){
+  headers[0].push('新列');
+  aligns.push('left');
+  rows.forEach(r=>r.push(''));
+  render();
+}
+
+function addRow(){
+  const cols=headers[0].length;
+  rows.push(new Array(cols).fill(''));
+  render();
+}
+
+function delCol(c){
+  if(headers[0].length<=1)return;
+  headers[0].splice(c,1);
+  aligns.splice(c,1);
+  rows.forEach(r=>r.splice(c,1));
+  render();
+}
+
+function delRow(r){
+  if(rows.length<=1)return;
+  rows.splice(r,1);
+  render();
+}
+
+function copyMd(){
+  navigator.clipboard.writeText(document.getElementById('mdOutput').value);
+  showToast('Markdown 已复制 ✅');
+}
+
+function copyHtml(){
+  const html=document.getElementById('previewWrap').innerHTML;
+  navigator.clipboard.writeText(html);
+  showToast('HTML 已复制 ✅');
+}
+
+function toggleImport(){
+  const a=document.getElementById('importArea');
+  a.style.display=a.style.display==='none'?'block':'none';
+}
+
+function importCsv(){
+  const text=document.getElementById('csvInput').value.trim();
+  if(!text)return;
+  const lines=text.split('\n').map(l=>l.split(',').map(c=>c.trim()));
+  if(lines.length<1)return;
+  headers=[lines[0]];
+  aligns=new Array(lines[0].length).fill('left');
+  rows=lines.slice(1);
+  if(!rows.length)rows=[new Array(lines[0].length).fill('')];
+  render();
+  document.getElementById('importArea').style.display='none';
+  showToast('CSV 导入成功 ✅');
+}
+
+const PRESETS={
+  empty:{h:['列1','列2','列3'],a:['left','left','left'],r:[['','',''],['','',''],['','','']]},
+  compare:{h:['模型','参数量','MMLU','HumanEval','价格($/M tokens)'],a:['left','center','center','center','right'],r:[['GPT-4o','~200B','88.7','90.2','5.00'],['Claude 3.5 Sonnet','~175B','88.3','92.0','3.00'],['Gemini 1.5 Pro','~540B','85.9','84.1','3.50'],['Qwen2.5-72B','72B','85.3','86.4','开源']]},
+  api:{h:['服务商','模型','输入价格','输出价格','上下文窗口'],a:['left','left','right','right','center'],r:[['OpenAI','GPT-4o','$2.50/M','$10.00/M','128K'],['Anthropic','Claude 3.5','$3.00/M','$15.00/M','200K'],['Google','Gemini 1.5','$3.50/M','$10.50/M','1M'],['DeepSeek','V3','$0.27/M','$1.10/M','128K']]},
+  schedule:{h:['任务','负责人','开始日期','截止日期','状态'],a:['left','center','center','center','center'],r:[['数据收集','张三','02-20','02-25','🟢 进行中'],['模型评测','李四','02-25','03-01','⏳ 待开始'],['报告撰写','王五','03-01','03-05','⏳ 待开始']]},
+  eval:{h:['Benchmark','GPT-4o','Claude 3.5','Gemini Pro','Qwen2.5'],a:['left','center','center','center','center'],r:[['MMLU','88.7','88.3','85.9','85.3'],['HumanEval','90.2','92.0','84.1','86.4'],['MATH','76.6','78.3','67.7','80.0'],['GPQA','53.6','59.4','46.2','49.0']]}
+};
+
+function loadPreset(name){
+  const p=PRESETS[name];
+  headers=[p.h.slice()];
+  aligns=p.a.slice();
+  rows=p.r.map(r=>r.slice());
+  render();
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+render();
+</script>
+</body>
+</html>

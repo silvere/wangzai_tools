@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打字速度测试 ⌨️</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e4e4e7;--dim:#6b7084;--accent:#6c5ce7;--green:#00b894;--red:#ff6b6b;--orange:#fdcb6e;--blue:#74b9ff}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 20px}
+h1{font-size:28px;margin-bottom:4px}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--dim);font-size:14px;margin-bottom:24px}
+.mode-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
+.mode-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:13px;cursor:pointer;transition:.2s}
+.mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mode-btn:hover{border-color:var(--accent)}
+.stats-row{display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;justify-content:center}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 24px;text-align:center;min-width:100px}
+.stat-card .val{font-size:32px;font-weight:700;color:var(--accent)}
+.stat-card .label{font-size:12px;color:var(--dim);margin-top:4px}
+.text-display{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:720px;width:100%;font-size:20px;line-height:1.8;margin-bottom:20px;min-height:120px;position:relative;user-select:none}
+.text-display .char{transition:color .1s}
+.char.correct{color:var(--green)}
+.char.wrong{color:var(--red);text-decoration:underline}
+.char.current{background:var(--accent);color:#fff;border-radius:2px;padding:0 1px}
+.char.pending{color:var(--dim)}
+.input-area{max-width:720px;width:100%}
+#typeInput{width:100%;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:18px;outline:none;font-family:inherit}
+#typeInput:focus{border-color:var(--accent)}
+#typeInput:disabled{opacity:.5}
+.progress-bar{max-width:720px;width:100%;height:4px;background:var(--border);border-radius:2px;margin:16px 0;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:2px;transition:width .2s;width:0}
+.actions{display:flex;gap:12px;margin-top:16px}
+.action-btn{padding:10px 24px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
+.btn-restart{background:var(--accent);color:#fff}
+.btn-restart:hover{opacity:.85}
+.btn-next{background:var(--border);color:var(--text)}
+.btn-next:hover{background:#3a3d4a}
+.result-panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;max-width:720px;width:100%;text-align:center;margin-top:20px}
+.result-panel h2{font-size:22px;margin-bottom:20px}
+.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.result-item .rval{font-size:28px;font-weight:700}
+.result-item .rlabel{font-size:12px;color:var(--dim);margin-top:4px}
+.result-item:nth-child(1) .rval{color:var(--accent)}
+.result-item:nth-child(2) .rval{color:var(--green)}
+.result-item:nth-child(3) .rval{color:var(--blue)}
+.result-item:nth-child(4) .rval{color:var(--orange)}
+.history{max-width:720px;width:100%;margin-top:24px}
+.history h3{font-size:14px;color:var(--dim);margin-bottom:8px}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.history-item{display:flex;justify-content:space-between;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:13px}
+.history-item .hwpm{color:var(--accent);font-weight:600}
+.rank-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-left:8px}
+.rank-s{background:rgba(108,92,231,.2);color:var(--accent)}
+.rank-a{background:rgba(0,184,148,.2);color:var(--green)}
+.rank-b{background:rgba(116,185,255,.2);color:var(--blue)}
+.rank-c{background:rgba(253,203,110,.2);color:var(--orange)}
+.rank-d{background:rgba(255,107,107,.2);color:var(--red)}
+@media(max-width:600px){.result-grid{grid-template-columns:repeat(2,1fr)}.stat-card .val{font-size:24px}}
+</style>
+</head>
+<body>
+<h1>⌨️ <span>打字速度测试</span></h1>
+<p class="subtitle">测测你的手速，支持中英文</p>
+<div class="mode-bar" id="modeBar"></div>
+<div class="stats-row">
+  <div class="stat-card"><div class="val" id="liveWpm">0</div><div class="label">WPM</div></div>
+  <div class="stat-card"><div class="val" id="liveAcc">100%</div><div class="label">准确率</div></div>
+  <div class="stat-card"><div class="val" id="liveTime">0s</div><div class="label">用时</div></div>
+  <div class="stat-card"><div class="val" id="liveChars">0</div><div class="label">已输入</div></div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="text-display" id="textDisplay"></div>
+<div class="input-area"><input id="typeInput" placeholder="点击这里开始打字..." autofocus></div>
+<div class="actions">
+  <button class="action-btn btn-restart" onclick="restart()">🔄 重新开始</button>
+  <button class="action-btn btn-next" onclick="nextText()">⏭️ 换一段</button>
+</div>
+<div class="result-panel" id="resultPanel">
+  <h2>🎉 完成！</h2>
+  <div class="result-grid">
+    <div class="result-item"><div class="rval" id="rWpm">0</div><div class="rlabel">WPM</div></div>
+    <div class="result-item"><div class="rval" id="rAcc">0%</div><div class="rlabel">准确率</div></div>
+    <div class="result-item"><div class="rval" id="rTime">0s</div><div class="rlabel">用时</div></div>
+    <div class="result-item"><div class="rval" id="rRank">-</div><div class="rlabel">评级</div></div>
+  </div>
+</div>
+<div class="history" id="historySection" style="display:none">
+  <h3>📊 历史记录</h3>
+  <div class="history-list" id="historyList"></div>
+</div>
+<script>
+const TEXTS={
+'英文-简单':[
+`The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet and is commonly used for typing practice.`,
+`Programming is the art of telling a computer what to do. A good programmer writes code that humans can understand and machines can execute efficiently.`,
+`Artificial intelligence is transforming the way we work and live. Large language models can now write code, translate languages, and answer complex questions.`,
+`The best way to learn programming is by doing. Start with small projects, make mistakes, and gradually build your skills through practice and persistence.`
+],
+'英文-中等':[
+`Machine learning models require careful evaluation across multiple dimensions including accuracy, robustness, fairness, and efficiency. A single benchmark score rarely tells the complete story.`,
+`The transformer architecture revolutionized natural language processing by introducing self-attention mechanisms that capture long-range dependencies in sequential data more effectively than recurrent networks.`,
+`Software engineering is not just about writing code. It encompasses requirements analysis, system design, testing, deployment, maintenance, and collaboration with diverse stakeholders across the organization.`
+],
+'英文-困难':[
+`Reinforcement learning from human feedback has emerged as a critical technique for aligning large language models with human preferences, though questions remain about the scalability and robustness of current approaches to preference optimization.`,
+`The evaluation of autonomous AI agents presents unique challenges: traditional benchmarks measure isolated capabilities, but real-world deployment requires consistent performance across diverse scenarios with graceful degradation under unexpected conditions.`
+],
+'中文-简单':[
+`人工智能正在改变我们的生活方式。从智能手机到自动驾驶，从语音助手到医疗诊断，AI技术已经渗透到日常生活的方方面面。`,
+`读书是一种享受，也是一种修行。每一本好书都是一扇窗户，让我们看到不同的世界，理解不同的人生。`,
+`健身不仅能强健体魄，还能改善心情。坚持运动的人往往更有精力，工作效率也更高。关键是找到适合自己的运动方式并持之以恒。`,
+`编程是一门手艺，需要不断练习才能精进。写代码就像写文章，既要逻辑清晰，又要简洁优雅。`
+],
+'中文-中等':[
+`大语言模型的评测是一个复杂的系统工程。单一的基准测试分数往往无法全面反映模型的真实能力，需要从准确性、鲁棒性、安全性、效率等多个维度进行综合评估。`,
+`注意力机制是现代深度学习的核心创新之一。它允许模型在处理序列数据时动态地关注最相关的部分，极大地提升了自然语言处理和计算机视觉等领域的性能。`,
+`开源社区的力量是巨大的。全球数百万开发者通过协作共享代码和知识，推动了技术的快速发展。从Linux到PyTorch，开源项目已经成为现代软件开发的基石。`
+],
+'中文-困难':[
+`基于人类反馈的强化学习已成为大语言模型对齐的关键技术，但当前偏好优化方法的可扩展性和鲁棒性仍存在诸多挑战。如何在保持模型通用能力的同时实现精确的价值对齐，是该领域亟待解决的核心问题。`,
+`自主智能体的评测面临独特挑战：传统基准测试衡量的是孤立能力，而真实部署要求模型在多样化场景中保持一致性能，并在遇到意外情况时优雅降级。这要求我们重新思考评测方法论的根本范式。`
+]
+};
+const MODES=Object.keys(TEXTS);
+let curMode='中文-简单',curText='',chars=[],pos=0,startTime=null,timer=null,done=false,correctCount=0,totalTyped=0;
+
+function initModes(){
+  const bar=document.getElementById('modeBar');
+  bar.innerHTML=MODES.map(m=>`<button class="mode-btn${m===curMode?' active':''}" onclick="setMode('${m}')">${m}</button>`).join('');
+}
+
+function setMode(m){
+  curMode=m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.textContent===m));
+  restart();
+}
+
+function pickText(){
+  const pool=TEXTS[curMode];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function renderText(){
+  const d=document.getElementById('textDisplay');
+  d.innerHTML=chars.map((c,i)=>{
+    let cls='pending';
+    if(i<pos)cls=c.correct?'correct':'wrong';
+    else if(i===pos)cls='current';
+    return`<span class="char ${cls}">${c.ch==='  '?'&nbsp;':escH(c.ch)}</span>`;
+  }).join('');
+}
+
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function restart(){
+  curText=pickText();
+  chars=curText.split('').map(ch=>({ch,correct:null}));
+  pos=0;startTime=null;done=false;correctCount=0;totalTyped=0;
+  if(timer)clearInterval(timer);timer=null;
+  document.getElementById('typeInput').value='';
+  document.getElementById('typeInput').disabled=false;
+  document.getElementById('resultPanel').style.display='none';
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('liveWpm').textContent='0';
+  document.getElementById('liveAcc').textContent='100%';
+  document.getElementById('liveTime').textContent='0s';
+  document.getElementById('liveChars').textContent='0';
+  renderText();
+  document.getElementById('typeInput').focus();
+}
+
+function nextText(){restart()}
+
+document.getElementById('typeInput').addEventListener('input',function(e){
+  if(done)return;
+  const val=this.value;
+  if(!startTime){
+    startTime=Date.now();
+    timer=setInterval(updateLive,200);
+  }
+  // Process each character
+  const newPos=val.length;
+  if(newPos>pos){
+    // Typed new chars
+    for(let i=pos;i<newPos&&i<chars.length;i++){
+      const typed=val[i];
+      chars[i].correct=(typed===chars[i].ch);
+      if(chars[i].correct)correctCount++;
+      totalTyped++;
+    }
+  }else if(newPos<pos){
+    // Backspace
+    for(let i=newPos;i<pos;i++){
+      if(chars[i].correct)correctCount--;
+      chars[i].correct=null;
+      totalTyped--;
+    }
+  }
+  pos=Math.min(newPos,chars.length);
+  renderText();
+  document.getElementById('progressFill').style.width=(pos/chars.length*100)+'%';
+  if(pos>=chars.length)finish();
+});
+
+document.getElementById('typeInput').addEventListener('keydown',function(e){
+  if(e.key==='Tab'){e.preventDefault();nextText()}
+});
+
+function updateLive(){
+  if(!startTime||done)return;
+  const elapsed=(Date.now()-startTime)/1000;
+  const isChinese=curMode.startsWith('中文');
+  const wpm=isChinese?Math.round(correctCount/(elapsed/60)):Math.round((correctCount/5)/(elapsed/60));
+  const acc=totalTyped>0?Math.round(correctCount/totalTyped*100):100;
+  document.getElementById('liveWpm').textContent=wpm;
+  document.getElementById('liveAcc').textContent=acc+'%';
+  document.getElementById('liveTime').textContent=Math.round(elapsed)+'s';
+  document.getElementById('liveChars').textContent=pos;
+}
+
+function finish(){
+  done=true;
+  if(timer)clearInterval(timer);
+  document.getElementById('typeInput').disabled=true;
+  const elapsed=(Date.now()-startTime)/1000;
+  const isChinese=curMode.startsWith('中文');
+  const wpm=isChinese?Math.round(correctCount/(elapsed/60)):Math.round((correctCount/5)/(elapsed/60));
+  const acc=totalTyped>0?Math.round(correctCount/totalTyped*100):100;
+  const rank=getRank(wpm,isChinese);
+  document.getElementById('rWpm').textContent=wpm;
+  document.getElementById('rAcc').textContent=acc+'%';
+  document.getElementById('rTime').textContent=elapsed.toFixed(1)+'s';
+  document.getElementById('rRank').innerHTML=rank.label+`<span class="rank-badge rank-${rank.cls}">${rank.tier}</span>`;
+  document.getElementById('resultPanel').style.display='block';
+  saveHistory({mode:curMode,wpm,acc,time:elapsed.toFixed(1),date:new Date().toLocaleString('zh-CN')});
+  renderHistory();
+}
+
+function getRank(wpm,cn){
+  if(cn){
+    if(wpm>=120)return{tier:'S',label:'打字之神',cls:'s'};
+    if(wpm>=80)return{tier:'A',label:'飞速',cls:'a'};
+    if(wpm>=50)return{tier:'B',label:'熟练',cls:'b'};
+    if(wpm>=30)return{tier:'C',label:'一般',cls:'c'};
+    return{tier:'D',label:'加油练习',cls:'d'};
+  }else{
+    if(wpm>=100)return{tier:'S',label:'Typing God',cls:'s'};
+    if(wpm>=70)return{tier:'A',label:'Fast',cls:'a'};
+    if(wpm>=40)return{tier:'B',label:'Average',cls:'b'};
+    if(wpm>=20)return{tier:'C',label:'Slow',cls:'c'};
+    return{tier:'D',label:'Keep Practicing',cls:'d'};
+  }
+}
+
+function saveHistory(entry){
+  let h=JSON.parse(localStorage.getItem('typing_history')||'[]');
+  h.unshift(entry);
+  if(h.length>20)h=h.slice(0,20);
+  localStorage.setItem('typing_history',JSON.stringify(h));
+}
+
+function renderHistory(){
+  const h=JSON.parse(localStorage.getItem('typing_history')||'[]');
+  if(!h.length){document.getElementById('historySection').style.display='none';return}
+  document.getElementById('historySection').style.display='block';
+  document.getElementById('historyList').innerHTML=h.slice(0,10).map(e=>
+    `<div class="history-item"><span>${e.date} · ${e.mode}</span><span><span class="hwpm">${e.wpm} WPM</span> · ${e.acc}% · ${e.time}s</span></div>`
+  ).join('');
+}
+
+initModes();restart();renderHistory();
+</script>
+</body>
+</html>
