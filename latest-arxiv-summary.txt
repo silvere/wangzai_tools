@@ -1,0 +1,73 @@
+# 📚 arXiv 最新大模型评测、AI智能体与行业应用论文精选
+
+📅 **更新时间**: 2026年02月07日
+📆 **覆盖范围**: 最近7天
+📝 **精选数量**: 5篇
+
+---
+
+## 📄 第1篇: Shared LoRA Subspaces for almost Strict Continual Learning
+
+👥 **作者**: Prakhar Kaushik, Ankit Vaidya, Shravan Chaudhari, Rama Chellappa, Alan Yuille
+📅 **发表时间**: 2026年02月06日 02:59
+🔗 **论文链接**: [PDF下载](https://arxiv.org/pdf/2602.06043v1)
+🏷️ **主题标签**: 💼 行业应用
+
+### 🎯 研究动机
+Adapting large pretrained models to new 任务s efficiently and continually is crucial for real-world 部署 but remains challenging due to catastrophic forgetting and the high cost of re训练. While parameter-efficient tuning methods like low rank adaptation (LoRA) reduce computational demands.
+
+---
+
+## 📄 第2篇: DyTopo: Dynamic Topology Routing for Multi-Agent Reasoning via Semantic Matching
+
+👥 **作者**: Yuxing Lu, Yucheng Hu, Xukai Zhao, Jiuxin Cao
+📅 **发表时间**: 2026年02月06日 02:59
+🔗 **论文链接**: [PDF下载](https://arxiv.org/pdf/2602.06039v1)
+🏷️ **主题标签**: 🤖 AI智能体
+
+### 🎯 研究动机
+Multi-agent systems built from prompted 大语言模型s can 改进 multi-round reasoning, yet most existing pipelines rely on fixed, trajectory-wide communication patterns that are poorly matched to the stage-dependent needs of iterative problem solving. We 介绍 DyTopo, a manager-guided.
+
+### 🔧 研究方法
+We 介绍 DyTopo, a manager-guided.
+
+---
+
+## 📄 第3篇: CommCP: Efficient Multi-Agent Coordination via LLM-Based Communication with Conformal Prediction
+
+👥 **作者**: Xiaopan Zhang, Zejin Wang, Zhixu Li, Jianpeng Yao, Jiachen Li
+📅 **发表时间**: 2026年02月06日 02:59
+🔗 **论文链接**: [PDF下载](https://arxiv.org/pdf/2602.06038v1)
+🏷️ **主题标签**: 🤖 AI智能体
+
+### 🎯 研究动机
+To complete assignments provided by humans in natural language, robots must interpret commands, generate and answer relevant questions for scene understanding, and manipulate target objects. Real-world 部署s often require multiple heterogeneous robots with different manipulation capabilities t.
+
+---
+
+## 📄 第4篇: PhysicsAgentABM: Physics-Guided Generative Agent-Based Modeling
+
+👥 **作者**: Kavana Venkatesh, Yinhan He, Jundong Li, Jiaming Cui
+📅 **发表时间**: 2026年02月06日 02:59
+🔗 **论文链接**: [PDF下载](https://arxiv.org/pdf/2602.06030v1)
+🏷️ **主题标签**: 🤖 AI智能体
+
+### 🎯 研究动机
+Large language model (大语言模型)-based 多智能体 systems enable expressive agent reasoning but are expensive to scale and poorly calibrated for timestep-aligned state-transition simulation, while classical agent-based models (ABMs) offer interpretability but struggle to integrate rich individual-level s...
+
+---
+
+## 📄 第5篇: AP-OOD: Attention Pooling for Out-of-Distribution Detection
+
+👥 **作者**: Claus Hofmann, Christian Huber, Bernhard Lehner, Daniel Klotz, Sepp Hochreiter, Werner Zellinger
+📅 **发表时间**: 2026年02月06日 02:59
+🔗 **论文链接**: [PDF下载](https://arxiv.org/pdf/2602.06031v1)
+🏷️ **主题标签**: 💼 行业应用
+
+### 🎯 研究动机
+Out-of-distribution (OOD) detection, which maps high-dimensional data into a scalar OOD score, is critical for the reliable 部署 of machine learning models. A key challenge in recent research is how to effectively leverage and aggregate token embeddings from language models to obtain the OOD s.
+
+---
+
+🤖 由旺仔AI助手自动生成
+🥛 每天早上9点准时推送最新精选

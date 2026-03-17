@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>居家健身动作库 | 按部位分类，图文要点</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe-ui', Roboto, sans-serif;
+        }
+        .exercise-card {
+            transition: all 0.2s ease;
+        }
+        .exercise-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-3">🏋️ 居家健身动作库</h1>
+            <p class="text-gray-600 text-lg">按部位分类收藏，图文要点随时查，在家健身不用翻找视频</p>
+        </div>
+
+        <!-- Filter -->
+        <div class="flex flex-wrap justify-center gap-2 mb-8">
+            <button class="filter-btn px-4 py-2 bg-blue-600 text-white rounded-full font-medium" data-filter="all">全部</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="chest">胸部</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="back">背部</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="shoulder">肩部</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="arm">手臂</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="abs">核心</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="leg">腿部</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="cardio">有氧</button>
+            <button class="filter-btn px-4 py-2 bg-white text-gray-700 rounded-full font-medium hover:bg-blue-100" data-filter="stretch">拉伸</button>
+        </div>
+
+        <!-- Exercise Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="exercise-grid">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Tips -->
+        <div class="mt-12 bg-blue-50 rounded-xl p-6">
+            <h3 class="text-xl font-semibold text-blue-800 mb-3">💡 健身小贴士</h3>
+            <ul class="list-disc list-inside space-y-2 text-blue-700">
+                <li>每个动作建议做 3~4 组，每组 8~12 次（力量）/ 15~20 次（塑形）</li>
+                <li>健身前一定要热身 5~10 分钟，健身后拉伸放松</li>
+                <li>如果动作过程中感到疼痛，立刻停下来，不要硬撑</li>
+                <li>渐进超负荷，慢慢增加重量/次数，进步才会持续</li>
+                <li>三分练七分吃，想要效果记得配合饮食</li>
+            </ul>
+        </div>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Built with ❤️ by 旺仔 · 在家健身随时查动作</p>
+        </footer>
+    </div>
+
+    <script>
+        const exercises = [
+            // Chest
+            {
+                name: "标准俯卧撑",
+                muscle: "chest",
+                difficulty: "中等",
+                description: "最经典的自重胸部训练，锻炼胸肌中缝和胸大肌",
+                tips: "身体成一条直线，下去时胸口接近地面，推起来时 fully extend 手臂",
+                imageUrl: "https://media.giphy.com/media/czxVJLRgVnXGz/giphy.gif",
+                url: ""
+            },
+            {
+                name: "宽距俯卧撑",
+                muscle: "chest",
+                difficulty: "中等",
+                description: "更侧重胸肌外侧和肩胸连接",
+                "tips": "双手距离大于肩宽，其他和标准俯卧撑相同",
+                imageUrl: "https://media.giphy.com/media/2tNvbcPOYjMBv/giphy.gif"
+            },
+            {
+                name: "钻石俯卧撑",
+                muscle: "chest",
+                difficulty: "困难",
+                description: "重点锻炼胸肌中缝和肱三头肌",
+                tips: "双手拇指食指拼成钻石形状，放在胸部下方",
+                imageUrl: "https://media.giphy.com/media/9jIkveQkMk6c/giphy.gif"
+            },
+            {
+                name: "下斜俯卧撑",
+                muscle: "chest",
+                difficulty: "困难",
+                description: "侧重胸肌上部，让胸部更饱满",
+                tips: "脚垫高，双手放在更低位置，重心偏下",
+                imageUrl: "https://media.giphy.com/media/xT5LMHxhOfWTgk/giphy-downsized.gif"
+            },
+
+            // Back
+            {
+                name: "自重引体向上",
+                muscle: "back",
+                difficulty: "困难",
+                description: "王牌背部动作，全面锻炼背阔肌和大圆肌",
+                tips: "挺胸沉肩，下巴过杆，控制下放速度",
+                imageUrl: "https://media.giphy.com/media/xTkcEQACH2Kru/giphy.gif"
+            },
+            {
+                name: "澳大利亚引体",
+                muscle: "back",
+                difficulty: "中等",
+                description: "低杠引体，适合力量不够的同学，同样练背",
+                tips: "身体倾斜，脚放在地上，拉起胸部到杠",
+                imageUrl: "https://media.giphy.com/media/xUnfJ1vQnbfvkJ/giphy-downsized.gif"
+            },
+            {
+                name: "俯身划船",
+                muscle: "back",
+                difficulty: "中等",
+                description: "用哑铃/矿泉水桶，锻炼背阔肌厚度",
+                tips: "弯腰 90 度，拉起来手肘贴身体，顶峰收缩停顿",
+                imageUrl: "https://media.giphy.com/media/1ivcYjtxdaRlrW/giphy-downsized.gif"
+            },
+
+            // Shoulder
+            {
+                name: "站姿哑铃侧平举",
+                muscle: "shoulder",
+                difficulty: "简单",
+                description: "重点锻炼肩中束，让肩膀更宽",
+                "tips": "重量不用太大，感受肩膀发力，不要甩身体",
+                imageUrl: "https://media.giphy.com/media/llIiFtxnDdVvK/giphy-downsized.gif"
+            },
+            {
+                name: "俯身哑铃飞鸟",
+                muscle: "shoulder",
+                difficulty: "简单",
+                description: "锻炼肩后束，改善圆肩驼背",
+                "tips": "打开时感受后束收缩，慢速控制",
+                imageUrl: "https://media.giphy.com/media/fnW2wUOxgRek/giphy-downsized.gif"
+            },
+            {
+                name: "肩推",
+                muscle: "shoulder",
+                difficulty: "中等",
+                description: "全面锻炼肩膀三角肌，增加肩部围度",
+                "tips": "坐姿稳定身体，推起来不要锁肘",
+                imageUrl: "https://media.giphy.com/media/qiNfWzrLdmnl6/giphy-downsized.gif"
+            },
+
+            // Arm
+            {
+                name: "俯卧撑臂屈伸",
+                muscle: "arm",
+                difficulty: "中等",
+                description: "自重锻炼肱三头肌",
+                tips: "双手撑在椅子边缘，身体下沉，推起来感受三头收缩",
+                imageUrl: "https://media.giphy.com/media/xT0GqkFgBpOey/giphy-downsized.gif"
+            },
+            {
+                name: "哑铃二头弯举",
+                muscle: "arm",
+                difficulty: "简单",
+                description: "经典肱二头肌训练",
+                "tips": "上臂贴身体，弯举顶峰停顿，下放慢速控制",
+                imageUrl: "https://media.giphy.com/media/KCtNVy3cBhxni/giphy-downsized.gif"
+            },
+
+            // Abs
+            {
+                name: "卷腹",
+                muscle: "abs",
+                difficulty: "简单",
+                description: "经典上腹训练，比仰卧起坐对腰椎友好",
+                tips: "卷起时吐气，下放吸气，下背部不要离开地面",
+                imageUrl: "https://media.giphy.com/media/ewnKRVdkiD72/giphy-downsized.gif"
+            },
+            {
+                name: "平板支撑",
+                muscle: "abs",
+                difficulty: "中等",
+                description: "超强核心稳定训练，整块腹肌都练",
+                tips: "身体成一条直线，核心收紧，不要塌腰翘屁股",
+                imageUrl: "https://media.giphy.com/media/ibBsYmkXnAjbk/giphy-downsized.gif"
+            },
+            {
+                name: "空中蹬腿",
+                muscle: "abs",
+                difficulty: "简单",
+                description: "针对下腹，甩掉小肚子",
+                tips: "下背部贴地面，腿部交替屈伸",
+                imageUrl: "https://media.giphy.com/media/3oriOqk0NttbJBniwe/giphy-downsized.gif"
+            },
+            {
+                name: "俄罗斯转体",
+                muscle: "abs",
+                difficulty: "中等",
+                description: "锻炼侧腹肌，雕刻腰部线条",
+                tips: "身体微微后仰，转体时触摸地面两边",
+                imageUrl: "https://media.giphy.com/media/xTkcEQBLiDj1W/giphy-downsized.gif"
+            },
+
+            // Leg
+            {
+                name: "自重深蹲",
+                muscle: "leg",
+                difficulty: "中等",
+                description: "王牌腿部动作，练大腿臀腿",
+                tips: "膝盖朝向脚尖，屁股向后坐，蹲到大腿平行地面",
+                imageUrl: "https://media.giphy.com/media/13fOqwnmIGjSg/giphy-downsized.gif"
+            },
+            {
+                name: "箭步蹲",
+                muscle: "leg",
+                difficulty: "中等",
+                description:"单腿训练，提高平衡性，侧重股四头肌",
+                tips: "前后腿弯曲大约 90 度，重心在中间",
+                imageUrl: "https://media.giphy.com/media/9zImiGDoxc0Vg/giphy-downsized.gif"
+            },
+            {
+                name: "臀桥",
+                muscle: "leg",
+                difficulty: "简单",
+                description: "超级美臀动作，紧致臀部",
+                tips: "脚靠近臀部，顶胯顶峰停顿收缩臀部，缓慢下放",
+                imageUrl: "https://media.giphy.com/media/llrYAkXbdgTGn/giphy-downsized.gif"
+            },
+            {
+                name: "保加利亚分腿蹲",
+                muscle: "leg",
+                difficulty: "困难",
+                description: "超强单腿臀部训练，提升臀线",
+                tips: "后脚垫高，前腿屈膝下蹲，感受臀部拉伸发力",
+                imageUrl: "https://media.giphy.com/media/itkx4j2vmmyOb/giphy-downsized.gif"
+            },
+
+            // Cardio
+            {
+                name: "开合跳",
+                muscle: "cardio",
+                difficulty: "简单",
+                description: "经典热身有氧，提升心率",
+                tips: "跳起来分开，落地轻轻并拢，保持节奏",
+                imageUrl: "https://media.giphy.com/media/llh2zUeDmGxF/giphy-downsized.gif"
+            },
+            {
+                name: "高抬腿",
+               脂肪: "cardio",
+                difficulty: "简单",
+                description: "快速提升心率，热身收尾都适合",
+                tips: "上抬大腿到平行，快速交换，保持核心稳定",
+                imageUrl: "https://media.giphy.com/media/bi6oNTBu8oGkU/giphy-downsized.gif"
+            },
+            {
+                name: "波比跳",
+                muscle: "cardio",
+                difficulty: "困难",
+                description: "超强全身燃脂，训练心肺",
+                tips: "蹲下→撑→跳起来举手，一口气完成，适合HIIT",
+                imageUrl: "https://media.giphy.com/media/92rbmbjzpYFS/giphy-downsized.gif"
+            },
+
+            // Stretch
+            {
+                name: "胸部拉伸",
+                muscle: "stretch",
+                difficulty: "简单",
+                description: "放松胸部，改善含胸",
+                tips: "站在门口，双手推开，身体向前，感受胸口拉伸",
+                imageUrl: "https://media.giphy.com/media/xT5LMHxhOfpU/mlf/giphy-downsized.gif"
+            },
+            {
+                name: "腘绳肌拉伸",
+                muscle: "stretch",
+                difficulty: "简单",
+                description: "拉伸大腿后侧，放松腿部",
+                tips: "坐地上伸直一条腿，身体前屈，感受后侧拉伸",
+                imageUrl: "https://media.giphy.com/media/xuQnMbSPDzbbO/giphy-downsized.gif"
+            },
+            {
+                name: "肩部拉伸",
+                muscle: "stretch",
+                difficulty: "简单",
+                description: "拉伸肩膀和上背",
+                "tips": "手抓住门框，身体向前转，感受肩部拉伸",
+                imageUrl: "https://media.giphy.com/media/xuQnMzyzWnkbO/giphy-downsized.gif"
+            },
+            {
+                name: "髋屈肌拉伸",
+                muscle: "stretch",
+                difficulty: "简单",
+                description: "拉伸髂腰肌，改善久坐僵硬",
+                tips: "弓箭步，前腿弯曲，身体前倾，感受前侧髋部拉伸",
+                imageUrl: "https://media.giphy.com/media/xT0GqnHfUfecg/giphy-downsized.gif"
+            }
+        ];
+
+        function renderExercises(filter = 'all') {
+            const grid = document.getElementById('exercise-grid');
+            grid.innerHTML = '';
+
+            const filtered = exercises.filter(e => filter === 'all' || e.muscle === filter);
+
+            filtered.forEach(ex => {
+                const card = document.createElement('div');
+                card.className = 'exercise-card bg-white rounded-xl shadow-md overflow-hidden';
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="text-xl font-bold text-gray-800">${ex.name}</h3>
+                            <span class="px-2 py-1 ${getDifficultyColor(ex.difficulty)} rounded-full text-xs font-medium">${ex.difficulty}</span>
+                        </div>
+                        <p class="text-gray-600 mb-3">${ex.description}</p>
+                        <div class="aspect-video bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                            <img src="${ex.imageUrl}" alt="${ex.name}" class="w-full h-full object-contain">
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-3">
+                            <p class="text-sm text-blue-800"><strong>💡 要点:</strong> ${ex.tips}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function getDifficultyColor(diff) {
+            const map = {
+                'simple': 'bg-green-100 text-green-700',
+                'medium': 'bg-yellow-100 text-yellow-700',
+                'hard': 'bg-red-100 text-red-700'
+            };
+            return map[diff] || map['medium'];
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-white', 'text-gray-700');
+                });
+                btn.classList.remove('bg-white', 'text-gray-700');
+                btn.classList.add('bg-blue-600', 'text-white');
+                renderExercises(btn.dataset.filter);
+            });
+        });
+
+        // Initial render
+        renderExercises();
+    </script>
+</body>
+</html>
