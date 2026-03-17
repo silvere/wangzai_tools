@@ -1,698 +1,206 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>旺仔作品集 🥛</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#0a0a1a;color:#e0e0e0;min-height:100vh;padding:24px}
-.container{max-width:900px;margin:0 auto}
-.header{text-align:center;padding:48px 0 32px}
-.header h1{font-size:2.5em;color:#fff}
-.header .sub{color:#888;margin-top:8px;font-size:1.1em}
-.category{margin-top:48px}
-.category-title{font-size:1.5em;color:#7c83ff;margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid #1e1e40}
-.grid{display:grid;gap:16px;margin-top:20px}
-.item{background:#12122a;border:1px solid #1e1e40;border-radius:12px;padding:20px;display:flex;gap:16px;align-items:center;text-decoration:none;color:inherit;transition:border-color 0.2s,transform 0.2s}
-.item:hover{border-color:#7c83ff;transform:translateY(-2px)}
-.item .icon{font-size:2em;flex-shrink:0}
-.item .info h3{color:#fff;font-size:1.05em;margin-bottom:4px}
-.item .info .desc{color:#888;font-size:0.9em;line-height:1.5}
-.item .info .meta{color:#555;font-size:0.8em;margin-top:6px}
-.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.75em;margin-left:8px}
-.tag-new{background:#1f3b2d;color:#4ade80}
-.footer{text-align:center;padding:48px 0;color:#444;font-size:0.85em}
-.stats{text-align:center;margin-top:20px;color:#666;font-size:0.95em}
-.quick-nav{background:#12122a;border:1px solid #1e1e40;border-radius:15px;padding:30px;margin-top:30px}
-.nav-title{font-size:1.3em;color:#fff;margin-bottom:20px;text-align:center}
-.nav-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:15px}
-.nav-item{background:#1a1a35;border:1px solid #2a2a50;border-radius:12px;padding:20px 15px;text-align:center;text-decoration:none;color:inherit;transition:all 0.3s;display:flex;flex-direction:column;align-items:center;gap:8px}
-.nav-item:hover{border-color:#7c83ff;transform:translateY(-3px);background:#1e1e40}
-.nav-icon{font-size:2em}
-.nav-label{color:#fff;font-size:0.95em;font-weight:600}
-.nav-count{color:#888;font-size:0.85em}
-.recent-section{background:linear-gradient(135deg,#1a1a35 0%,#12122a 100%);border:2px solid #7c83ff;border-radius:20px;padding:35px;margin-top:30px;box-shadow:0 0 30px rgba(124,131,255,0.1)}
-.recent-title{font-size:1.6em;color:#fff;margin-bottom:25px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px}
-.recent-badge{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:6px 14px;border-radius:20px;font-size:0.85em;font-weight:600}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旺仔工具百宝箱 | 149 个开箱即用的小工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        .tool-card {
+            transition: all 0.2s ease;
+        }
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>🥛 旺仔作品集</h1>
-    <div class="sub">95 个小工具，持续改善工作流</div>
-    <div class="stats">最后更新：2026-03-06</div>
-  </div>
-
-  <!-- 最新5个工具 -->
-  <div class="recent-section">
-    <div class="recent-title">
-      ✨ 最新工具 <span class="recent-badge">Build #91-#95</span>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Hero -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div class="container mx-auto px-4 py-12 max-w-7xl">
+            <div class="text-center">
+                <h1 class="text-5xl font-bold mb-4">🥛 旺仔工具百宝箱</h1>
+                <p class="text-xl opacity-90 mb-">每 4 小时构建一个小工具，持续改善工作流</p>
+                <p class="mt-2">当前共计 <strong>149</strong> 个工具 · 全部在线可用</p>
+                <div class="mt-8">
+                    <a href="https://github.com/silvere/wangzai_tools" target="_blank" class="inline-flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.005.404 2.291-1.548 3.297-1.23 3.297-1.23.633 1.653.242 2.874.118 3.176.77.84 2.767.306 5.167 1.335 5.464 4.598 0 4.598-3.003 5.624-5.473 5.921-.46.396-.908 1.42-.908 3.016 0 2.144-.089 3.878-.089 7.017 0-6.146 5.373-12 12-12z"/></svg>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="grid">
-      <a class="item" href="./project-idea-generator/index.html">
-        <div class="icon">💡</div>
-        <div class="info">
-          <h3>Project Idea Generator 项目灵感生成器 <span class="tag tag-new">NEW</span></h3>
-          <div class="desc">AI创业与开源项目创意工厂！7大方向，40+预设灵感，每个都带完整方案（技术选型+商业化+路线图）</div>
-          <div class="meta">Build #95 · 2026-03-06</div>
-        </div>
-      </a>
-      <a class="item" href="./meeting-minutes-generator/index.html">
-        <div class="icon">📝</div>
-        <div class="info">
-          <h3>Meeting Minutes Generator 会议纪要生成器 <span class="tag tag-new">NEW</span></h3>
-          <div class="desc">职场效率神器！3种会议模板，智能格式化输出，参会人员管理，自动生成完整纪要，一键复制下载</div>
-          <div class="meta">Build #94 · 2026-03-06</div>
-        </div>
-      </a>
-      <a class="item" href="./viral-title-generator/index.html">
-        <div class="icon">🔥</div>
-        <div class="info">
-          <h3>Viral Title Generator 爆款标题生成器 <span class="tag tag-new">NEW</span></h3>
-          <div class="desc">内容创作者必备！4大平台，6种标题风格，智能评分系统，一键复制，内置爆款技巧提示</div>
-          <div class="meta">Build #93 · 2026-03-05</div>
-        </div>
-      </a>
-      <a class="item" href="./api-formatter/index.html">
-        <div class="icon">🎨</div>
-        <div class="info">
-          <h3>API Response Formatter API响应格式化工具</h3>
-          <div class="desc">API调试神器！JSON/XML自动识别和美化，可调缩进，紧凑/展开模式，一键压缩，实时格式化</div>
-          <div class="meta">Build #92 · 2026-03-05</div>
-        </div>
-      </a>
-      <a class="item" href="./token-calculator/index.html">
-        <div class="icon">💰</div>
-        <div class="info">
-          <h3>Token Calculator & Cost Estimator Token计数器</h3>
-          <div class="desc">大模型评测必备！实时计算token数量，精准估算API成本，4种模型定价，成本估算表</div>
-          <div class="meta">Build #91 · 2026-03-05</div>
-        </div>
-      </a>
-    </div>
-  </div>
 
-  <!-- 快速导航 -->
-  <div class="quick-nav">
-    <div class="nav-title">📑 快速导航</div>
-    <div class="nav-grid">
-      <a href="#evaluation" class="nav-item">
-        <div class="nav-icon">📊</div>
-        <div class="nav-label">评测工具</div>
-        <div class="nav-count">12个</div>
-      </a>
-      <a href="#development" class="nav-item">
-        <div class="nav-icon">💻</div>
-        <div class="nav-label">开发工具</div>
-        <div class="nav-count">10个</div>
-      </a>
-      <a href="#text" class="nav-item">
-        <div class="nav-icon">📝</div>
-        <div class="nav-label">文本处理</div>
-        <div class="nav-count">7个</div>
-      </a>
-      <a href="#productivity" class="nav-item">
-        <div class="nav-icon">⚡</div>
-        <div class="nav-label">效率工具</div>
-        <div class="nav-count">10个</div>
-      </a>
-      <a href="#visualization" class="nav-item">
-        <div class="nav-icon">📈</div>
-        <div class="nav-label">数据可视化</div>
-        <div class="nav-count">5个</div>
-      </a>
-      <a href="#games" class="nav-item">
-        <div class="nav-icon">🎮</div>
-        <div class="nav-label">游戏娱乐</div>
-        <div class="nav-count">7个</div>
-      </a>
-      <a href="#health" class="nav-item">
-        <div class="nav-icon">💪</div>
-        <div class="nav-label">健康生活</div>
-        <div class="nav-count">5个</div>
-      </a>
-    </div>
-  </div>
+    <!-- Search -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <div class="mb-8">
+            <div class="max-w-xl mx-auto">
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-2">🔍 搜索工具</label>
+                <input type="text" id="search" placeholder="输入关键词搜索（比如：CSS、JSON、Markdown、评测）..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
 
-  <!-- 评测工具 -->
-  <div class="category" id="evaluation">
-    <h2 class="category-title">📊 评测工具</h2>
-    <div class="grid">
-      <a class="item" href="./prompt-ab-tester/index.html">
-        <div class="icon">🔬</div>
-        <div class="info">
-          <h3>Prompt A/B Tester</h3>
-          <div class="desc">对比测试不同提示词效果，4个快速模板，详细对比分析，测试历史记录</div>
-          <div class="meta">Build #73 · 2026-02-27</div>
+        <!-- Categories -->
+        <div class="mb-8 flex flex-wrap gap-2 justify-center" id="category-filters">
+            <button class="category-btn px-4 py-2 bg-blue-600 text-white rounded-full font-medium" data-category="all">全部</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="CSS前端">CSS/前端</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="开发工具">开发工具</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="评测AI">评测/AI</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="文本内容">文本/内容</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="设计可视化">设计/可视化</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300" data-category="游戏娱乐">游戏/娱乐</button>
+            <button class="category-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300" data-category="生活健康">生活/健康</button>
         </div>
-      </a>
-      <a class="item" href="./token-calculator/index.html">
-        <div class="icon">🔢</div>
-        <div class="info">
-          <h3>Token 计数器</h3>
-          <div class="desc">支持8个主流模型，智能区分中英文，精确成本估算，评测工作必备</div>
-          <div class="meta">Build #91 · 2026-03-05</div>
-        </div>
-      </a>
-      <a class="item" href="./score-calculator/index.html">
-        <div class="icon">🧮</div>
-        <div class="info">
-          <h3>Benchmark Score Calculator</h3>
-          <div class="desc">模型评分计算器，自定义权重，自动排名和可视化，支持5个主流benchmark</div>
-          <div class="meta">Build #68 · 2026-02-26</div>
-        </div>
-      </a>
-      <a class="item" href="./api-debugger/index.html">
-        <div class="icon">🔍</div>
-        <div class="info">
-          <h3>API Response Debugger</h3>
-          <div class="desc">LLM API响应调试，双响应对比，自动识别格式，成本估算</div>
-          <div class="meta">Build #66 · 2026-02-26</div>
-        </div>
-      </a>
-      <a class="item" href="./benchmark-comparator/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>Benchmark Comparator 模型对比工具</h3>
-          <div class="desc">多模型Benchmark性能对比，雷达图+柱状图，自动计算平均分，导出Markdown报告</div>
-          <div class="meta">Build #85 · 2026-03-03</div>
-        </div>
-      </a>
-      <a class="item" href="./prompt-templates/index.html">
-        <div class="icon">📝</div>
-        <div class="info">
-          <h3>Prompt Templates Prompt模板库</h3>
-          <div class="desc">Prompt管理神器！{{变量}}语法自动提取，实时预览，分类筛选，localStorage持久化</div>
-          <div class="meta">Build #84 · 2026-03-03</div>
-        </div>
-      </a>
-      <a class="item" href="./prompt-library/index.html">
-        <div class="icon">📝</div>
-        <div class="info">
-          <h3>Prompt 模板库</h3>
-          <div class="desc">精选评测与开发Prompt，12个常用模板，6大类别，一键复制</div>
-          <div class="meta">Build #63 · 2026-02-25</div>
-        </div>
-      </a>
-      <a class="item" href="./prompt-batch/index.html">
-        <div class="icon">🚀</div>
-        <div class="info">
-          <h3>Prompt 批量生成器</h3>
-          <div class="desc">批量生成测试Prompt，模板+变量，CSV导入，支持多变量组合</div>
-          <div class="meta">Build #60 · 2026-02-25</div>
-        </div>
-      </a>
-      <a class="item" href="./eval-metrics/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>评测指标计算器</h3>
-          <div class="desc">LLM评测专用指标，Exact Match/BLEU/ROUGE/F1/Jaccard/编辑距离，批量评测</div>
-          <div class="meta">Build #39 · 2026-02-21</div>
-        </div>
-      </a>
-      <a class="item" href="./eval-report-generator/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>评测报告生成器</h3>
-          <div class="desc">一键生成Markdown评测报告，综合排名/优劣势分析/推荐结论，4个快速模板</div>
-          <div class="meta">Build #74 · 2026-02-27</div>
-        </div>
-      </a>
-      <a class="item" href="./eval-checklist/index.html">
-        <div class="icon">✅</div>
-        <div class="info">
-          <h3>评测检查清单生成器</h3>
-          <div class="desc">确保评测流程不遗漏！4个阶段20+检查项，实时进度条，支持打印和导出</div>
-          <div class="meta">Build #79 · 2026-02-28</div>
-        </div>
-      </a>
-      <a class="item" href="./benchmark-cheatsheet/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>Benchmark Cheat Sheet 基准速查表</h3>
-          <div class="desc">快速查阅10个核心benchmark，分类筛选+搜索，警告和洞察高亮显示</div>
-          <div class="meta">Build #78 · 2026-02-28</div>
-        </div>
-      </a>
-    </div>
-  </div>
 
-  <!-- 开发工具 -->
-  <div class="category" id="development">
-    <h2 class="category-title">💻 开发工具</h2>
-    <div class="grid">
-      <a class="item" href="./api-formatter/index.html">
-        <div class="icon">🎨</div>
-        <div class="info">
-          <h3>API Response Formatter API响应格式化工具</h3>
-          <div class="desc">JSON/XML自动识别和美化，可调缩进，紧凑/展开模式，一键压缩，实时格式化</div>
-          <div class="meta">Build #92 · 2026-03-05</div>
+        <!-- Tool Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="tool-grid">
+            <!-- Tools populated by JS -->
         </div>
-      </a>
-      <a class="item" href="./api-diff/index.html">
-        <div class="icon">🔍</div>
-        <div class="info">
-          <h3>API Response Diff API响应对比工具</h3>
-          <div class="desc">并排对比两个API响应，可视化差异高亮，5个统计指标，一键格式化JSON</div>
-          <div class="meta">Build #87 · 2026-03-04</div>
-        </div>
-      </a>
-      <a class="item" href="./code-snippets/index.html">
-        <div class="icon">💻</div>
-        <div class="info">
-          <h3>Code Snippets 代码片段管理器</h3>
-          <div class="desc">保存常用代码片段，13种编程语言，语法高亮，按语言和标签筛选，导入导出JSON</div>
-          <div class="meta">Build #82 · 2026-03-03</div>
-        </div>
-      </a>
-      <a class="item" href="./regex-tester-pro/index.html">
-        <div class="icon">🔍</div>
-        <div class="info">
-          <h3>Regex Tester Pro</h3>
-          <div class="desc">增强版正则测试，实时匹配高亮，8个常用模板，替换功能预览</div>
-          <div class="meta">Build #67 · 2026-02-26</div>
-        </div>
-      </a>
-      <a class="item" href="./http-status/index.html">
-        <div class="icon">🌐</div>
-        <div class="info">
-          <h3>HTTP 状态码速查</h3>
-          <div class="desc">60+个状态码，分类筛选，详细说明和使用场景</div>
-          <div class="meta">Build #61 · 2026-02-25</div>
-        </div>
-      </a>
-      <a class="item" href="./unicode-inspector/index.html">
-        <div class="icon">🔍</div>
-        <div class="info">
-          <h3>Unicode 字符检查器</h3>
-          <div class="desc">Unicode字符详细信息，编码转换，特殊字符搜索</div>
-          <div class="meta">Build #50 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./bit-playground/index.html">
-        <div class="icon">🔢</div>
-        <div class="info">
-          <h3>位运算游乐场</h3>
-          <div class="desc">可视化位运算，支持AND/OR/XOR/NOT/左移/右移，二进制/十六进制转换</div>
-          <div class="meta">Build #49 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./code-snapshot/index.html">
-        <div class="icon">📸</div>
-        <div class="info">
-          <h3>Code Snapshot 代码快照</h3>
-          <div class="desc">代码美化截图，30+语言高亮，10+主题，自定义背景和边距</div>
-          <div class="meta">Build #34 · 2026-02-19</div>
-        </div>
-      </a>
-      <a class="item" href="./dev-toolbox/index.html">
-        <div class="icon">🛠️</div>
-        <div class="info">
-          <h3>开发者工具箱</h3>
-          <div class="desc">8合1瑞士军刀：JSON格式化、Base64、URL编解码、时间戳、UUID、Hash、颜色转换、正则测试</div>
-          <div class="meta">Build #7 · 2026-02-15</div>
-        </div>
-      </a>
-      <a class="item" href="./chmod-calc/index.html">
-        <div class="icon">🔐</div>
-        <div class="info">
-          <h3>Chmod 权限计算器</h3>
-          <div class="desc">Linux文件权限可视化，数字/符号双向转换，权限说明</div>
-          <div class="meta">Build #28 · 2026-02-18</div>
-        </div>
-      </a>
-      <a class="item" href="./cron-builder/index.html">
-        <div class="icon">⏰</div>
-        <div class="info">
-          <h3>Cron 表达式生成器</h3>
-          <div class="desc">可视化构建cron表达式，15个常用预设，中文人类可读描述，实时计算执行时间</div>
-          <div class="meta">Build #53 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./json-tree/index.html">
-        <div class="icon">🌳</div>
-        <div class="info">
-          <h3>JSON 树形浏览器</h3>
-          <div class="desc">JSON可视化树形结构，折叠/展开，点击复制JSONPath，类型标识，搜索过滤</div>
-          <div class="meta">Build #25 · 2026-02-18</div>
-        </div>
-      </a>
     </div>
-  </div>
 
-  <!-- 文本处理 -->
-  <div class="category" id="text">
-    <h2 class="category-title">📝 文本处理</h2>
-    <div class="grid">
-      <a class="item" href="./viral-title-generator/index.html">
-        <div class="icon">🔥</div>
-        <div class="info">
-          <h3>Viral Title Generator 爆款标题生成器</h3>
-          <div class="desc">内容创作者必备！4大平台，6种标题风格，智能评分系统，一键复制，内置爆款技巧提示</div>
-          <div class="meta">Build #93 · 2026-03-05</div>
-        </div>
-      </a>
-      <a class="item" href="./lorem-ipsum/index.html">
-        <div class="icon">📝</div>
-        <div class="info">
-          <h3>Lorem Ipsum Generator 占位文本生成器</h3>
-          <div class="desc">占位文本生成神器！4种生成类型，数量滑块调节，一键生成/复制/清空，实时统计</div>
-          <div class="meta">Build #90 · 2026-03-05</div>
-        </div>
-      </a>
-      <a class="item" href="./markdown-table-generator/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>Markdown Table Generator</h3>
-          <div class="desc">快速生成Markdown表格，可视化编辑，5个快速模板，实时预览</div>
-          <div class="meta">Build #72 · 2026-02-27</div>
-        </div>
-      </a>
-      <a class="item" href="./markdown-editor/index.html">
-        <div class="icon">📝</div>
-        <div class="info">
-          <h3>Markdown Editor</h3>
-          <div class="desc">极简Markdown编辑器，实时预览，三种视图模式，快捷键支持</div>
-          <div class="meta">Build #59 · 2026-02-24</div>
-        </div>
-      </a>
-      <a class="item" href="./text-diff/index.html">
-        <div class="icon">🔄</div>
-        <div class="info">
-          <h3>Text Diff 文本对比</h3>
-          <div class="desc">文本差异对比，逐行/逐字符高亮，统计变更数量</div>
-          <div class="meta">Build #22 · 2026-02-17</div>
-        </div>
-      </a>
-      <a class="item" href="./text-analyzer/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>Text Analyzer 文本分析</h3>
-          <div class="desc">文本统计分析，字符/词频/句子分析，可读性评分</div>
-          <div class="meta">Build #21 · 2026-02-17</div>
-        </div>
-      </a>
-      <a class="item" href="./wechat-formatter/index.html">
-        <div class="icon">📱</div>
-        <div class="info">
-          <h3>公众号排版助手</h3>
-          <div class="desc">Markdown转微信公众号风格，4套配色主题，4个内容模板</div>
-          <div class="meta">Build #6 · 2026-02-15</div>
-        </div>
-      </a>
-      <a class="item" href="./ascii-art/index.html">
-        <div class="icon">✨</div>
-        <div class="info">
-          <h3>ASCII Art 文字生成器</h3>
-          <div class="desc">输入文字即时生成大字ASCII艺术，3种字体，6种填充字符，一键复制</div>
-          <div class="meta">Build #27 · 2026-02-19</div>
-        </div>
-      </a>
-    </div>
-  </div>
+    <!-- Footer -->
+    <footer class="container mx-auto px-4 py-8 text-center text-gray-500 text-sm">
+        <p>Built with ❤️ by 旺仔 (Clawdbot) · Every 4 hours one new tool · Since 2026</p>
+    </footer>
 
-  <!-- 效率工具 -->
-  <div class="category" id="productivity">
-    <h2 class="category-title">⚡ 效率工具</h2>
-    <div class="grid">
-      <a class="item" href="./project-idea-generator/index.html">
-        <div class="icon">💡</div>
-        <div class="info">
-          <h3>Project Idea Generator 项目灵感生成器</h3>
-          <div class="desc">AI创业与开源项目创意工厂！7大方向，40+预设灵感，每个都带完整方案</div>
-          <div class="meta">Build #95 · 2026-03-06</div>
-        </div>
-      </a>
-      <a class="item" href="./meeting-minutes-generator/index.html">
-        <div class="icon">📝</div>
-        <div class="info">
-          <h3>Meeting Minutes Generator 会议纪要生成器</h3>
-          <div class="desc">职场效率神器！3种会议模板，智能格式化输出，参会人员管理，自动生成完整纪要</div>
-          <div class="meta">Build #94 · 2026-03-06</div>
-        </div>
-      </a>
-      <a class="item" href="./quick-capture/index.html">
-        <div class="icon">⚡</div>
-        <div class="info">
-          <h3>Quick Capture 快速想法捕捉器</h3>
-          <div class="desc">极简想法收件箱！输入框支持多行文本，#标签分类，Ctrl+Enter保存，时间戳智能显示</div>
-          <div class="meta">Build #81 · 2026-03-03</div>
-        </div>
-      </a>
-      <a class="item" href="./time-tracker/index.html">
-        <div class="icon">⏱️</div>
-        <div class="info">
-          <h3>Time Tracker 时间追踪器</h3>
-          <div class="desc">时间管理神器！实时计时器，任务名称和分类标签，今日时间分布饼图，本周时间趋势柱状图</div>
-          <div class="meta">Build #83 · 2026-03-03</div>
-        </div>
-      </a>
-      <a class="item" href="./habit-tracker/index.html">
-        <div class="icon">🎯</div>
-        <div class="info">
-          <h3>Habit Tracker 习惯追踪器</h3>
-          <div class="desc">习惯养成神器！添加习惯，每日打卡，连续天数统计，7周49天热力图，6个成就徽章</div>
-          <div class="meta">Build #86 · 2026-03-04</div>
-        </div>
-      </a>
-      <a class="item" href="./emoji-picker/index.html">
-        <div class="icon">😊</div>
-        <div class="info">
-          <h3>Emoji Picker Emoji选择器</h3>
-          <div class="desc">Emoji快速选择神器！9大分类，800+ emoji，点击即复制，实时搜索，最近使用记录</div>
-          <div class="meta">Build #88 · 2026-03-04</div>
-        </div>
-      </a>
-      <a class="item" href="./countdown-timer/index.html">
-        <div class="icon">⏱️</div>
-        <div class="info">
-          <h3>Countdown Timer 倒计时器</h3>
-          <div class="desc">专业倒计时器！4个快速预设，自定义时分秒，大字体显示，环形进度条，提示音+浏览器通知</div>
-          <div class="meta">Build #89 · 2026-03-04</div>
-        </div>
-      </a>
-      <a class="item" href="./daily-review/daily_review.py">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>每日复盘助手</h3>
-          <div class="desc">AI驱动的每日复盘，自动生成结构化报告，5个反思问题，AI智能建议</div>
-          <div class="meta">Build #69 · 2026-02-26 · Python</div>
-        </div>
-      </a>
-      <a class="item" href="./pomodoro-timer/index.html">
-        <div class="icon">🍅</div>
-        <div class="info">
-          <h3>番茄钟</h3>
-          <div class="desc">番茄工作法计时器，三种模式，环形进度条，自动统计</div>
-          <div class="meta">Build #65 · 2026-02-26</div>
-        </div>
-      </a>
-      <a class="item" href="./timeline-generator/index.html">
-        <div class="icon">⏱️</div>
-        <div class="info">
-          <h3>时间线生成器</h3>
-          <div class="desc">可视化时间线，自动排序，3个预设模板，导出PNG/JSON</div>
-          <div class="meta">Build #64 · 2026-02-25</div>
-        </div>
-      </a>
-      <a class="item" href="./qr-studio/index.html">
-        <div class="icon">📱</div>
-        <div class="info">
-          <h3>二维码工坊</h3>
-          <div class="desc">二维码生成与解析，自定义颜色/Logo/容错级别，批量生成</div>
-          <div class="meta">Build #48 · 2026-02-22</div>
-        </div>
-      </a>
-      <a class="item" href="./password-gen/index.html">
-        <div class="icon">🔐</div>
-        <div class="info">
-          <h3>密码生成器</h3>
-          <div class="desc">安全密码生成，自定义规则，强度评估，批量生成</div>
-          <div class="meta">Build #20 · 2026-02-17</div>
-        </div>
-      </a>
-      <a class="item" href="./reading-tracker/index.html">
-        <div class="icon">📚</div>
-        <div class="info">
-          <h3>Reading Progress Tracker 读书进度追踪器</h3>
-          <div class="desc">记录阅读旅程！添加书籍，实时进度条，读书笔记，标记完成，统计卡片</div>
-          <div class="meta">Build #80 · 2026-03-01</div>
-        </div>
-      </a>
-    </div>
-  </div>
+    <script>
+        const tools = [
+            // === CSS/前端 完整列表 ===
+            { name: "CSS Backdrop-Filter 毛玻璃生成器", path: "build-149-css-backdrop-filter-generator/index.html", category: "CSS前端", description: "可视化调节毛玻璃模糊效果，支持多种滤镜组合，现代UI设计必备" },
+            { name: "CSS Transform 变换生成器", path: "build-148-css-transform-generator/index.html", category: "CSS前端", description: "平移/旋转/缩放/倾斜可视化调节，变换原点自由选择" },
+            { name: "CSS Border-Radius 生成器", path: "build-147-css-border-radius-generator/index.html", category: "CSS前端", description: "四个圆角独立调节，支持椭圆圆角，8种常用预设" },
+            { name: "CSS Box Shadow 生成器", path: "build-146-css-box-shadow-generator/index.html", category: "CSS前端", description: "多层阴影叠加，参数实时调节，一键复制代码" },
+            { name: "CSS Grid 可视化生成器", path: "build-145-css-grid-generator/index.html", category: "CSS前端", description: "栅格布局可视化配置，多种对齐方式，8种预设" },
+            { name: "CSS Flexbox 可视化生成器", path: "build-144-flexbox-generator/index.html", category: "CSS前端", description: "Flexbox 容器属性可视化点击配置，完整速查表内置" },
+            { name: "CSS 渐变生成器", path: "build-143-css-gradient-generator/index.html", category: "CSS前端", description: "线性/径向/锥形渐变，可视化色标调整，8种预设" },
+            { name: "Color Palette 配色方案生成器", path: "build-108-color-palette-generator/index.html", category: "CSS前端", description: "多种配色模式，WCAG对比度检测，导出CSS" },
 
-  <!-- 数据可视化 -->
-  <div class="category" id="visualization">
-    <h2 class="category-title">📈 数据可视化</h2>
-    <div class="grid">
-      <a class="item" href="./quick-chart/index.html">
-        <div class="icon">📊</div>
-        <div class="info">
-          <h3>Quick Chart 数据可视化速写板</h3>
-          <div class="desc">粘贴CSV/JSON秒出图表，9种图表类型，8套配色方案，导出PNG</div>
-          <div class="meta">Build #51 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./mermaid-live/index.html">
-        <div class="icon">🧜♀️</div>
-        <div class="info">
-          <h3>Mermaid 实时编辑器</h3>
-          <div class="desc">Mermaid图表实时预览，流程图/时序图/甘特图等，导出SVG/PNG</div>
-          <div class="meta">Build #47 · 2026-02-22</div>
-        </div>
-      </a>
-      <a class="item" href="./gradient-gen/index.html">
-        <div class="icon">🎨</div>
-        <div class="info">
-          <h3>渐变色生成器</h3>
-          <div class="desc">CSS渐变色生成，线性/径向/圆锥渐变，预设方案，一键复制代码</div>
-          <div class="meta">Build #30 · 2026-02-18</div>
-        </div>
-      </a>
-      <a class="item" href="./color-palette/index.html">
-        <div class="icon">🎨</div>
-        <div class="info">
-          <h3>配色方案生成器</h3>
-          <div class="desc">智能配色生成，多种配色规则，导出多种格式</div>
-          <div class="meta">Build #19 · 2026-02-17</div>
-        </div>
-      </a>
-      <a class="item" href="./flexbox/index.html">
-        <div class="icon">📦</div>
-        <div class="info">
-          <h3>Flexbox 可视化游乐场</h3>
-          <div class="desc">CSS Flexbox可视化，实时调整属性，6个预设布局，自动生成CSS代码</div>
-          <div class="meta">Build #26 · 2026-02-18</div>
-        </div>
-      </a>
-      <a class="item" href="./pixel-art/index.html">
-        <div class="icon">🎨</div>
-        <div class="info">
-          <h3>像素画编辑器</h3>
-          <div class="desc">3种画布尺寸，5种工具，16色调色板，6个预设模板，导出PNG</div>
-          <div class="meta">Build #23 · 2026-02-18</div>
-        </div>
-      </a>
-    </div>
-  </div>
+            // === 开发工具 完整列表 ===
+            { name: "YAML 格式化验证工具", path: "build-142-yaml-validator/index.html", category: "开发工具", description: "YAML格式化验证，JSON双向转换，语法错误精准定位" },
+            { name: "XML 格式化美化工具", path: "build-141-xml-formatter/index.html", category: "开发工具", description: "XML格式化压缩，树形结构展示，支持文件上传" },
+            { name: "User-Agent 解析器", path: "build-140-user-agent-parser/index.html", category: "开发工具", description: "解析UA识别浏览器/系统/设备，批量解析支持导出CSV" },
+            { name: "URL 解析与参数修改器", path: "build-139-url-parser/index.html", category: "开发工具", description: "URL结构拆解，参数可视化编辑，URL编解码" },
+            { name: "JSON 格式化美化工具", path: "build-138-json-prettifier/index.html", category: "开发工具", description: "JSON格式化压缩，语法验证，树形浏览器" },
+            { name: "Crontab 可视化解析器", path: "build-137-crontab-visualizer/index.html", category: "开发工具", description: "Cron表达式解析，自然语言描述，预览未来执行时间" },
+            { name: "Linux 权限计算器", path: "build-134-chmod-calculator/index.html", category: "开发工具", description: "可视化点击计算chmod权限，一键复制完整命令" },
+            { name: "Unix 时间戳转换工具", path: "build-133-timestamp-converter/index.html", category: "开发工具", description: "时间戳转日期，多时区展示，时间差计算" },
+            { name: "JSON 转 TypeScript 接口工具", path: "build-132-json-to-typescript/index.html", category: "开发工具", description: "JSON结构自动转换TS接口，支持多种命名风格" },
+            { name: "HTTP 状态码查询工具", path: "build-130-http-status-codes/index.html", category: "开发工具", description: "查询所有HTTP状态码，中文说明，支持搜索" },
+            { name: "SQL 格式化美化工具", path: "build-129-sql-formatter/index.html", category: "开发工具", description: "SQL格式化，支持10+种SQL方言，语法提示" },
+            { name: "正则表达式可视化调试器", path: "build-128-regex-visualizer/index.html", category: "开发工具", description: "正则铁路图可视化，匹配高亮，12个常用模板" },
+            { name: "全网热搜聚合器", path: "build-127-hot-search-aggregator/index.html", category: "开发工具", description: "抖音/小红书/B站/微博/知乎热搜一站式查看" },
+            { name: "端口扫描工具", path: "build-123-port-scanner/index.html", category: "开发工具", description: "浏览器端端口扫描，自动识别常见服务" },
+            { name: "JSON YAML 转换器", path: "build-122-json-yaml-converter/index.html", category: "开发工具", description: "JSON YAML双向转换，自动语法校验" },
+            { name: "Base64 编码解码工具", path: "build-107-base64-converter/index.html", category: "开发工具", description: "文本/图片/文件Base64转换，支持大文件" },
+            { name: "二维码全能工具箱", path: "build-109-qrcode-reader/index.html", category: "开发工具", description: "生成识别二维码，摄像头扫描，全部本地完成" },
+            { name: "JSON 树形浏览器", path: "build-105-json-viewer/index.html", category: "开发工具", description: "折叠展开搜索高亮，路径导航格式化" },
+            { name: "JSON Path 提取器", path: "build-110-json-path-extractor/index.html", category: "开发工具", description: "JSONPath查询，点击复制路径，内置语法参考" },
+            { name: "剪贴板历史管理器", path: "build-135-clipboard-history/index.html", category: "开发工具", description: "本地保存剪贴板历史，搜索筛选，一键复制历史" },
+            { name: "API 响应格式化工具", path: "api-formatter/index.html", category: "开发工具", description: "美化JSON/XML响应，快速调试API接口" },
+            { name: "网络速度测试工具", path: "build-124-network-speed-test/index.html", category: "开发工具", description: "浏览器本地测速，延迟抖动丢包率下载上传测试" },
+            { name: "智能 Cron 表达式生成器", path: "build-114-crontab-scheduler/index.html", category: "开发工具", description: "可视化点选生成，中文自然语言解析，预览执行时间" },
+            { name: "正则表达式测试工具", path: "build-113-regular-expression-tester/index.html", category: "开发工具", description: "实时测试正则，匹配高亮，18个常用模板" },
 
-  <!-- 游戏娱乐 -->
-  <div class="category" id="games">
-    <h2 class="category-title">🎮 游戏娱乐</h2>
-    <div class="grid">
-      <a class="item" href="./sudoku/index.html">
-        <div class="icon">🧩</div>
-        <div class="info">
-          <h3>Sudoku 数独</h3>
-          <div class="desc">经典数独游戏，4种难度，回溯算法生成谜题，键盘操作</div>
-          <div class="meta">Build #56 · 2026-02-24</div>
-        </div>
-      </a>
-      <a class="item" href="./web-piano/index.html">
-        <div class="icon">🎹</div>
-        <div class="info">
-          <h3>Web Piano 网页钢琴</h3>
-          <div class="desc">两个八度网页钢琴，4种音色，录制回放功能</div>
-          <div class="meta">Build #55 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./morse-code/index.html">
-        <div class="icon">📡</div>
-        <div class="info">
-          <h3>Morse Code 摩尔斯电码</h3>
-          <div class="desc">摩尔斯电码互转+音频播放+手动敲击，实时波形可视化</div>
-          <div class="meta">Build #54 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./typerush/index.html">
-        <div class="icon">⌨️</div>
-        <div class="info">
-          <h3>TypeRush 打字速度测试</h3>
-          <div class="desc">测打字速度，支持英文/中文/代码三种模式，WPM/CPM计算</div>
-          <div class="meta">Build #52 · 2026-02-23</div>
-        </div>
-      </a>
-      <a class="item" href="./game-2048/index.html">
-        <div class="icon">🎮</div>
-        <div class="info">
-          <h3>2048 小游戏</h3>
-          <div class="desc">经典2048游戏，流畅动画，最高分记录，撤销功能</div>
-          <div class="meta">Build #38 · 2026-02-20</div>
-        </div>
-      </a>
-      <a class="item" href="./game-of-life/index.html">
-        <div class="icon">🧬</div>
-        <div class="info">
-          <h3>生命游戏</h3>
-          <div class="desc">康威生命游戏，多种预设图案，可调速度，随机生成</div>
-          <div class="meta">Build #42 · 2026-02-21</div>
-        </div>
-      </a>
-      <a class="item" href="./typing-test/index.html">
-        <div class="icon">⌨️</div>
-        <div class="info">
-          <h3>打字速度测试</h3>
-          <div class="desc">中英文打字速度测试，6种模式，实时WPM/准确率，历史记录</div>
-          <div class="meta">Build #35 · 2026-02-20</div>
-        </div>
-      </a>
-    </div>
-  </div>
+            // === 评测/AI ===
+            { name: "大模型评测报告生成器", path: "eval-report-generator/index.html", category: "评测AI", description: "输入模型分数，一键生成可视化评测报告" },
+            { name: "项目灵感粉碎机", path: "idea-generator/index.html", category: "评测AI", description: "生成AI创业开源项目灵感，完整方案" },
+            { name: "评测数据集浏览器", path: "benchmark-browser/index.html", category: "评测AI", description: "浏览主流大模型评测基准，查看详情" },
+            { name: "论文速览工具", path: "paper-summary/index.html", category: "评测AI", description: "arXiv论文速读，提取核心信息" },
+            { name: "Token计数器 成本估算器", path: "token-calculator/index.html", category: "评测AI", description: "统计Token数量，估算API调用成本" },
+            { name: "项目灵感生成器", path: "project-idea-generator/index.html", category: "评测AI", description: "AI创业开源项目灵感工厂" },
 
-  <!-- 健康生活 -->
-  <div class="category" id="health">
-    <h2 class="category-title">💪 健康生活</h2>
-    <div class="grid">
-      <a class="item" href="./breathing/index.html">
-        <div class="icon">🫁</div>
-        <div class="info">
-          <h3>呼吸练习器</h3>
-          <div class="desc">呼吸训练，多种呼吸模式，动画引导，统计记录</div>
-          <div class="meta">Build #43 · 2026-02-21</div>
-        </div>
-      </a>
-      <a class="item" href="./workout-timer/index.html">
-        <div class="icon">💪</div>
-        <div class="info">
-          <h3>健身间歇计时器</h3>
-          <div class="desc">HIIT训练计时，自定义间歇，语音提示，预设方案</div>
-          <div class="meta">Build #41 · 2026-02-21</div>
-        </div>
-      </a>
-      <a class="item" href="./badminton/index.html">
-        <div class="icon">🏸</div>
-        <div class="info">
-          <h3>羽毛球计分板</h3>
-          <div class="desc">羽毛球比赛计分，支持单打/双打，换边提醒，比赛历史</div>
-          <div class="meta">Build #40 · 2026-02-21</div>
-        </div>
-      </a>
-      <a class="item" href="./white-noise/index.html">
-        <div class="icon">🎧</div>
-        <div class="info">
-          <h3>白噪音生成器</h3>
-          <div class="desc">多种白噪音，助眠专注，音量调节，定时关闭</div>
-          <div class="meta">Build #37 · 2026-02-20</div>
-        </div>
-      </a>
-      <a class="item" href="./pomodoro-timer/index.html">
-        <div class="icon">🍅</div>
-        <div class="info">
-          <h3>番茄钟</h3>
-          <div class="desc">番茄工作法计时器，三种模式，环形进度条，自动统计</div>
-          <div class="meta">Build #65 · 2026-02-26</div>
-        </div>
-      </a>
-    </div>
-  </div>
+            // === 文本/内容 ===
+            { name: "小红书爆款文案生成器", path: "xiaohongshu-copywriter/index.html", category: "文本内容", description: "10大类型7种风格，一键生成小红书爆款文案" },
+            { name: "Markdown Mermaid 实时编辑器", path: "build-131-markdown-mermaid-editor/index.html", category: "文本内容", description: "Mermaid图表实时渲染，8种模板，支持导出HTML" },
+            { name: "Markdown 目录生成器", path: "build-136-markdown-toc-generator/index.html", category: "文本内容", description: "一键生成Markdown目录，多种风格锚点格式" },
+            { name: "Markdown 思维导图生成器", path: "build-126-markdown-mindmap/index.html", category: "文本内容", description: "Markdown标题生成思维导图，支持拖拽导出PNG/SVG" },
+            { name: "Markdown 幻灯片生成器", path: "build-117-markdown-slides-generator/index.html", category: "文本内容", description: "Markdown写PPT，演讲者模式支持计时器备注，导出PDF" },
+            { name: "Markdown 笔记速记工具", path: "build-104-markdown-note/index.html", category: "文本内容", description: "本地存储实时预览，导出MD/HTML，自动保存草稿" },
+            { name: "Markdown Excel 转换器", path: "build-120-markdown-excel-converter/index.html", category: "文本内容", description: "Markdown表格Excel双向转换，完美保留格式" },
+            { name: "SRT 字幕编辑器", path: "build-121-srt-subtitle-editor/index.html", category: "文本内容", description: "字幕时间偏移，查找替换，简繁体转换" },
+            { name: "会议纪要生成器", path: "meeting-minutes-generator/index.html", category: "文本内容", description: "3分钟生成专业会议纪要" },
+            { name: "爆款标题生成器", path: "viral-title-generator/index.html", category: "文本内容", description: "爆款标题生成，支持四大平台六种风格" },
+            { name: "文本统计分析工具箱", path: "build-112-text-statistics/index.html", category: "文本内容", description: "字数统计，词频分析可视化，多种文本处理工具" },
+            { name: "Markdown表格排序工具", path: "build-111-markdown-table-sorter/index.html", category: "文本内容", description: "点击表头排序，支持多列排序自动识别类型" },
 
-  <div class="footer">
-    <p>🥛 旺仔 · 每4小时一个小工具 · 持续改善工作流</p>
-    <p style="margin-top:8px">Build #1-#95 · 2026-02-14 至今</p>
-  </div>
-</div>
+            // === 设计/可视化 ===
+            { name: "Mermaid 流程图生成器", path: "build-115-mermaid-diagram-generator/index.html", category: "设计可视化", description: "Mermaid实时渲染，模板丰富，一键导出PNG/SVG" },
+
+            // === 生活/健康 ===
+            { name: "全能单位换算工具", path: "build-125-unit-converter/index.html", category: "生活健康", description: "18大类300+单位互相换算，日常工作生活必备" },
+            { name: "图片批量压缩调整工具", path: "build-119-image-resizer/index.html", category: "生活健康", description: "批量调整图片尺寸，格式转换压缩，本地处理不上传" },
+            { name: "离线密码管理器", path: "build-118-password-manager/index.html", category: "生活健康", description: "AES-256加密本地存储，内置强密码生成器" },
+            { name: "密码生成器", path: "build-103-password-generator/index.html", category: "生活健康", description: "安全离线生成，强度评估破解时间估算" },
+            { name: "短链接生成器", path: "build-102-link-shortener/index.html", category: "生活健康", description: "纯本地离线短链接，自定义短码有效期访问统计" }
+        ];
+
+        function renderTools(filterCategory = 'all', searchText = '') {
+            const grid = document.getElementById('tool-grid');
+            grid.innerHTML = '';
+
+            const filtered = tools.filter(tool => {
+                const matchCategory = filterCategory === 'all' || filterCategory === tool.category;
+                const matchSearch = !searchText ||
+                    tool.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                    tool.description.toLowerCase().includes(searchText.toLowerCase());
+                return matchCategory && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">未找到匹配的工具 😕</div>';
+                return;
+            }
+
+            filtered.forEach(tool => {
+                const card = document.createElement('a');
+                card.href = tool.path;
+                card.target = '_blank';
+                card.className = 'tool-card block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:border-blue-500';
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-semibold text-gray-900 text-lg leading-tight">${tool.name}</h3>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">${tool.description}</p>
+                        <div class="flex items-center">
+                            <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">${tool.category}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Category filter
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                btn.classList.remove('bg-gray-200', 'text-gray-700');
+                btn.classList.add('bg-blue-600', 'text-white');
+                const category = btn.dataset.category;
+                const search = document.getElementById('search').value;
+                renderTools(category, search);
+            });
+        });
+
+        // Search
+        document.getElementById('search').addEventListener('input', (e) => {
+            const searchText = e.target.value;
+            const activeBtn = document.querySelector('.category-btn.bg-blue-600');
+            const category = activeBtn.dataset.category;
+            renderTools(category, searchText);
+        });
+
+        // Initial render
+        renderTools();
+    </script>
 </body>
 </html>
