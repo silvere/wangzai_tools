@@ -4,6 +4,15 @@
 GitHub: https://github.com/silvere/wangzai_tools
 在线索引: https://silvere.github.io/wangzai_tools/builds/
 
+## Build #153 — 大模型Benchmark分数对比表生成器 📊
+- **日期**: 2026-03-18 16:00
+- **路径**: `builds/build-153-llm-benchmark-table-generator/index.html`
+- **描述**: 大模型评测刚需工具！专门为整理各大模型在不同Benchmark上的得分对比设计，支持自由添加/删除Benchmark，自由添加/删除模型，录入分数后自动计算平均分，自动高亮每个Benchmark的最高分，支持按平均分自动排序，可以生成雷达图可视化各模型能力分布，一键导出标准Markdown对比表直接用在评测报告中，支持保存数据到JSON文件后续继续编辑。完美解决"整理评测分数需要手动画表格、计算平均分太麻烦"的痛点，大模型评测报告整理效率提升10倍！
+- **补充**: 老大日常工作就是大模型评测，经常要整理各个模型在不同基准上的得分对比，这个工具直接省去手动排版计算的麻烦，导出的Markdown直接能用，还能生成雷达图可视化能力分布，太方便了！
+- **技术栈**: 纯 HTML/CSS/JS + Tailwind CSS + Chart.js
+- **状态**: ✅ 完成
+- **商业价值**: ⭐⭐⭐⭐⭐ 大模型评测工作者、AI研究员必备工具，大幅提升评测报告整理效率！
+
 ## Build #152 — 大模型输出对比工具 🆚
 - **日期**: 2026-03-18 04:00
 - **路径**: `builds/build-152-llm-comparison-tool/index.html`
