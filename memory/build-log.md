@@ -4,6 +4,15 @@
 GitHub: https://github.com/silvere/wangzai_tools
 在线索引: https://silvere.github.io/wangzai_tools/builds/
 
+## Build #154 — JSON 转 CSV 转换器 📄
+- **日期**: 2026-03-18 20:00
+- **路径**: `builds/build-154-json-to-csv-converter/index.html`
+- **描述**: 数据处理必备小工具！一键把 JSON 数组转换为 CSV 表格，支持任意深度嵌套 JSON 对象自动展平，嵌套字段自动转换为 "parent.child" 列名，自动收集所有列，缺失字段自动留空，支持自定义分隔符（逗号/制表符/分号），支持打开本地JSON文件、直接粘贴JSON、转换后下载CSV或复制到剪贴板，完全在浏览器本地运行，数据不上传服务器。完美解决"API返回JSON数据需要转成Excel表格分析、评测数据JSON导出后需要转CSV"的痛点，数据处理效率提升10倍！
+- **补充**: 老大做评测经常需要把JSON格式的评测结果转成CSV表格放进Excel或Numbers分析，这个工具直接一步到位，还支持嵌套JSON自动展平，非常方便！
+- **技术栈**: 纯 HTML/CSS/JS + Tailwind CSS
+- **状态**: ✅ 完成
+- **商业价值**: ⭐⭐⭐⭐⭐ 数据分析师、开发者、评测工作者必备工具，随时转换JSON到CSV，不用安装软件打开浏览器就能用！
+
 ## Build #153 — 大模型Benchmark分数对比表生成器 📊
 - **日期**: 2026-03-18 16:00
 - **路径**: `builds/build-153-llm-benchmark-table-generator/index.html`
