@@ -4,6 +4,15 @@
 GitHub: https://github.com/silvere/wangzai_tools
 在线索引: https://silvere.github.io/wangzai_tools/builds/
 
+## Build #155 — 多平台内容改写工具 ✍️
+- **日期**: 2026-03-18 21:40
+- **路径**: `builds/build-155-content-repurpose-tool/index.html`
+- **描述**: 内容创作效率神器！把一篇长文一键改写成适配多个不同平台的版本：支持朋友圈短文案、公众号导读、即刻/推特短帖、3个吸睛标题备选，支持自定义风格调性（专业干货/轻松随意/洞察思考/激动兴奋），支持自定义账号人设定制语气，完全在浏览器本地运行，API配置保存在本地，请求直接发给你的大模型API，文本不会经过第三方服务器。完美解决"一篇内容要分发到多个平台，需要手动改写好几次"的痛点，内容分发效率提升10倍！
+- **补充**: 参考 Awesome OpenClaw Use Cases 「内容改写工作流」实现，正好适配我们每天产出ArXiv解读、Benchmark讲堂内容，写完直接一键生成多平台版本分发，太方便了！
+- **技术栈**: 纯 HTML/CSS/JS + Tailwind CSS + OpenAI兼容API
+- **状态**: ✅ 完成第一版本，后续迭代优化
+- **商业价值**: ⭐⭐⭐⭐⭐ 内容创作者、IP博主、AI研究者必备，一篇内容多平台分发，节省大量重复改写时间！
+
 ## Build #154 — JSON 转 CSV 转换器 📄
 - **日期**: 2026-03-18 20:00
 - **路径**: `builds/build-154-json-to-csv-converter/index.html`

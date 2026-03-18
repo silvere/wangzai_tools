@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多平台内容改写工具 ✍️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .input-area {
+            min-height: 200px;
+        }
+        .output-block {
+            transition: all 0.2s ease;
+        }
+        .output-block:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">多平台内容改写工具 ✍️</h1>
+            <p class="text-gray-600">粘贴原文，一键生成多个平台版本：朋友圈 / 公众号 / 即刻 / 标题备选</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Input -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">输入原文</h2>
+                <textarea id="originalText" class="input-area w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base" placeholder="在这里粘贴你的原文...
+
+例如：
+# 📚 arXiv 近7天AI精选论文解读 | 2026年3月18日
+
+## 1. [Can Large Language Models Keep Up? Benchmarking Online Adaptation...](link)
+...（你的完整文章）
+
+粘贴进来，点击生成按钮，一键得到多个平台版本！"></textarea>
+
+                <div class="mt-4 space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">目标平台</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="wechatMoments" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                <span class="text-gray-700">朋友圈</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="wechatOfficial" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                <span class="text-gray-700">公众号导读</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="jike" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                <span class="text-gray-700">即刻/推特</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="titles" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                <span class="text-gray-700">标题备选</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">风格调性</label>
+                        <select id="tone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+                            <option value="professional" selected>专业干货</option>
+                            <option value="casual">轻松随意</option>
+                            <option value="insightful">洞察思考</option>
+                            <option value="exciting">激动兴奋</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">你的账号定位/人设（可选）</label>
+                        <input type="text" id="persona" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="例如：大模型评测工程师，专注AI前沿研究">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button onclick="generateContent()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors w-full">🚀 生成多平台版本</button>
+                </div>
+                <div class="mt-3 flex gap-3">
+                    <button onclick="loadSample()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">📋 加载示例</button>
+                    <button onclick="clearAll()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">🗑️ 清空</button>
+                </div>
+
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-800">
+                        <strong>💡 使用说明：</strong><br>
+                        这是<strong>内容改写工作流</strong>工具，把一篇长文快速改写成不同平台适配版本，保留原意，提升传播性。所有计算在你的大模型API完成，文本不会上传到第三方服务器。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Output -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">生成结果</h2>
+                <div id="outputContainer" class="space-y-4">
+                    <div id="emptyState" class="text-center py-12 text-gray-400">
+                        <p class="text-lg">输入原文点击生成，结果会显示在这里</p>
+                        <p class="text-sm mt-2">生成后可以点击复制按钮一键复制</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3">💡 设计理念</h3>
+            <ul class="list-disc list-inside space-y-2 text-blue-800">
+                <li>大多数内容写一次，应该能分发到多个平台，不用重新写一遍</li>
+                <li>不同平台用户阅读习惯不同，文案长度、语气、重点都应该适配</li>
+                <li>AI 帮你完成机械改写，你只需要做最后的润色，大幅提升内容复用率</li>
+                <li>支持自定义人设风格，保留你的个人写作语气</li>
+                <li>完全本地控制文案质量，你觉得不好可以随时调整生成参数</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>Build #155 - 旺仔工具百宝箱 • Awesome OpenClaw Use Case 参考实现</p>
+        </footer>
+    </div>
+
+    <!-- Result Modal for copying -->
+    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50">
+        已复制到剪贴板！
+    </div>
+
+    <script>
+        // 需要配置你的LLM API信息
+        // 从环境变量读取或者用户手动配置
+        let config = {
+            apiKey: '',
+            apiUrl: '',
+            model: ''
+        };
+
+        // 尝试从localStorage读取配置
+        function loadConfig() {
+            const saved = localStorage.getItem('content-repurpose-config');
+            if (saved) {
+                try {
+                    config = JSON.parse(saved);
+                } catch(e) {
+                    console.error('Failed to load config', e);
+                }
+            } else {
+                // 默认使用当前页面环境的API（如果是在Clawdbot环境运行，会注入）
+                // 用户第一次使用会提示配置
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('content-repurpose-config', JSON.stringify(config));
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2000);
+        }
+
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板');
+                // Flash effect
+                element.classList.add('ring-2', 'ring-green-500');
+                setTimeout(() => {
+                    element.classList.remove('ring-2', 'ring-green-500');
+                }, 500);
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('已复制到剪贴板');
+            });
+        }
+
+        function createOutputBlock(title, content, type) {
+            const div = document.createElement('div');
+            div.className = 'output-block border border-gray-200 rounded-lg p-4';
+            div.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-gray-800">${title}</h4>
+                    <button class="copy-btn bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium transition-colors" data-content="${encodeURIComponent(content)}">📋 复制</button>
+                </div>
+                <div class="whitespace-pre-wrap text-gray-700 text-sm bg-gray-50 rounded p-3">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            `;
+            div.querySelector('.copy-btn').addEventListener('click', function() {
+                const content = decodeURIComponent(this.getAttribute('data-content'));
+                copyToClipboard(content, div);
+            });
+            return div;
+        }
+
+        function generatePrompt(originalText, options) {
+            const { tone, persona, selectedPlatforms } = options;
+
+            const toneDescriptions = {
+                professional: '专业干货风格，严谨有条理，适合技术读者',
+                casual: '轻松随意风格，像聊天一样，亲切自然',
+                insightful: '洞察思考风格，有深度，引人思考',
+                exciting: '激动兴奋风格，充满热情，带动情绪'
+            };
+
+            let platformInstructions = '';
+            if (selectedPlatforms.includes('wechatMoments')) {
+                platformInstructions += `
+---
+## 1. 朋友圈文案
+要求：
+- 长度：100-200字
+- 风格：轻松碎片化，适合朋友圈阅读
+- 结构：一句话核心观点 + 精华提炼 + 话题标签
+- 保留最吸引人的亮点，不用太技术细节
+`;
+            }
+            if (selectedPlatforms.includes('wechatOfficial')) {
+                platformInstructions += `
+---
+## 2. 公众号导读
+要求：
+- 长度：300-500字
+- 风格：正式但不生硬，适合公众号开头导读
+- 结构：引出主题 + 核心内容摘要 + 价值点总结 + 引导阅读
+- 帮助读者快速判断这篇文章值不值得读
+`;
+            }
+            if (selectedPlatforms.includes('jike')) {
+                platformInstructions += `
+---
+## 3. 即刻/推特短帖
+要求：
+- 长度：50-150字
+- 风格：观点鲜明，直截了当，适合信息流快速阅读
+- 结构：抛出核心观点 + 简要证据 + 1-2个话题标签
+- 更容易引发互动和讨论
+`;
+            }
+            if (selectedPlatforms.includes('titles')) {
+                platformInstructions += `
+---
+## 4. 3个吸引人的标题备选
+要求：
+- 每个标题15-30字
+- 抓住核心亮点，有吸引力，提高点击率
+- 三个标题风格各异：一个干货向，一个悬念向，一个热点向
+- 保留关键词方便搜索
+`;
+            }
+
+            let personaText = persona ? `
+用户账号定位/人设：${persona}
+请改写的内容符合这个人设的语气和风格。
+` : '';
+
+            const prompt = `你是一位专业的内容分发助手，帮我把一篇原文改写适配到多个不同社交媒体平台。
+
+原文：
+\`\`\`
+${originalText}
+\`\`\`
+
+风格要求：${toneDescriptions[tone]}
+${personaText}
+请输出以下各个平台的改写版本：
+${platformInstructions}
+
+要求：
+- 严格保留原文核心观点和信息，不能改变原意
+- 根据平台特性调整长度、结构和表达方式
+- 符合平台用户阅读习惯
+- 输出直接给各个版本内容，不要多余解释
+`;
+
+            return prompt;
+        }
+
+        async function generateContent() {
+            const originalText = document.getElementById('originalText').value.trim();
+            if (!originalText) {
+                alert('请输入原文');
+                return;
+            }
+
+            // Collect options
+            const selectedPlatforms = [];
+            if (document.getElementById('wechatMoments').checked) selectedPlatforms.push('wechatMoments');
+            if (document.getElementById('wechatOfficial').checked) selectedPlatforms.push('wechatOfficial');
+            if (document.getElementById('jike').checked) selectedPlatforms.push('jike');
+            if (document.getElementById('titles').checked) selectedPlatforms.push('titles');
+
+            if (selectedPlatforms.length === 0) {
+                alert('请至少选择一个目标平台');
+                return;
+            }
+
+            const tone = document.getElementById('tone').value;
+            const persona = document.getElementById('persona').value.trim();
+
+            // Check if API configured
+            loadConfig();
+            if (!config.apiKey) {
+                // Try to get from URL hash for deep linking
+                if (window.location.hash) {
+                    try {
+                        const hashConfig = JSON.parse(decodeURIComponent(window.location.hash.slice(1)));
+                        config = { ...config, ...hashConfig };
+                        saveConfig();
+                    } catch(e) {
+                        console.error('Failed to parse hash config', e);
+                    }
+                }
+            }
+
+            if (!config.apiKey) {
+                const apiKey = prompt('请输入你的LLM API Key（如火山引擎方舟API Key）:');
+                if (!apiKey) return;
+                const apiUrl = prompt('请输入API Base URL（默认: https://ark.cn-beijing.volces.com/api/v3）:', 'https://ark.cn-beijing.volces.com/api/v3');
+                const model = prompt('请输入Model ID（默认: doubao-seed-1-8-251228):', 'doubao-seed-1-8-251228');
+                config = { apiKey, apiUrl, model };
+                saveConfig();
+                // Save to hash for sharing
+                window.location.hash = encodeURIComponent(JSON.stringify(config));
+            }
+
+            const container = document.getElementById('outputContainer');
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) emptyState.remove();
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'text-center py-12';
+            loadingDiv.innerHTML = '<p class="text-gray-500">🤖 正在生成中，请稍候...</p>';
+            container.appendChild(loadingDiv);
+
+            try {
+                const prompt = generatePrompt(originalText, { tone, persona, selectedPlatforms });
+
+                // Call OpenAI-compatible API
+                const messages = [
+                    { role: 'user', content: prompt }
+                ];
+
+                const response = await fetch(config.apiUrl + '/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + config.apiKey
+                    },
+                    body: JSON.stringify({
+                        model: config.model,
+                        messages: messages,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const result = data.choices[0].message.content;
+
+                // Parse result into sections
+                container.innerHTML = '';
+                parseAndDisplayResult(result, container, selectedPlatforms);
+
+            } catch (error) {
+                container.innerHTML = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'p-4 bg-red-50 border border-red-200 rounded-lg';
+                errorDiv.innerHTML = `<p class="text-red-700"><strong>生成失败:</strong> ${error.message}</p><p class="text-sm text-red-600 mt-2">请检查API配置和网络连接，重试一次。</p>`;
+                container.appendChild(errorDiv);
+                console.error(error);
+            }
+        }
+
+        function parseAndDisplayResult(result, container, selectedPlatforms) {
+            // Try to parse by section headings
+            const sections = [];
+
+            // Match patterns like ## 1. XXX, 1. XXX, 【1】XXX, etc.
+            const sectionRegex = /(?:^|\n)(?:#+)?\s*(?:\d+\.\s*)?(.*?(朋友圈|公众号|导读|即刻|推特|标题|文案).*?):?\s*(?:\n|$)/i;
+            const lines = result.split('\n');
+            let currentTitle = '';
+            let currentContent = [];
+
+            lines.forEach(line => {
+                const match = line.match(sectionRegex);
+                if (match && match[1]) {
+                    if (currentTitle && currentContent.length > 0) {
+                        sections.push({
+                            title: currentTitle,
+                            content: currentContent.join('\n').trim()
+                        });
+                    }
+                    currentTitle = match[1].replace(/^##\s*/, '').trim();
+                    currentContent = [];
+                } else if (currentTitle) {
+                    currentContent.push(line);
+                }
+            });
+
+            if (currentTitle && currentContent.length > 0) {
+                sections.push({
+                    title: currentTitle,
+                    content: currentContent.join('\n').trim()
+                });
+            }
+
+            // If parsing failed, just show as one block
+            if (sections.length === 0) {
+                container.appendChild(createOutputBlock('生成结果', result, 'full'));
+                return;
+            }
+
+            sections.forEach(section => {
+                if (section.content) {
+                    container.appendChild(createOutputBlock(section.title, section.content));
+                }
+            });
+        }
+
+        function loadSample() {
+            const sample = `# 📚 arXiv 近7天AI精选论文解读 | 2026年3月18日
+
+---
+
+## 1. [Can Large Language Models Keep Up? Benchmarking Online Adaptation to Continual Knowledge Streams](https://arxiv.org/abs/2603.07392)
+**作者**: Jiyeon Kim, Hyunji Lee, Dylan Zhou 等 (首尔大学 + Adobe Research)
+**分类**: cs.CL cs.AI cs.LG
+**链接**: [arXiv](https://arxiv.org/abs/2603.07392) | [PDF](https://arxiv.org/pdf/2603.07392.pdf)
+
+### 研究动机
+大语言模型在动态真实世界环境中运行时，会持续遇到不断演化或增量出现的新知识。模型需要能够在线适应这些新 arriving 的信息，以保持准确性和有效性。但目前缺乏针对这一场景的系统性基准评测。
+
+### 核心结论
+1. 即使最强的商业大模型也只达到 **62% 准确率**，说明对持续知识流的在线适应仍然是一个巨大的未解决挑战
+2. 基础性能好的较小开源模型，不一定能在在线适应场景保持领先
+3. 现有的知识编辑方法在持续学习场景泛化效果不佳
+4. 在线适应性能并不一定随着模型规模增大而提升，意味着单纯 scaling 可能无法自动解决这个问题
+
+### 实际价值
+为大模型持续学习研究提供了一个新的评测基准，揭示了当前模型在在线知识适应上的短板，指明了未来研究方向。
+
+---
+
+# 🏷️ 主题标签
+#大模型评测 #AI智能体 #RAG #大模型训练 #多模态
+
+> *ArXiv API 网络不稳定，本次为你筛选了最近7天最相关的5篇优质论文*`;
+
+            document.getElementById('originalText').value = sample;
+            document.getElementById('persona').value = '大模型评测工程师，每日跟进AI前沿研究，分享干货';
+        }
+
+        function clearAll() {
+            document.getElementById('originalText').value = '';
+            document.getElementById('outputContainer').innerHTML = '<div id="emptyState" class="text-center py-12 text-gray-400"><p class="text-lg">输入原文点击生成，结果会显示在这里</p><p class="text-sm mt-2">生成后可以点击复制按钮一键复制</p></div>';
+        }
+
+        // Init
+        loadConfig();
+    </script>
+</body>
+</html>
