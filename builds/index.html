@@ -35,7 +35,7 @@
             <input 
                 type="text" 
                 id="searchInput" 
-                placeholder="🔍 搜索工具名称或描述..." 
+                placeholder="🔍 搜索工具名称..." 
                 class="w-full px-4 py-3 text-lg border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onkeyup="filterTools()"
             >
@@ -57,171 +57,157 @@
     <script>
         // 自动生成的工具列表
         const tools = [
-{"id":"llm-knowledge-map","name":"LLM 知识图谱","description":"Claude Artifacts 导出的大模型知识图谱","category":"参考资料","url":"./llm-knowledge-map/"}
-,{"id":"build-158-llm-leaderboard-generator","name":"大模型评测榜单生成器","description":"大模型评测报告必备工具！输入benchmarks和各个模型的分数，一键生成美化的Markdown对比表格 + 交互式能力雷达图，支持任意多个benchmarks和模型","category":"评测工具","url":"./build-158-llm-leaderboard-generator/"}
-,{"id":"build-157-benchmark-search","name":"Benchmark 搜索引擎","description":"大模型评测必备工具！把我们已经讲过的71个主流大模型评测基准全部整理收录，支持关键词搜索、分类快速筛选，点击卡片高亮","category":"评测工具","url":"./build-157-benchmark-search/"}
-,{"id":"build-156-llm-pairwise-collector","name":"大模型 Pairwise 偏好收集工具","description":"大模型评测与RLHF研究刚需工具！专门用于收集 pairwise 人类偏好数据，同一个prompt对比两个模型回答，一键选择哪个更好","category":"评测工具","url":"./build-156-llm-pairwise-collector/"}
-,{"id":"build-155-content-repurpose-tool","name":"多平台内容改写工具","description":"内容创作效率神器！把一篇长文一键改写成适配多个不同平台的版本：支持朋友圈短文案、公众号导读、即刻/推特短帖","category":"内容工具","url":"./build-155-content-repurpose-tool/"}
-,{"id":"build-154-json-to-csv-converter","name":"JSON 转 CSV 转换器","description":"数据处理必备小工具！一键把 JSON 数组转换为 CSV 表格，支持任意深度嵌套 JSON 对象自动展平","category":"数据工具","url":"./build-154-json-to-csv-converter/"}
-,{"id":"build-153-llm-benchmark-table-generator","name":"大模型Benchmark分数对比表生成器","description":"大模型评测刚需工具！专门为整理各大模型在不同Benchmark上的得分对比设计，支持自由添加/删除Benchmark","category":"评测工具","url":"./build-153-llm-benchmark-table-generator/"}
-,{"id":"build-152-llm-comparison-tool","name":"大模型输出对比工具","description":"大模型评测刚需工具！专门为对比两个大模型输出设计，支持并排对比回答，1-10分打分，勾选偏好结果","category":"评测工具","url":"./build-152-llm-comparison-tool/"}
-,{"id":"build-150-css-animation-generator","name":"CSS Animation 关键帧动画可视化生成器","description":"CSS动画调试神器！纯前端实现的CSS关键帧动画可视化生成器，支持自定义动画名称、持续时间、延迟、缓动函数","category":"开发工具","url":"./build-150-css-animation-generator/"}
-,{"id":"build-149-css-backdrop-filter-generator","name":"CSS Backdrop-Filter 毛玻璃可视化生成器","description":"现代UI设计神器！纯前端实现的CSS Backdrop-Filter毛玻璃效果可视化生成器，支持模糊度、亮度、对比度七大滤镜参数","category":"开发工具","url":"./build-149-css-backdrop-filter-generator/"}
-,{"id":"build-148-css-transform-generator","name":"CSS Transform 变换可视化生成器","description":"CSS样式调试神器！纯前端实现的CSS Transform变换可视化生成器，支持平移旋转缩放倾斜四大变换，可视化滑块实时拖拽","category":"开发工具","url":"./build-148-css-transform-generator/"}
-,{"id":"build-147-css-border-radius-generator","name":"CSS Border-Radius 可视化生成器","description":"CSS样式调试神器！纯前端实现的Border-Radius可视化生成器，支持一键统一设置所有圆角，四个角独立调节","category":"开发工具","url":"./build-147-css-border-radius-generator/"}
-,{"id":"llm-explorer","name":"大模型参数探险家","description":"交互式浏览不同尺寸大模型参数和性能","category":"数据工具","url":"./llm-explorer/"}
-,{"id":"llm-pricing","name":"大模型API价格对比表","description":"主流大模型API价格对比，帮助选型","category":"参考资料","url":"./llm-pricing/"}
-,{"id":"ai-interview","name":"AI 面试模拟器","description":"模拟AI技术面试，随机抽题，支持前端/后端/算法/产品多种岗位","category":"工具","url":"./ai-interview/"}
-,{"id":"api-debugger","name":"API 调试器","description":"纯前端HTTP请求调试工具，支持GET/POST/PUT/DELETE，自定义headers","category":"开发工具","url":"./api-debugger/"}
-,{"id":"api-diff","name":"API 响应对比工具","description":"对比两个API返回JSON的差异，高亮显示不同之处","category":"开发工具","url":"./api-diff/"}
-,{"id":"api-formatter","name":"API 格式化工具","description":"自动格式化JSON/XML/YAML响应，美化排版方便阅读","category":"开发工具","url":"./api-formatter/"}
-,{"id":"api-tester","name":"API 压力测试工具","description":"前端版简单API压力测试，统计响应时间和成功率","category":"开发工具","url":"./api-tester/"}
-,{"id":"ascii-art","name":"ASCII 艺术生成器","description":"图片转ASCII艺术文字，支持自定义字符集和宽度","category":"开发工具","url":"./ascii-art/"}
-,{"id":"badminton","name":"羽毛球场地预约提醒","description":"羽毛球场地预约状态查看，提醒有空位","category":"生活工具","url":"./badminton/"}
-,{"id":"benchmark-browser","name":"Benchmark 浏览器","description":"浏览大模型评测基准列表，查看详细信息","category":"评测工具","url":"./benchmark-browser/"}
-,{"id":"benchmark-cheatsheet","name":"大模型评测 Cheat Sheet","description":"常用评测基准速查表，复制引用方便","category":"评测工具","url":"./benchmark-cheatsheet/"}
-,{"id":"benchmark-comparator","name":"Benchmark 对比器","description":"对比不同模型在多个Benchmark上的表现，生成对比表格","category":"评测工具","url":"./benchmark-comparator/"}
-,{"id":"benchmark-compare","name":"模型跑分对比工具","description":"输入多个模型分数，生成对比图表","category":"评测工具","url":"./benchmark-compare/"}
-,{"id":"bit-playground","name":"位运算 playground","description":"可视化位运算，实时看结果","category":"开发工具","url":"./bit-playground/"}
-,{"id":"breathing","name":"呼吸冥想工具","description":"引导式呼吸冥想，帮助放松专注","category":"生活工具","url":"./breathing/"}
-,{"id":"build-102-link-shortener","name":"链接缩短器","description":"纯前端本地链接缩短，使用hash压缩，不需要后端","category":"工具","url":"./build-102-link-shortener/"}
-,{"id":"build-103-password-generator","name":"密码生成器","description":"生成高强度随机密码，自定义长度和字符类型","category":"工具","url":"./build-103-password-generator/"}
-,{"id":"build-104-markdown-note","name":"Markdown 笔记编辑器","description":"纯前端本地Markdown笔记，实时预览，自动保存到本地存储","category":"内容工具","url":"./build-104-markdown-note/"}
-,{"id":"build-105-json-viewer","name":"JSON 查看器","description":"树形结构查看JSON，可折叠节点，搜索过滤","category":"开发工具","url":"./build-105-json-viewer/"}
-,{"id":"build-106-regex-tester","name":"正则表达式测试器","description":"实时测试正则表达式，高亮匹配结果，支持替换","category":"开发工具","url":"./build-106-regex-tester/"}
-,{"id":"build-107-base64-converter","name":"Base64 转换器","description":"文本和Base64互相转换，支持文件转换","category":"开发工具","url":"./build-107-base64-converter/"}
-,{"id":"build-108-color-palette-generator","name":"调色板生成器","description":"从图片提取颜色生成调色板，导出CSS/JSON","category":"开发工具","url":"./build-108-color-palette-generator/"}
-,{"id":"build-109-qrcode-reader","name":"二维码阅读器","name":"二维码阅读器","description":"上传图片识别二维码内容，纯前端","category":"工具","url":"./build-109-qrcode-reader/"}
-,{"id":"build-110-json-path-extractor","name":"JSON Path 提取器","description":"使用JSONPath提取JSON中的数据，实时测试","category":"开发工具","url":"./build-110-json-path-extractor/"}
-,{"id":"build-111-markdown-table-sorter","name":"Markdown 表格排序器","description":"对Markdown表格按列排序，支持升降序","category":"开发工具","url":"./build-111-markdown-table-sorter/"}
-,{"id":"build-112-text-statistics","name":"文本统计工具","description":"统计文本字数、字符数、行数、段落数，中文分词统计","category":"开发工具","url":"./build-112-text-statistics/"}
-,{"id":"build-113-regular-expression-tester","name":"正则表达式测试器","description":"完整功能正则测试器，支持多行/忽略大小写等选项","category":"开发工具","url":"./build-113-regular-expression-tester/"}
-,{"id":"build-114-crontab-scheduler","name":"Crontab 调度表达式生成器","description":"可视化选择生成Crontab表达式，不用记语法","category":"开发工具","url":"./build-114-crontab-scheduler/"}
-,{"id":"build-115-mermaid-diagram-generator","name":"Mermaid 图表生成器","description":"输入Mermaid代码，实时预览图表，导出图片","category":"开发工具","url":"./build-115-mermaid-diagram-generator/"}
-,{"id":"build-116-json-schema-validator","name":"JSON Schema 验证器","description":"验证JSON是否符合Schema定义，显示错误信息","category":"开发工具","url":"./build-116-json-schema-validator/"}
-,{"id":"build-117-markdown-slides-generator","name":"Markdown 幻灯片生成器","description":"用Markdown写演示文稿，一键生成幻灯片","category":"内容工具","url":"./build-117-markdown-slides-generator/"}
-,{"id":"build-118-password-manager","name":"本地密码管理器","description":"纯前端本地密码管理，加密存储，主密码保护","category":"工具","url":"./build-118-password-manager/"}
-,{"id":"build-119-image-resizer","name":"图片尺寸修改器","description":"上传图片修改尺寸，导出不同格式","category":"工具","url":"./build-119-image-resizer/"}
-,{"id":"build-120-markdown-excel-converter","name":"Markdown 表格转 Excel","description":"把Markdown表格转换为Excel文件下载","category":"开发工具","url":"./build-120-markdown-excel-converter/"}
-,{"id":"build-121-srt-subtitle-editor","name":"SRT 字幕编辑器","description":"编辑SRT字幕，调整时间轴，合并段落","category":"工具","url":"./build-121-srt-subtitle-editor/"}
-,{"id":"build-122-json-yaml-converter","name":"JSON YAML 互转","description":"JSON转YAML，YAML转JSON，格式化输出","category":"开发工具","url":"./build-122-json-yaml-converter/"}
-,{"id":"build-123-port-scanner","name":"端口扫描器","description":"前端端口扫描本地网络，纯HTML5实现","category":"开发工具","url":"./build-123-port-scanner/"}
-,{"id":"build-124-network-speed-test","name":"网络速度测试","description":"测试下载上传速度和延迟，纯前端","category":"工具","url":"./build-124-network-speed-test/"}
-,{"id":"build-125-unit-converter","name":"单位转换器","description":"常见单位换算，长度重量温度体积等","category":"工具","url":"./build-125-unit-converter/"}
-,{"id":"build-126-markdown-mindmap","name":"Markdown 思维导图","description":"用Markdown语法生成思维导图，支持导出","category":"内容工具","url":"./build-126-markdown-mindmap/"}
-,{"id":"build-127-hot-search-aggregator","name":"热搜聚合器","description":"聚合各平台热搜，实时查看","category":"工具","url":"./build-127-hot-search-aggregator/"}
-,{"id":"build-128-regex-visualizer","name":"正则表达式可视化","description":"可视化正则表达式匹配过程，帮助理解","category":"开发工具","url":"./build-128-regex-visualizer/"}
-,{"id":"build-129-sql-formatter","name":"SQL 格式化工具","description":"格式化SQL代码，美化排版","category":"开发工具","url":"./build-129-sql-formatter/"}
-,{"id":"build-130-http-status-codes","name":"HTTP 状态码速查","description":"HTTP状态码含义和说明速查","category":"开发工具","url":"./build-130-http-status-codes/"}
-,{"id":"build-131-markdown-mermaid-editor","name":"Markdown Mermaid 编辑器","description":"Markdown编辑+Mermaid图表实时预览，一站式编辑","category":"开发工具","url":"./build-131-markdown-mermaid-editor/"}
-,{"id":"build-132-json-to-typescript","name":"JSON 转 TypeScript 接口","description":"根据JSON示例生成TypeScript接口定义","category":"开发工具","url":"./build-132-json-to-typescript/"}
-,{"id":"build-133-timestamp-converter","name":"时间戳转换器","description":"时间戳转日期，日期转时间戳，支持不同时区","category":"开发工具","url":"./build-133-timestamp-converter/"}
-,{"id":"build-134-chmod-calculator","name":"Chmod 权限计算器","description":"可视化计算chmod权限数值，生成命令","category":"开发工具","url":"./build-134-chmod-calculator/"}
-,{"id":"build-135-clipboard-history","name":"剪贴板历史记录","description":"记录本地剪贴板历史，搜索查找之前复制的内容","category":"工具","url":"./build-135-clipboard-history/"}
-,{"id":"build-136-markdown-toc-generator","name":"Markdown 目录生成器","description":"从Markdown标题生成目录，支持链接跳转","category":"开发工具","url":"./build-136-markdown-toc-generator/"}
-,{"id":"build-137-crontab-visualizer","name":"Crontab 可视化","description":"可视化Crontab执行时间，预览运行时刻","category":"开发工具","url":"./build-137-crontab-visualizer/"}
-,{"id":"build-138-json-prettifier","name":"JSON 格式化美化","description":"格式化美化JSON，验证语法，树形展示","category":"开发工具","url":"./build-138-json-prettifier/"}
-,{"id":"build-139-url-parser","name":"URL 解析器","description":"解析URL各个部分，编辑参数，编码解码","category":"开发工具","url":"./build-139-url-parser/"}
-,{"id":"build-140-user-agent-parser","name":"User-Agent 解析器","description":"解析User-Agent，识别浏览器、操作系统、设备","category":"开发工具","url":"./build-140-user-agent-parser/"}
-,{"id":"build-141-xml-formatter","name":"XML 格式化美化","description":"格式化美化XML，语法高亮，树形展示","category":"开发工具","url":"./build-141-xml-formatter/"}
-,{"id":"build-142-yaml-validator","name":"YAML 格式化验证","description":"格式化验证YAML，转JSON，错误定位","category":"开发工具","url":"./build-142-yaml-validator/"}
-,{"id":"build-143-css-gradient-generator","name":"CSS 渐变生成器","description":"可视化CSS渐变生成器，支持线性/径向/锥形，一键复制代码","category":"开发工具","url":"./build-143-css-gradient-generator/"}
-,{"id":"build-144-flexbox-generator","name":"CSS Flexbox 可视化生成器","description":"可视化配置Flexbox布局，实时预览，一键复制代码","category":"开发工具","url":"./build-144-flexbox-generator/"}
-,{"id":"build-145-css-grid-generator","name":"CSS Grid 可视化生成器","description":"可视化配置Grid布局，预设模板，一键复制代码","category":"开发工具","url":"./build-145-css-grid-generator/"}
-,{"id":"build-146-css-box-shadow-generator","name":"CSS Box Shadow 可视化生成器","description":"可视化配置阴影，多层叠加，一键复制代码","category":"开发工具","url":"./build-146-css-box-shadow-generator/"}
-,{"id":"build-147-css-border-radius-generator","name":"CSS Border-Radius 可视化生成器","description":"四个圆角独立调节，支持椭圆圆角，一键复制代码","category":"开发工具","url":"./build-147-css-border-radius-generator/"}
-,{"id":"build-148-css-transform-generator","name":"CSS Transform 变换可视化生成器","description":"平移旋转缩放倾斜，可视化调节，一键复制代码","category":"开发工具","url":"./build-148-css-transform-generator/"}
-,{"id":"build-149-css-backdrop-filter-generator","name":"CSS Backdrop-Filter 毛玻璃可视化生成器","description":"毛玻璃效果可视化调节，一键复制带前缀代码","category":"开发工具","url":"./build-149-css-backdrop-filter-generator/"}
-,{"id":"build-150-css-animation-generator","name":"CSS Animation 关键帧动画可视化生成器","description":"可视化配置CSS关键帧动画，实时预览，一键复制代码","category":"开发工具","url":"./build-150-css-animation-generator/"}
-,{"id":"build-152-llm-comparison-tool","name":"大模型输出对比工具","description":"对比两个大模型输出，打分偏好统计，导出Markdown报告","category":"评测工具","url":"./build-152-llm-comparison-tool/"}
-,{"id":"build-153-llm-benchmark-table-generator","name":"大模型Benchmark分数对比表生成器","description":"自动计算平均分，高亮最高分，导出Markdown表格","category":"评测工具","url":"./build-153-llm-benchmark-table-generator/"}
-,{"id":"build-154-json-to-csv-converter","name":"JSON 转 CSV 转换器","description":"JSON数组转CSV，支持嵌套自动展平","category":"数据工具","url":"./build-154-json-to-csv-converter/"}
-,{"id":"build-155-content-repurpose-tool","name":"多平台内容改写工具","description":"一篇长文一键生成多个平台版本，朋友圈/公众号/即刻","category":"内容工具","url":"./build-155-content-repurpose-tool/"}
-,{"id":"build-156-llm-pairwise-collector","name":"大模型 Pairwise 偏好收集工具","description":"收集人类偏好数据，用于RLHF和模型对比，导出JSON","category":"评测工具","url":"./build-156-llm-pairwise-collector/"}
-,{"id":"build-157-benchmark-search","name":"Benchmark 搜索引擎","description":"70+大模型评测基准全文搜索，支持分类筛选","category":"评测工具","url":"./build-157-benchmark-search/"}
-,{"id":"build-158-llm-leaderboard-generator","name":"大模型评测榜单生成器","description":"一键生成Markdown表格 + 雷达图，写报告直接用","category":"评测工具","url":"./build-158-llm-leaderboard-generator/"}
-,{"id":"chmod-calc","name":"Chmod 权限计算器","description":"可视化计算chmod权限数值","category":"开发工具","url":"./chmod-calc/"}
-,{"id":"code-snapshot","name":"代码快照生成器","description":"把代码生成美观图片，方便分享","category":"开发工具","url":"./code-snapshot/"}
-,{"id":"code-snippets","name":"代码片段库","description":"收藏常用代码片段，快速查找复制","category":"开发工具","url":"./code-snippets/"}
-,{"id":"color-palette","name":"调色板","description":"收藏常用配色方案","category":"开发工具","url":"./color-palette/"}
-,{"id":"content-creator","name":"内容创作助手","description":"辅助内容创作的工具集合","category":"内容工具","url":"./content-creator/"}
-,{"id":"countdown-timer","name":"倒计时计时器","description":"活动倒计时，全屏显示","category":"生活工具","url":"./countdown-timer/"}
-,{"id":"cron-builder","name":"Cron 表达式构建器","description":"可视化构建Cron表达式","category":"开发工具","url":"./cron-builder/"}
-,{"id":"data-viz","name":"数据可视化工具","description":"快速可视化JSON/CSV数据","category":"数据工具","url":"./data-viz/"}
-,{"id":"decision-wheel","name":"决策轮盘","description":"选择困难症帮助，随机转转盘做决定","category":"生活工具","url":"./decision-wheel/"}
-,{"id":"dev-almanac","name":"开发者年鉴","description":"开发知识点备忘","category":"开发工具","url":"./dev-almanac/"}
-,{"id":"dev-toolbox","name":"开发者工具箱","description":"各种开发小工具集合入口","category":"开发工具","url":"./dev-toolbox/"}
-,{"id":"emoji-picker","name":"Emoji 选择器","description":"搜索选择Emoji，一键复制","category":"开发工具","url":"./emoji-picker/"}
-,{"id":"eval-checklist","name":"评测检查清单","description":"大模型评测项目检查清单","category":"评测工具","url":"./eval-checklist/"}
-,{"id":"evalhub-link","name":"EvalHub 链接生成器","description":"生成EvalHub分享链接","category":"评测工具","url":"./evalhub-link/"}
-,{"id":"eval-metrics","name":"评测指标计算器","description":"计算各种评测指标","category":"评测工具","url":"./eval-metrics/"}
-,{"id":"eval-report-generator","name":"评测报告生成器","name":"评测报告生成器","description":"根据评测数据生成完整报告","category":"评测工具","url":"./eval-report-generator/"}
-,{"id":"fireworks","name":"烟花模拟器","description":"新年烟花动画","category":"生活工具","url":"./fireworks/"}
-,{"id":"fitness-gym","name":"健身记录","description":"健身计划和训练记录","category":"生活工具","url":"./fitness-gym/"}
-,{"id":"flexbox","name":"Flexbox 可视化","description":"Flexbox 布局可视化练习","category":"开发工具","url":"./flexbox/"}
-,{"id":"focus-station","name":"专注工作站","description":"专注倒计时，白噪音背景","category":"生活工具","url":"./focus-station/"}
-,{"id":"fortune-draw","name":"抽奖转盘","description":"活动抽奖转盘","category":"生活工具","url":"./fortune-draw/"}
-,{"id":"game-2048","name":"2048 游戏","description":"经典2048游戏","category":"生活工具","url":"./game-2048/"}
-,{"id":"game-of-life","name":"康威生命游戏","description":"细胞自动机模拟","category":"生活工具","url":"./game-of-life/"}
-,{"id":"gradient-gen","name":"渐变生成器","description":"生成CSS渐变代码","category":"开发工具","url":"./gradient-gen/"}
-,{"id":"habit-tracker","name":"习惯追踪器","description":"追踪每日习惯坚持","category":"生活工具","url":"./habit-tracker/"}
-,{"id":"http-status","name":"HTTP 状态码手册","description":"HTTP状态码查询","category":"开发工具","url":"./http-status/"}
-,{"id":"idea-generator","name":"项目idea生成器","description":"生成有趣的项目idea","category":"工具","url":"./idea-generator/"}
-,{"id":"json-explorer","name":"JSON 探险家","description":"交互式浏览JSON数据","category":"开发工具","url":"./json-explorer/"}
-,{"id":"json-formatter","name":"JSON 格式化","description":"格式化JSON数据","category":"开发工具","url":"./json-formatter/"}
-,{"id":"json-tree","name":"JSON 树形查看器","description":"树形展示JSON结构","category":"开发工具","url":"./json-tree/"}
-,{"id":"llm-explorer","name":"大模型参数探险家","description":"交互式浏览不同尺寸大模型参数和性能","category":"数据工具","url":"./llm-explorer/"}
-,{"id":"llm-knowledge-map","name":"LLM 知识图谱","description":"Claude Artifacts 导出的大模型知识图谱","category":"参考资料","url":"./llm-knowledge-map/"}
-,{"id":"llm-pricing","name":"大模型API价格对比表","description":"主流大模型API价格对比，帮助选型","category":"参考资料","url":"./llm-pricing/"}
-,{"id":"lorem-ipsum","name":"Lorem Ipsum 生成器","description":"生成占位文本","category":"开发工具","url":"./lorem-ipsum/"}
-,{"id":"markdown-editor","name":"Markdown 编辑器","description":"带预览的Markdown编辑器","category":"内容工具","url":"./markdown-editor/"}
-,{"id":"markdown-table-generator","name":"Markdown 表格生成器","description":"生成Markdown表格","category":"开发工具","url":"./markdown-table-generator/"}
-,{"id":"md-slides","name":"Markdown 幻灯片","description":"用Markdown写幻灯片","category":"内容工具","url":"./md-slides/"}
-,{"id":"md-table","name":"Markdown 表格工具","description":"Markdown表格编辑工具","category":"开发工具","url":"./md-table/"}
-,{"id":"meeting-minutes-generator","name":"会议纪要生成器","description":"根据讨论内容生成会议纪要","category":"工具","url":"./meeting-minutes-generator/"}
-,{"id":"memory-explorer","name":"记忆浏览器","description":"浏览记忆文件","category":"工具","url":"./memory-explorer/"}
-,{"id":"mermaid-live","name":"Mermaid 实时编辑","description":"Mermaid图表实时编辑预览","category":"开发工具","url":"./mermaid-live/"}
-,{"id":"mock-data","name":"模拟数据生成器","description":"生成测试用模拟数据","category":"开发工具","url":"./mock-data/"}
-,{"id":"model-compare","name":"模型对比工具","description":"对比不同模型性能","category":"评测工具","url":"./model-compare/"}
-,{"id":"morse-code","name":"摩尔斯电码转换器","description":"文本转摩尔斯电码，解码","category":"开发工具","url":"./morse-code/"}
-,{"id":"noise","name":"白噪音生成器","description":"生成不同类型白噪音帮助专注","category":"生活工具","url":"./noise/"}
-,{"id":"paper-summary","name":"论文摘要生成器","description":"生成论文结构化摘要","category":"工具","url":"./paper-summary/"}
-,{"id":"password-gen","name":"密码生成器","description":"生成强密码","category":"工具","url":"./password-gen/"}
-,{"id":"pixel-art","name":"像素画编辑器","description":"编辑像素画","category":"开发工具","url":"./pixel-art/"}
-,{"id":"pomodoro-timer","name":"番茄工作法计时器","description":"番茄工作法倒计时","category":"生活工具","url":"./pomodoro-timer/"}
-,{"id":"project-idea-generator","name":"项目idea生成器","description":"生成新项目创意idea","category":"工具","url":"./project-idea-generator/"}
-,{"id":"prompt-ab-tester","name":"Prompt A/B 测试工具","description":"对比不同prompt效果","category":"工具","url":"./prompt-ab-tester/"}
-,{"id":"prompt-batch","name":"Prompt 批量处理","description":"批量处理prompt，生成结果","category":"工具","url":"./prompt-batch/"}
-,{"id":"prompt-library","name":"Prompt 库","description":"收藏优质prompt","category":"工具","url":"./prompt-library/"}
-,{"id":"prompt-templates","name":"Prompt 模板","description":"常用prompt模板集合","category":"工具","url":"./prompt-templates/"}
-,{"id":"prompt-workshop","name":"Prompt 工作坊","description":"交互式prompt编辑测试","category":"工具","url":"./prompt-workshop/"}
-,{"id":"qr-studio","name":"二维码工作室","description":"生成二维码，扫码识别","category":"工具","url":"./qr-studio/"}
-,{"id":"quick-capture","name":"快速记录","description":"快速捕捉想法，本地保存","category":"工具","url":"./quick-capture/"}
-,{"id":"quick-chart","name":"快速图表","description":"快速生成简单图表","category":"数据工具","url":"./quick-chart/"}
-,{"id":"reading-list","name":"阅读清单","description":"管理想读书单","category":"生活工具","url":"./reading-list/"}
-,{"id":"reading-tracker","name":"阅读追踪","description":"追踪阅读进度","category":"生活工具","url":"./reading-tracker/"}
-,{"id":"regex-tester-pro","name":"正则表达式测试器 Pro","description":"高级正则测试工具","category":"开发工具","url":"./regex-tester-pro/"}
-,{"id":"score-calculator","name":"分数计算器","description":"计算总分平均分","category":"工具","url":"./score-calculator/"}
-,{"id":"sudoku","name":"数独游戏","description":"经典数独游戏","category":"生活工具","url":"./sudoku/"}
-,{"id":"text-analyzer","name":"文本分析器","description":"分析文本统计信息","category":"开发工具","url":"./text-analyzer/"}
-,{"id":"text-diff","name":"文本对比工具","description":"对比两个文本差异","category":"开发工具","url":"./text-diff/"}
-,{"id":"timeline-generator","name":"时间线生成器","description":"生成时间线可视化","category":"工具","url":"./timeline-generator/"}
-,{"id":"time-tracker","name":"时间追踪器","description":"追踪时间花在哪里","category":"生活工具","url":"./time-tracker/"}
-,{"id":"token-calculator","name":"Token 计算器","description":"计算文本token数量","category":"开发工具","url":"./token-calculator/"}
-,{"id":"token-counter","name":"Token 计数器","description":"统计token数量，估算价格","category":"开发工具","url":"./token-counter/"}
-,{"id":"toolbox","name":"工具盒","description":"工具集合首页","category":"工具","url":"./toolbox/"}
-,{"id":"typerush","name":"打字冲刺","description":"打字速度练习游戏","category":"生活工具","url":"./typerush/"}
-,{"id":"typing-test","name":"打字测试","description":"测试打字速度","category":"生活工具","url":"./typing-test/"}
-,{"id":"unicode-inspector","name":"Unicode 检查器","description":"检查Unicode字符信息","category":"开发工具","url":"./unicode-inspector/"}
-,{"id":"viral-title-generator","name":"爆款标题生成器","description":"生成吸引眼球的标题","category":"内容工具","url":"./viral-title-generator/"}
-,{"id":"web-piano","name":"网页钢琴","description":"网页钢琴可以弹","category":"生活工具","url":"./web-piano/"}
-,{"id":"wechat-formatter","name":"微信格式整理","description":"整理微信文章格式，去除多余空行","category":"内容工具","url":"./wechat-formatter/"}
-,{"id":"white-noise","name":"白噪音","description":"白噪音背景帮助专注","category":"生活工具","url":"./white-noise/"}
-,{"id":"workflow-dashboard","name":"工作流仪表盘","description":"工作流状态仪表盘","category":"工具","url":"./workflow-dashboard/"}
-,{"id":"workout-timer","name":"健身计时器","description":"健身组间休息计时器","category":"生活工具","url":"./workout-timer/"}
-,{"id":"xiaohongshu-copywriter","name":"小红书文案生成器","description":"生成小红书风格文案","category":"内容工具","url":"./xiaohongshu-copywriter/"}
-,{"id":"yuanze","name":"元气语录","description":"元气满满语录随机","category":"生活工具","url":"./yuanze/"}
-];
+  {"id":"ai-interview","name":"ai-interview","description":"","category":"工具","url":"./ai-interview/"},
+  {"id":"api-debugger","name":"api-debugger","description":"","category":"工具","url":"./api-debugger/"},
+  {"id":"api-diff","name":"api-diff","description":"","category":"工具","url":"./api-diff/"},
+  {"id":"api-formatter","name":"api-formatter","description":"","category":"工具","url":"./api-formatter/"},
+  {"id":"api-tester","name":"api-tester","description":"","category":"工具","url":"./api-tester/"},
+  {"id":"ascii-art","name":"ascii-art","description":"","category":"工具","url":"./ascii-art/"},
+  {"id":"badminton","name":"badminton","description":"","category":"工具","url":"./badminton/"},
+  {"id":"benchmark-browser","name":"benchmark-browser","description":"","category":"工具","url":"./benchmark-browser/"},
+  {"id":"benchmark-cheatsheet","name":"benchmark-cheatsheet","description":"","category":"工具","url":"./benchmark-cheatsheet/"},
+  {"id":"benchmark-comparator","name":"benchmark-comparator","description":"","category":"工具","url":"./benchmark-comparator/"},
+  {"id":"benchmark-compare","name":"benchmark-compare","description":"","category":"工具","url":"./benchmark-compare/"},
+  {"id":"bit-playground","name":"bit-playground","description":"","category":"工具","url":"./bit-playground/"},
+  {"id":"breathing","name":"breathing","description":"","category":"工具","url":"./breathing/"},
+  {"id":"build-102-link-shortener","name":"build-102-link-shortener","description":"","category":"工具","url":"./build-102-link-shortener/"},
+  {"id":"build-103-password-generator","name":"build-103-password-generator","description":"","category":"工具","url":"./build-103-password-generator/"},
+  {"id":"build-104-markdown-note","name":"build-104-markdown-note","description":"","category":"工具","url":"./build-104-markdown-note/"},
+  {"id":"build-105-json-viewer","name":"build-105-json-viewer","description":"","category":"工具","url":"./build-105-json-viewer/"},
+  {"id":"build-106-regex-tester","name":"build-106-regex-tester","description":"","category":"工具","url":"./build-106-regex-tester/"},
+  {"id":"build-107-base64-converter","name":"build-107-base64-converter","description":"","category":"工具","url":"./build-107-base64-converter/"},
+  {"id":"build-108-color-palette-generator","name":"build-108-color-palette-generator","description":"","category":"工具","url":"./build-108-color-palette-generator/"},
+  {"id":"build-109-qrcode-reader","name":"build-109-qrcode-reader","description":"","category":"工具","url":"./build-109-qrcode-reader/"},
+  {"id":"build-110-json-path-extractor","name":"build-110-json-path-extractor","description":"","category":"工具","url":"./build-110-json-path-extractor/"},
+  {"id":"build-111-markdown-table-sorter","name":"build-111-markdown-table-sorter","description":"","category":"工具","url":"./build-111-markdown-table-sorter/"},
+  {"id":"build-112-text-statistics","name":"build-112-text-statistics","description":"","category":"工具","url":"./build-112-text-statistics/"},
+  {"id":"build-113-regular-expression-tester","name":"build-113-regular-expression-tester","description":"","category":"工具","url":"./build-113-regular-expression-tester/"},
+  {"id":"build-114-crontab-scheduler","name":"build-114-crontab-scheduler","description":"","category":"工具","url":"./build-114-crontab-scheduler/"},
+  {"id":"build-115-mermaid-diagram-generator","name":"build-115-mermaid-diagram-generator","description":"","category":"工具","url":"./build-115-mermaid-diagram-generator/"},
+  {"id":"build-116-json-schema-validator","name":"build-116-json-schema-validator","description":"","category":"工具","url":"./build-116-json-schema-validator/"},
+  {"id":"build-117-markdown-slides-generator","name":"build-117-markdown-slides-generator","description":"","category":"工具","url":"./build-117-markdown-slides-generator/"},
+  {"id":"build-118-password-manager","name":"build-118-password-manager","description":"","category":"工具","url":"./build-118-password-manager/"},
+  {"id":"build-119-image-resizer","name":"build-119-image-resizer","description":"","category":"工具","url":"./build-119-image-resizer/"},
+  {"id":"build-120-markdown-excel-converter","name":"build-120-markdown-excel-converter","description":"","category":"工具","url":"./build-120-markdown-excel-converter/"},
+  {"id":"build-121-srt-subtitle-editor","name":"build-121-srt-subtitle-editor","description":"","category":"工具","url":"./build-121-srt-subtitle-editor/"},
+  {"id":"build-122-json-yaml-converter","name":"build-122-json-yaml-converter","description":"","category":"工具","url":"./build-122-json-yaml-converter/"},
+  {"id":"build-123-port-scanner","name":"build-123-port-scanner","description":"","category":"工具","url":"./build-123-port-scanner/"},
+  {"id":"build-124-network-speed-test","name":"build-124-network-speed-test","description":"","category":"工具","url":"./build-124-network-speed-test/"},
+  {"id":"build-125-unit-converter","name":"build-125-unit-converter","description":"","category":"工具","url":"./build-125-unit-converter/"},
+  {"id":"build-126-markdown-mindmap","name":"build-126-markdown-mindmap","description":"","category":"工具","url":"./build-126-markdown-mindmap/"},
+  {"id":"build-127-hot-search-aggregator","name":"build-127-hot-search-aggregator","description":"","category":"工具","url":"./build-127-hot-search-aggregator/"},
+  {"id":"build-128-regex-visualizer","name":"build-128-regex-visualizer","description":"","category":"工具","url":"./build-128-regex-visualizer/"},
+  {"id":"build-129-sql-formatter","name":"build-129-sql-formatter","description":"","category":"工具","url":"./build-129-sql-formatter/"},
+  {"id":"build-130-http-status-codes","name":"build-130-http-status-codes","description":"","category":"工具","url":"./build-130-http-status-codes/"},
+  {"id":"build-131-markdown-mermaid-editor","name":"build-131-markdown-mermaid-editor","description":"","category":"工具","url":"./build-131-markdown-mermaid-editor/"},
+  {"id":"build-132-json-to-typescript","name":"build-132-json-to-typescript","description":"","category":"工具","url":"./build-132-json-to-typescript/"},
+  {"id":"build-133-timestamp-converter","name":"build-133-timestamp-converter","description":"","category":"工具","url":"./build-133-timestamp-converter/"},
+  {"id":"build-134-chmod-calculator","name":"build-134-chmod-calculator","description":"","category":"工具","url":"./build-134-chmod-calculator/"},
+  {"id":"build-135-clipboard-history","name":"build-135-clipboard-history","description":"","category":"工具","url":"./build-135-clipboard-history/"},
+  {"id":"build-136-markdown-toc-generator","name":"build-136-markdown-toc-generator","description":"","category":"工具","url":"./build-136-markdown-toc-generator/"},
+  {"id":"build-137-crontab-visualizer","name":"build-137-crontab-visualizer","description":"","category":"工具","url":"./build-137-crontab-visualizer/"},
+  {"id":"build-138-json-prettifier","name":"build-138-json-prettifier","description":"","category":"工具","url":"./build-138-json-prettifier/"},
+  {"id":"build-139-url-parser","name":"build-139-url-parser","description":"","category":"工具","url":"./build-139-url-parser/"},
+  {"id":"build-140-user-agent-parser","name":"build-140-user-agent-parser","description":"","category":"工具","url":"./build-140-user-agent-parser/"},
+  {"id":"build-141-xml-formatter","name":"build-141-xml-formatter","description":"","category":"工具","url":"./build-141-xml-formatter/"},
+  {"id":"build-142-yaml-validator","name":"build-142-yaml-validator","description":"","category":"工具","url":"./build-142-yaml-validator/"},
+  {"id":"build-143-css-gradient-generator","name":"build-143-css-gradient-generator","description":"","category":"工具","url":"./build-143-css-gradient-generator/"},
+  {"id":"build-144-flexbox-generator","name":"build-144-flexbox-generator","description":"","category":"工具","url":"./build-144-flexbox-generator/"},
+  {"id":"build-145-css-grid-generator","name":"build-145-css-grid-generator","description":"","category":"工具","url":"./build-145-css-grid-generator/"},
+  {"id":"build-146-css-box-shadow-generator","name":"build-146-css-box-shadow-generator","description":"","category":"工具","url":"./build-146-css-box-shadow-generator/"},
+  {"id":"build-147-css-border-radius-generator","name":"build-147-css-border-radius-generator","description":"","category":"工具","url":"./build-147-css-border-radius-generator/"},
+  {"id":"build-148-css-transform-generator","name":"build-148-css-transform-generator","description":"","category":"工具","url":"./build-148-css-transform-generator/"},
+  {"id":"build-149-css-backdrop-filter-generator","name":"build-149-css-backdrop-filter-generator","description":"","category":"工具","url":"./build-149-css-backdrop-filter-generator/"},
+  {"id":"build-150-css-animation-generator","name":"build-150-css-animation-generator","description":"","category":"工具","url":"./build-150-css-animation-generator/"},
+  {"id":"build-152-llm-comparison-tool","name":"build-152-llm-comparison-tool","description":"","category":"工具","url":"./build-152-llm-comparison-tool/"},
+  {"id":"build-153-llm-benchmark-table-generator","name":"build-153-llm-benchmark-table-generator","description":"","category":"工具","url":"./build-153-llm-benchmark-table-generator/"},
+  {"id":"build-154-json-to-csv-converter","name":"build-154-json-to-csv-converter","description":"","category":"工具","url":"./build-154-json-to-csv-converter/"},
+  {"id":"build-155-content-repurpose-tool","name":"build-155-content-repurpose-tool","description":"","category":"工具","url":"./build-155-content-repurpose-tool/"},
+  {"id":"build-156-llm-pairwise-collector","name":"build-156-llm-pairwise-collector","description":"","category":"工具","url":"./build-156-llm-pairwise-collector/"},
+  {"id":"build-157-benchmark-search","name":"build-157-benchmark-search","description":"","category":"工具","url":"./build-157-benchmark-search/"},
+  {"id":"build-158-llm-leaderboard-generator","name":"build-158-llm-leaderboard-generator","description":"","category":"工具","url":"./build-158-llm-leaderboard-generator/"},
+  {"id":"chmod-calc","name":"chmod-calc","description":"","category":"工具","url":"./chmod-calc/"},
+  {"id":"code-snapshot","name":"code-snapshot","description":"","category":"工具","url":"./code-snapshot/"},
+  {"id":"code-snippets","name":"code-snippets","description":"","category":"工具","url":"./code-snippets/"},
+  {"id":"color-palette","name":"color-palette","description":"","category":"工具","url":"./color-palette/"},
+  {"id":"content-creator","name":"content-creator","description":"","category":"工具","url":"./content-creator/"},
+  {"id":"countdown-timer","name":"countdown-timer","description":"","category":"工具","url":"./countdown-timer/"},
+  {"id":"cron-builder","name":"cron-builder","description":"","category":"工具","url":"./cron-builder/"},
+  {"id":"data-viz","name":"data-viz","description":"","category":"工具","url":"./data-viz/"},
+  {"id":"decision-wheel","name":"decision-wheel","description":"","category":"工具","url":"./decision-wheel/"},
+  {"id":"dev-almanac","name":"dev-almanac","description":"","category":"工具","url":"./dev-almanac/"},
+  {"id":"dev-toolbox","name":"dev-toolbox","description":"","category":"工具","url":"./dev-toolbox/"},
+  {"id":"emoji-picker","name":"emoji-picker","description":"","category":"工具","url":"./emoji-picker/"},
+  {"id":"eval-checklist","name":"eval-checklist","description":"","category":"工具","url":"./eval-checklist/"},
+  {"id":"eval-metrics","name":"eval-metrics","description":"","category":"工具","url":"./eval-metrics/"},
+  {"id":"eval-report-generator","name":"eval-report-generator","description":"","category":"工具","url":"./eval-report-generator/"},
+  {"id":"evalhub-link","name":"evalhub-link","description":"","category":"工具","url":"./evalhub-link/"},
+  {"id":"fireworks","name":"fireworks","description":"","category":"工具","url":"./fireworks/"},
+  {"id":"fitness-gym","name":"fitness-gym","description":"","category":"工具","url":"./fitness-gym/"},
+  {"id":"flexbox","name":"flexbox","description":"","category":"工具","url":"./flexbox/"},
+  {"id":"focus-station","name":"focus-station","description":"","category":"工具","url":"./focus-station/"},
+  {"id":"fortune-draw","name":"fortune-draw","description":"","category":"工具","url":"./fortune-draw/"},
+  {"id":"game-2048","name":"game-2048","description":"","category":"工具","url":"./game-2048/"},
+  {"id":"game-of-life","name":"game-of-life","description":"","category":"工具","url":"./game-of-life/"},
+  {"id":"gradient-gen","name":"gradient-gen","description":"","category":"工具","url":"./gradient-gen/"},
+  {"id":"habit-tracker","name":"habit-tracker","description":"","category":"工具","url":"./habit-tracker/"},
+  {"id":"http-status","name":"http-status","description":"","category":"工具","url":"./http-status/"},
+  {"id":"idea-generator","name":"idea-generator","description":"","category":"工具","url":"./idea-generator/"},
+  {"id":"json-explorer","name":"json-explorer","description":"","category":"工具","url":"./json-explorer/"},
+  {"id":"json-formatter","name":"json-formatter","description":"","category":"工具","url":"./json-formatter/"},
+  {"id":"json-tree","name":"json-tree","description":"","category":"工具","url":"./json-tree/"},
+  {"id":"llm-explorer","name":"llm-explorer","description":"","category":"工具","url":"./llm-explorer/"},
+  {"id":"llm-knowledge-map","name":"llm-knowledge-map","description":"","category":"工具","url":"./llm-knowledge-map/"},
+  {"id":"llm-pricing","name":"llm-pricing","description":"","category":"工具","url":"./llm-pricing/"},
+  {"id":"lorem-ipsum","name":"lorem-ipsum","description":"","category":"工具","url":"./lorem-ipsum/"},
+  {"id":"markdown-editor","name":"markdown-editor","description":"","category":"工具","url":"./markdown-editor/"},
+  {"id":"markdown-table-generator","name":"markdown-table-generator","description":"","category":"工具","url":"./markdown-table-generator/"},
+  {"id":"md-slides","name":"md-slides","description":"","category":"工具","url":"./md-slides/"},
+  {"id":"md-table","name":"md-table","description":"","category":"工具","url":"./md-table/"},
+  {"id":"meeting-minutes-generator","name":"meeting-minutes-generator","description":"","category":"工具","url":"./meeting-minutes-generator/"},
+  {"id":"memory-explorer","name":"memory-explorer","description":"","category":"工具","url":"./memory-explorer/"},
+  {"id":"mermaid-live","name":"mermaid-live","description":"","category":"工具","url":"./mermaid-live/"},
+  {"id":"mock-data","name":"mock-data","description":"","category":"工具","url":"./mock-data/"},
+  {"id":"model-compare","name":"model-compare","description":"","category":"工具","url":"./model-compare/"},
+  {"id":"morse-code","name":"morse-code","description":"","category":"工具","url":"./morse-code/"},
+  {"id":"noise","name":"noise","description":"","category":"工具","url":"./noise/"},
+  {"id":"paper-summary","name":"paper-summary","description":"","category":"工具","url":"./paper-summary/"},
+  {"id":"password-gen","name":"password-gen","description":"","category":"工具","url":"./password-gen/"},
+  {"id":"pixel-art","name":"pixel-art","description":"","category":"工具","url":"./pixel-art/"},
+  {"id":"pomodoro-timer","name":"pomodoro-timer","description":"","category":"工具","url":"./pomodoro-timer/"},
+  {"id":"project-idea-generator","name":"project-idea-generator","description":"","category":"工具","url":"./project-idea-generator/"},
+  {"id":"prompt-ab-tester","name":"prompt-ab-tester","description":"","category":"工具","url":"./prompt-ab-tester/"},
+  {"id":"prompt-batch","name":"prompt-batch","description":"","category":"工具","url":"./prompt-batch/"},
+  {"id":"prompt-library","name":"prompt-library","description":"","category":"工具","url":"./prompt-library/"},
+  {"id":"prompt-templates","name":"prompt-templates","description":"","category":"工具","url":"./prompt-templates/"},
+  {"id":"prompt-workshop","name":"prompt-workshop","description":"","category":"工具","url":"./prompt-workshop/"},
+  {"id":"qr-studio","name":"qr-studio","description":"","category":"工具","url":"./qr-studio/"},
+  {"id":"quick-capture","name":"quick-capture","description":"","category":"工具","url":"./quick-capture/"},
+  {"id":"quick-chart","name":"quick-chart","description":"","category":"工具","url":"./quick-chart/"},
+  {"id":"reading-list","name":"reading-list","description":"","category":"工具","url":"./reading-list/"},
+  {"id":"reading-tracker","name":"reading-tracker","description":"","category":"工具","url":"./reading-tracker/"},
+  {"id":"regex-tester-pro","name":"regex-tester-pro","description":"","category":"工具","url":"./regex-tester-pro/"},
+  {"id":"score-calculator","name":"score-calculator","description":"","category":"工具","url":"./score-calculator/"},
+  {"id":"sudoku","name":"sudoku","description":"","category":"工具","url":"./sudoku/"},
+  {"id":"text-analyzer","name":"text-analyzer","description":"","category":"工具","url":"./text-analyzer/"},
+  {"id":"text-diff","name":"text-diff","description":"","category":"工具","url":"./text-diff/"},
+  {"id":"time-tracker","name":"time-tracker","description":"","category":"工具","url":"./time-tracker/"},
+  {"id":"timeline-generator","name":"timeline-generator","description":"","category":"工具","url":"./timeline-generator/"},
+  {"id":"token-calculator","name":"token-calculator","description":"","category":"工具","url":"./token-calculator/"},
+  {"id":"token-counter","name":"token-counter","description":"","category":"工具","url":"./token-counter/"},
+  {"id":"toolbox","name":"toolbox","description":"","category":"工具","url":"./toolbox/"},
+  {"id":"typerush","name":"typerush","description":"","category":"工具","url":"./typerush/"},
+  {"id":"typing-test","name":"typing-test","description":"","category":"工具","url":"./typing-test/"},
+  {"id":"unicode-inspector","name":"unicode-inspector","description":"","category":"工具","url":"./unicode-inspector/"},
+  {"id":"viral-title-generator","name":"viral-title-generator","description":"","category":"工具","url":"./viral-title-generator/"},
+  {"id":"web-piano","name":"web-piano","description":"","category":"工具","url":"./web-piano/"},
+  {"id":"wechat-formatter","name":"wechat-formatter","description":"","category":"工具","url":"./wechat-formatter/"},
+  {"id":"white-noise","name":"white-noise","description":"","category":"工具","url":"./white-noise/"},
+  {"id":"workflow-dashboard","name":"workflow-dashboard","description":"","category":"工具","url":"./workflow-dashboard/"},
+  {"id":"workout-timer","name":"workout-timer","description":"","category":"工具","url":"./workout-timer/"},
+  {"id":"xiaohongshu-copywriter","name":"xiaohongshu-copywriter","description":"","category":"工具","url":"./xiaohongshu-copywriter/"},
+  {"id":"yuanze","name":"yuanze","description":"","category":"工具","url":"./yuanze/"}
+        ];
 
         const categoryColors = {
             "评测工具": "bg-red-100 text-red-800",
@@ -256,7 +242,7 @@
                         <h3 class="text-xl font-bold text-gray-800">${tool.name}</h3>
                         <span class="px-2 py-1 rounded-full text-xs font-semibold ${colorClass}">${tool.category}</span>
                     </div>
-                    <p class="text-gray-600 mb-3 line-clamp-2">${tool.description}</p>
+                    <p class="text-gray-600 mb-3 line-clamp-2">${tool.description || '工具'}</p>
                     <div class="text-blue-600 font-medium text-sm">点击打开 →</div>
                 `;
                 grid.appendChild(card);
