@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 搜索引擎 🔍 - 大模型评测基准速查</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+    .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    .card-hover {
+        transition: all 0.2s ease;
+    }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Benchmark 搜索引擎 🔍</h1>
+            <p class="text-gray-600">大模型评测基准快速检索工具，已收录 71 个评测基准信息，随时搜索查询</p>
+        </header>
+
+        <!-- 搜索框 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="🔍 搜索 Benchmark 名称、分类、标签... 例如: 代码 推理 多模态 MMLU"
+                    class="w-full px-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onkeyup="searchBenchmarks()"
+                >
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <div class="text-sm text-gray-600 mr-2">快速筛选:</div>
+                <button onclick="quickFilter('代码能力')" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition">代码能力</button>
+                <button onclick="quickFilter('推理与数学')" class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm hover:bg-green-200 transition">推理与数学</button>
+                <button onclick="quickFilter('知识与理解')" class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm hover:bg-purple-200 transition">知识与理解</button>
+                <button onclick="quickFilter('多模态')" class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm hover:bg-orange-200 transition">多模态</button>
+                <button onclick="quickFilter('Agent')" class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm hover:bg-red-200 transition">Agent</button>
+                <button onclick="quickFilter('长上下文')" class="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm hover:bg-teal-200 transition">长上下文</button>
+                <button onclick="quickFilter('工具调用')" class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm hover:bg-yellow-200 transition">工具调用</button>
+                <button onclick="quickFilter('安全与鲁棒性')" class="px-3 py-1 bg-pink-100 text-pink-800 rounded-full text-sm hover:bg-pink-200 transition">安全与鲁棒性</button>
+                <button onclick="clearSearch()" class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm hover:bg-gray-200 transition">清空</button>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div id="totalCount" class="text-3xl font-bold text-blue-600">71</div>
+                <div class="text-gray-600 text-sm">已收录基准</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div id="codeCount" class="text-1xl font-bold text-green-600">10</div>
+                <div class="text-gray-600 text-sm">代码能力</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div id="reasoningCount" class="text-xl font-bold text-purple-600">10</div>
+                <div class="text-gray-600 text-sm">推理与数学</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div id="shownCount" class="text-xl font-bold text-gray-600">显示全部</div>
+                <div class="text-gray-600 text-sm">当前显示</div>
+            </div>
+        </div>
+
+        <!-- 结果列表 -->
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 结果会在这里动态插入 -->
+        </div>
+
+        <!-- 无结果提示 -->
+        <div id="noResults" class="hidden text-center py-16 bg-white rounded-lg shadow">
+            <p class="text-gray-500 text-lg">没有找到匹配的 Benchmark，请尝试其他关键词</p>
+        </div>
+
+        <footer class="text-center text-gray-500 text-sm mt-12">
+            <p>数据来自每日 Benchmark 讲堂 | 所有信息保存在浏览器本地 | 旺仔构建 🥛</p>
+        </footer>
+    </div>
+
+    <script>
+        const benchmarks = [
+            {"day": 1, "name": "HumanEval", "category": "代码能力", "source": "OpenAI", "description": "经典函数级代码生成评测，包含164道Python编程题", "tags": ["代码", "Python", "函数生成"], "link": null},
+            {"day": 2, "name": "LiveCodeBench", "category": "代码能力", "source": "LiveCodeBench Team", "description": "持续更新的真实世界编程题目集合，来自LeetCode、AtCoder等竞赛平台", "tags": ["代码", "竞赛", "持续更新"], "link": null},
+            {"day": 3, "name": "SWE-bench", "category": "代码能力", "source": "Princeton NLP", "description": "真实软件工程问题评测，要求修复GitHub上真实的开源项目issue", "tags": ["代码", "软件工程", "debug", "修复bug"], "link": null},
+            {"day": 4, "name": "Aider Polyglot", "category": "代码能力", "source": "Aider", "description": "多编程语言代码编辑基准，评测大模型在现有代码基础上编辑代码的能力", "tags": ["代码", "多语言", "代码编辑"], "link": null},
+            {"day": 5, "name": "GSM8K", "category": "推理与数学", "source": "OpenAI", "description": "8年级数学文字题数据集，评测大模型的算术推理能力", "tags": ["数学", "推理", "算术", "文字题"], "link": null},
+            {"day": 6, "name": "MATH", "category": "推理与数学", "source": "UC Berkeley", "description": "高等数学问题集合，包含竞赛难度的数学题，评测复杂数学推理", "tags": ["数学", "推理", "竞赛", "高等数学"], "link": null},
+            {"day": 7, "name": "AIME 2024/2025", "category": "推理与数学", "source": "AMC/MAA", "description": "最新美国数学邀请赛题目，非常难，用来测试顶尖模型的数学能力", "tags": ["数学", "推理", "竞赛", "高难度"], "link": null},
+            {"day": 8, "name": "ARC-AGI", "category": "推理与数学", "source": "Francois Chollet", "description": "抽象推理语料库，测试模型的泛化能力和抽象推理能力", "tags": ["推理", "抽象推理", "泛化", "AGI"], "link": null},
+            {"day": 9, "name": "ZebraLogic", "category": "推理与数学", "source": "AI2", "description": "逻辑推理评测，包含各种难度的逻辑谜题", "tags": ["逻辑", "推理", "谜题"], "link": null},
+            {"day": 10, "name": "MMLU", "category": "知识与理解", "source": "UC Berkeley", "description": "大规模多任务语言理解，涵盖57个学科，评测模型的世界知识", "tags": ["知识", "多学科", "理解"], "link": null},
+            {"day": 11, "name": "MMLU-Pro", "category": "知识与理解", "source": "TIGER-Lab", "description": "MMLU的增强版本，题目更难，选项更多，更具挑战性", "tags": ["知识", "MMLU", "更难"], "link": null},
+            {"day": 12, "name": "GPQA", "category": "知识与理解", "source": "NYU", "description": "研究生水平的问答数据集，由领域专家出题，测试专家级知识", "tags": ["知识", "专家级", "问答"], "link": null},
+            {"day": 13, "name": "SimpleQA", "category": "知识与理解", "source": "OpenAI", "description": "简单真假问答，测试模型对简单事实知识的准确性", "tags": ["知识", "事实", "问答", "简单"], "link": null},
+            {"day": 14, "name": "Humanity's Last Exam", "category": "知识与理解", "source": "CAIE", "description": "人类终极考试，包含非常难的专家级问题，用来测试顶尖模型", "tags": ["知识", "高难度", "专家"], "link": null},
+            {"day": 15, "name": "IFEval", "category": "指令遵循", "source": "Google", "description": "指令跟随评测，测试模型能否严格遵循格式和约束指令", "tags": ["指令遵循", "格式", "约束"], "link": null},
+            {"day": 16, "name": "Chatbot Arena (LMArena)", "category": "指令遵循", "source": "LMSYS", "description": "盲选对战平台，人工对战比较不同聊天模型", "tags": ["对战", "人工评测", "聊天机器人"], "link": null},
+            {"day": 17, "name": "AlpacaEval", "category": "指令遵循", "source": "Stanford", "description": "自动评估开放域指令模型，基于GPT-4作为裁判", "tags": ["指令", "自动评估", "GPT-4裁判"], "link": null},
+            {"day": 18, "name": "Tau-bench", "category": "Agent", "source": "Sierra AI", "description": "真实世界工具使用基准，测试AI Agent在实际软件工具中的任务完成能力", "tags": ["Agent", "工具使用", "真实世界"], "link": null},
+            {"day": 19, "name": "WebArena", "category": "Agent", "source": "CMU", "description": "交互式网页任务环境，测试Agent在完整网站上完成任务的能力", "tags": ["Agent", "网页", "交互", "环境"], "link": null},
+            {"day": 20, "name": "GAIA", "category": "Agent", "source": "Meta/HuggingFace", "description": "普普通通AI问题，测试Agent解决实际问题的能力，需要工具使用", "tags": ["Agent", "工具", "实际问题"], "link": null},
+            {"day": 21, "name": "SWE-bench Multilingual", "category": "Agent", "source": "OpenAI", "description": "多语言版本SWE-bench，测试Agent在不同编程语言解决软件工程问题", "tags": ["Agent", "代码", "多语言"], "link": null},
+            {"day": 22, "name": "MMMU", "category": "多模态", "source": "IN.AI", "description": "大规模多模态多学科评测，涵盖大学级别多学科问题", "tags": ["多模态", "多学科", "大学"], "link": null},
+            {"day": 23, "name": "MathVista", "category": "多模态", "source": "UCLA", "description": "可视化数学推理评测，测试模型理解数学图表的能力", "tags": ["多模态", "数学", "可视化"], "link": null},
+            {"day": 24, "name": "Video-MME", "category": "多模态", "source": "Tsinghua", "description": "视频多模态评测，全面测试模型理解长视频的能力", "tags": ["多模态", "视频", "理解"], "link": null},
+            {"day": 25, "name": "RULER", "category": "长上下文", "source": "NVIDIA", "description": "长上下文能力评测，包含不同类型的上下文测试", "tags": ["长上下文", "评测", "nvidia"], "link": null},
+            {"day": 26, "name": "Needle-in-a-Haystack", "category": "长上下文", "source": "Greg Kamradt", "description": "大海捞针测试，测试模型在长文本中找到关键信息的能力", "tags": ["长上下文", "检索", "大海捞针"], "link": null},
+            {"day": 27, "name": "LongBench", "category": "长上下文", "source": "Tsinghua", "description": "清华大学长上下文基准，涵盖多种任务类型", "tags": ["长上下文", "清华", "基准"], "link": null},
+            {"day": 28, "name": "TruthfulQA", "category": "安全与鲁棒性", "source": "Oxford", "description": "测试模型生成真实信息的能力，包含常见错误问题", "tags": ["真实性", "安全", "错误"], "link": null},
+            {"day": 29, "name": "BBQ", "category": "安全与鲁棒性", "source": "Google", "description": "偏见问答基准，测试模型的社会偏见", "tags": ["偏见", "安全", "鲁棒性"], "link": null},
+            {"day": 30, "name": "MBPP / EvalPlus", "category": "代码能力", "source": "Google/NTU", "description": "基本Python编程项目，包含1000道初学者题目，EvalPlus增强了测试用例", "tags": ["代码", "Python", "初学者", "EvalPlus"], "link": null},
+            {"day": 31, "name": "TerminalBench", "category": "代码能力", "source": "Terminal Research", "description": "终端交互代码生成评测，测试模型在真实终端环境中编程的能力", "tags": ["代码", "终端", "交互"], "link": null},
+            {"day": 32, "name": "BFCL (Berkeley Function Calling Leaderboard)", "category": "工具调用", "source": "UC Berkeley / Gorilla", "description": "伯克利函数调用排行榜，评测模型工具调用能力", "tags": ["工具调用", "函数调用", "berkeley"], "link": null},
+            {"day": 33, "name": "MT-Bench", "category": "指令遵循", "source": "LMSYS / UC Berkeley", "description": "多轮对话基准，包含80个多轮问题，GPT-4评分", "tags": ["指令", "多轮对话", "评分"], "link": null},
+            {"day": 34, "name": "WildBench", "category": "综合对话", "source": "Allen AI (AI2)", "description": "真实世界野生对话基准，收集真实用户与聊天机器人的对话", "tags": ["对话", "真实世界", "野生"], "link": null},
+            {"day": 35, "name": "BigCodeBench", "category": "代码能力", "source": "BigCode Community / ICLR 2025", "description": "面向实际软件工程任务的代码生成基准，评测模型调用多样库函数的能力", "tags": ["代码", "ICLR 2025", "函数调用", "实际"], "link": null},
+            {"day": 36, "name": "OlympiadBench", "category": "推理与数学", "source": "PKU / Shanghai Jiao Tong University", "description": "国际奥林匹克竞赛题目基准，包含数学物理奥赛题目，非常困难", "tags": ["数学", "物理", "奥赛", "高难度"], "link": null},
+            {"day": 37, "name": "MMLongBench", "category": "推理与数学", "source": "THU", "description": "长文档多跳推理基准，评测模型在长文档中进行多步推理的能力", "tags": ["长文档", "多跳推理", "推理"], "link": null},
+            {"day": 38, "name": "ToolBench", "category": "工具调用", "source": "THU / Gorilla", "description": "大规模工具调用评测基准，包含数万真实工具调用轨迹", "tags": ["工具调用", "大规模", "轨迹"], "link": null},
+            {"day": 39, "name": "AgentBench", "category": "Agent", "source": "THU", "description": "多领域Agent评测基准，包含8个真实环境", "tags": ["Agent", "多领域", "环境"], "link": null},
+            {"day": 40, "name": "SciBench", "category": "Agent", "source": "UCB", "description": "科学问题解决Agent评测，评测Agent解决大学级别科学问题", "tags": ["Agent", "科学", "问题解决"], "link": null},
+            {"day": 41, "name": "CMMLU", "category": "知识与理解", "source": "PKU", "description": "中国医学知识多任务语言理解，评测中文医学知识", "tags": ["知识", "中文", "医学"], "link": null},
+            {"day": 42, "name": "C-Eval", "category": "知识与理解", "source": "Shanghai Jiao Tong University / Tsinghua", "description": "中国教育考试评测，涵盖从小学到大学的各个学科", "tags": ["知识", "中文", "教育", "考试"], "link": null},
+            {"day": 43, "name": "GaokaoBench", "category": "知识与理解", "source": "ByteDance", "description": "高考题目评测，包含中国高考各学科真题", "tags": ["知识", "中文", "高考"], "link": null},
+            {"day": 44, "name": "SEED-Bench", "category": "多模态", "source": "ByteDance", "description": "大规模多模态评测基准，包含12K多个多项选择题", "tags": ["多模态", "大规模", "选择题"], "link": null},
+            {"day": 45, "name": "MMBench", "category": "多模态", "source": "OpenGVLab", "description": "多模态能力全面评测，涵盖多个维度", "tags": ["多模态", "评测", "全面"], "link": null},
+            {"day": 46, "name": "HallusionBench", "category": "多模态", "source": "UMich / MIT", "description": "幻觉评测基准，专门测试视觉语言模型的幻觉问题", "tags": ["多模态", "幻觉", "评测"], "link": null},
+            {"day": 47, "name": "AdvBench", "category": "安全与鲁棒性", "source": "CMU", "description": "对抗性攻击基准，测试模型对抗提示注入攻击的鲁棒性", "tags": ["安全", "对抗", "攻击", "鲁棒性"], "link": null},
+            {"day": 48, "name": "HarmBench", "category": "安全与鲁棒性", "source": "Stanford", "description": "标准化有害内容生成基准，测试模型的安全性对齐", "tags": ["安全", "有害内容", "对齐"], "link": null},
+            {"day": 49, "name": "Do-Not-Answer", "category": "安全与鲁棒性", "source": "SafetyEval Team", "description": "禁止回答问题集合，测试模型安全对齐效果", "tags": ["安全", "对齐", "禁止"], "link": null},
+            {"day": 50, "name": "LongChat", "category": "长上下文", "source": "LMSYS", "description": "长对话测试集合，评测模型长对话能力", "tags": ["长上下文", "对话", "测试"], "link": null},
+            {"day": 51, "name": "BookSum", "category": "长上下文", "source": "Stanford", "description": "书籍章节摘要数据集，测试长文档摘要能力", "tags": ["长上下文", "摘要", "书籍"], "link": null},
+            {"day": 52, "name": "HumanEvalX", "category": "代码能力", "source": "Salesforce", "description": "HumanEval多语言版本，支持5种编程语言", "tags": ["代码", "多语言", "HumanEval"], "link": null},
+            {"day": 53, "name": "Codeforces", "category": "代码能力", "source": "Codeforces / LMSYS", "description": "Codeforces竞赛题目集合，评测模型解决编程竞赛问题", "tags": ["代码", "竞赛", "编程"], "link": null},
+            {"day": 54, "name": "DS-1000", "category": "代码能力", "source": "MIT", "description": "数据科学代码生成基准，1000个数据科学问题，涵盖多种库", "tags": ["代码", "数据科学", "python"], "link": null},
+            {"day": 55, "name": "GSM8K-Hard", "category": "推理与数学", "source": "Stanford", "description": "GSM8K难题版本，更具挑战性的数学推理", "tags": ["数学", "推理", "难题", "GSM8K"], "link": null},
+            {"day": 56, "name": "BigMath", "category": "推理与数学", "source": "BigMath Team", "description": "大规模数学推理基准，包含更高质量更难的数学问题", "tags": ["数学", "推理", "大规模", "高难度"], "link": null},
+            {"day": 57, "name": "PIQA", "category": "知识与理解", "source": "Allen AI", "description": "物理常识问答，测试模型对物理世界常识的理解", "tags": ["常识", "物理", "知识"], "link": null},
+            {"day": 58, "name": "Winogrande", "category": "知识与理解", "source": "Allen AI", "description": "Winograd模式挑战，测试常识推理", "tags": ["常识推理", "消歧"], "link": null},
+            {"day": 59, "name": "OpenBookQA", "category": "知识与理解", "source": "Allen AI", "description": "开放书籍问答，测试基于常识的问答", "tags": ["常识", "问答", "知识"], "link": null},
+            {"day": 60, "name": "CommonsenseQA", "category": "推理与数学", "source": "Allen AI", "description": "常识问答，基于ConceptNet的常识推理评测", "tags": ["常识", "推理", "问答"], "link": null},
+            {"day": 61, "name": "RepoBench", "category": "代码能力", "source": "HKU", "description": "代码仓库级代码补全评测，测试模型在完整仓库中补全代码", "tags": ["代码", "仓库", "补全"], "link": null},
+            {"day": 62, "name": "RepoCodeEval", "category": "代码能力", "source": "Microsoft", "description": "仓库代码评测，测试模型理解现有代码仓库的能力", "tags": ["代码", "仓库", "理解"], "link": null},
+            {"day": 63, "name": "BrowserArena", "category": "Agent", "source": "Nanjing University", "description": "浏览器交互Agent评测，测试Agent在真实浏览器完成任务", "tags": ["Agent", "浏览器", "交互"], "link": null},
+            {"day": 64, "name": "Mind2Web", "category": "Agent", "source": "UW", "description": "网页交互Agent，测试在真实网页点击操作完成任务", "tags": ["Agent", "网页", "交互"], "link": null},
+            {"day": 65, "name": "Flask", "category": "指令遵循", "source": "Google DeepMind", "description": "遵循指令评分语言，评估模型指令跟随能力", "tags": ["指令遵循", "评分", "language"], "link": null},
+            {"day": 66, "name": "StrategyQA", "category": "推理与数学", "source": "Allen AI", "description": "策略问答，需要多步推理隐式策略知识", "tags": ["推理", "问答", "多步"], "link": null},
+            {"day": 67, "name": "Flickr30k-CN", "category": "多模态", "source": "THU", "description": "Flickr30k中文数据集，图像描述中文评测", "tags": ["多模态", "中文", "图像描述"], "link": null},
+            {"day": 68, "name": "VQAv2", "category": "多模态", "source": "Georgia Tech", "description": "视觉问答基准，测试模型回答图像问题的能力", "tags": ["多模态", "视觉问答", "图像"], "link": null},
+            {"day": 69, "name": "RealToxicityPrompts", "category": "安全与鲁棒性", "source": "Allen AI", "description": "真实毒性提示数据集，评估模型生成有毒内容的可能性", "tags": ["安全", "毒性", "评估"], "link": null},
+            {"day": 70, "name": "ToxiGen", "category": "安全与鲁棒性", "source": "UW", "description": "毒性生成基准，包含大量有毒和良性生成示例", "tags": ["安全", "毒性", "生成"], "link": null},
+            {"day": 71, "name": "MultiPL-E", "category": "代码能力", "source": "University of Copenhagen", "description": "大规模多语言代码生成评测，18种编程语言，评测模型在不同语言的能力", "tags": ["代码", "多语言", "18种语言"], "link": null},
+        ];
+
+        const categoryColors = {
+            "代码能力": "bg-blue",
+            "推理与数学": "bg-green",
+            "知识与理解": "bg-purple",
+            "指令遵循": "bg-indigo",
+            "Agent": "bg-red",
+            "多模态": "bg-orange",
+            "长上下文": "bg-teal",
+            "工具调用": "bg-yellow",
+            "安全与鲁棒性": "bg-pink",
+            "综合对话": "bg-gray"
+        };
+
+        const categoryTextColors = {
+            "代码能力": "text-blue-800",
+            "推理与数学": "text-green-800",
+            "知识与理解": "text-purple-800",
+            "指令遵循": "text-indigo-800",
+            "Agent": "text-red-800",
+            "多模态": "text-orange-800",
+            "长上下文": "text-teal-800",
+            "工具调用": "text-yellow-800",
+            "安全与鲁棒性": "text-pink-800",
+            "综合对话": "text-gray-800"
+        };
+
+        const categoryBgLight = {
+            "代码能力": "bg-blue-100",
+            "推理与数学": "bg-green-100",
+            "知识与理解": "bg-purple-100",
+            "指令遵循": "bg-indigo-100",
+            "Agent": "bg-red-100",
+            "多模态": "bg-orange-100",
+            "长上下文": "bg-teal-100",
+            "工具调用": "bg-yellow-100",
+            "安全与鲁棒性": "bg-pink-100",
+            "综合对话": "bg-gray-100"
+        };
+
+        function getCategoryCount(category) {
+            return benchmarks.filter(b => b.category === category).length;
+        }
+
+        function updateStats(results) {
+            document.getElementById('totalCount').textContent = benchmarks.length;
+            document.getElementById('codeCount').textContent = getCategoryCount('代码能力');
+            document.getElementById('reasoningCount').textContent = getCategoryCount('推理与数学');
+            document.getElementById('shownCount').textContent = results.length;
+        }
+
+        function createBenchmarkCard(b) {
+            const tagHtml = b.tags.map(tag => `<span class="inline-block px-2 py-1 ${categoryBgLight[b.category]} ${categoryTextColors[b.category]} rounded text-xs mr-1 mb-1">${tag}</span>`).join('');
+            
+            return `
+                <div class="bg-white rounded-lg shadow p-5 card-hover" onclick="highlightCard(this)">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-xl font-bold text-gray-800">${b.day}. ${b.name}</h3>
+                        <span class="px-2 py-1 rounded text-xs font-semibold ${categoryBgLight[b.category]} ${categoryTextColors[b.category]}">${b.category}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-3">来源: ${b.source}</p>
+                    <p class="text-gray-700 mb-4">${b.description}</p>
+                    <div class="flex flex-wrap">
+                        ${tagHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function searchBenchmarks() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const results = benchmarks.filter(b => {
+                const searchText = `${b.name} ${b.category} ${b.source} ${b.description} ${(b.tags || []).join(' ')}`.toLowerCase();
+                return searchText.includes(query);
+            });
+            
+            renderResults(results);
+            updateStats(results);
+        }
+
+        function quickFilter(category) {
+            document.getElementById('searchInput').value = category;
+            searchBenchmarks();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            searchBenchmarks();
+        }
+
+        function renderResults(results) {
+            const container = document.getElementById('results');
+            const noResults = document.getElementById('noResults');
+            
+            if (results.length === 0) {
+                container.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            container.innerHTML = results.map(b => createBenchmarkCard(b)).join('');
+        }
+
+        function highlightCard(element) {
+            // 简单高亮效果，点击可以聚焦
+            element.classList.toggle('ring-2');
+            element.classList.toggle('ring-blue-500');
+            setTimeout(() => {
+                element.classList.toggle('ring-2');
+                element.classList.toggle('ring-blue-500');
+            }, 500);
+        }
+
+        // 初始渲染
+        updateStats(benchmarks);
+        renderResults(benchmarks);
+    </script>
+</body>
+</html>

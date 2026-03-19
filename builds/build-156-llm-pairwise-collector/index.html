@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大模型 Pairwise 偏好收集工具 🎯</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">大模型 Pairwise 偏好收集工具 🎯</h1>
+            <p class="text-gray-600">轻松收集人类偏好数据，用于RLHF训练、奖励模型训练和模型对比评测</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- 统计面板 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">📊 统计信息</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">总比较次数:</span>
+                            <span id="totalCount" class="font-bold text-blue-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span id="modelAName" class="text-gray-600">模型 A 胜:</span>
+                            <span id="aWins" class="font-bold text-green-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span id="modelBName" class="text-gray-600">模型 B 胜:</span>
+                            <span id="bWins" class="font-bold text-red-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">平局:</span>
+                            <span id="ties" class="font-bold text-yellow-600">0</span>
+                        </div>
+                        <div class="border-t pt-3 mt-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">模型 A 胜率:</span>
+                                <span id="aWinRate" class="font-bold text-blue-600">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">模型 B 胜率:</span>
+                                <span id="bWinRate" class="font-bold text-blue-600">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        <h3 class="font-semibold text-gray-700">⚙️ 配置</h3>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">模型 A 名称</label>
+                            <input type="text" id="modelAInput" placeholder="例如: GPT-4" value="模型 A" class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">模型 B 名称</label>
+                            <input type="text" id="modelBInput" placeholder="例如: Claude 3" value="模型 B" class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button onclick="updateModelNames()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">保存配置</button>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        <h3 class="font-semibold text-gray-700">📥 导入导出</h3>
+                        <button onclick="exportData()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">导出 JSON 数据</button>
+                        <button onclick="document.getElementById('importInput').click()" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition">导入 JSON 数据</button>
+                        <input type="file" id="importInput" accept=".json" class="hidden" onchange="importData(event)">
+                        <button onclick="clearAllData()" class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 transition">清空所有数据</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 添加新比较 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">➕ 添加新比较</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">用户提示 (Prompt)</label>
+                            <textarea id="promptInput" rows="4" placeholder="在这里输入用户提问或提示..." class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label id="modelALabel" class="block text-sm font-medium text-green-700 mb-1">模型 A 回答</label>
+                                <textarea id="answerAInput" rows="8" placeholder="在这里输入模型 A 的回答..." class="w-full px-3 py-2 border border-green-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                            </div>
+                            <div>
+                                <label id="modelBLabel" class="block text-sm font-medium text-red-700 mb-1">模型 B 回答</label>
+                                <textarea id="answerBInput" rows="8" placeholder="在这里输入模型 B 的回答..." class="w-full px-3 py-2 border border-red-200 rounded focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 pt-2">
+                            <button onclick="selectWinner('A')" class="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition font-semibold">
+                                ✅ A 更好
+                            </button>
+                            <button onclick="selectWinner('tie')" class="flex-1 bg-yellow-500 text-white py-3 px-4 rounded-lg hover:bg-yellow-600 transition font-semibold">
+                                ⚖️ 平局
+                            </button>
+                            <button onclick="selectWinner('B')" class="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition font-semibold">
+                                ✅ B 更好
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 比较历史 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">📜 比较历史</h2>
+                    <div id="historyList" class="space-y-4">
+                        <div class="text-center text-gray-500 py-8">
+                            暂无比较数据，添加第一个比较开始吧！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-gray-500 text-sm mt-8">
+            <p>所有数据保存在浏览器本地，不会上传到任何服务器 | 构建 #156 by 旺仔 🥛</p>
+        </footer>
+    </div>
+
+    <script>
+        // 数据存储
+        let comparisons = [];
+        let modelNames = {
+            A: '模型 A',
+            B: '模型 B'
+        };
+
+        // 初始化
+        function loadData() {
+            const saved = localStorage.getItem('llm-pairwise-data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                comparisons = data.comparisons || [];
+                if (data.modelNames) {
+                    modelNames = data.modelNames;
+                }
+            }
+            const savedNames = localStorage.getItem('llm-pairwise-names');
+            if (savedNames) {
+                modelNames = JSON.parse(savedNames);
+            }
+            updateUI();
+        }
+
+        // 保存数据
+        function saveData() {
+            localStorage.setItem('llm-pairwise-data', JSON.stringify({
+                comparisons,
+                modelNames
+            }));
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const total = comparisons.length;
+            let aWins = 0;
+            let bWins = 0;
+            let ties = 0;
+
+            comparisons.forEach(c => {
+                if (c.winner === 'A') aWins++;
+                else if (c.winner === 'B') bWins++;
+                else ties++;
+            });
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('aWins').textContent = aWins;
+            document.getElementById('bWins').textContent = bWins;
+            document.getElementById('ties').textContent = ties;
+
+            const aRate = total > 0 ? ((aWins / (total - ties)) * 100).toFixed(1) : 0;
+            const bRate = total > 0 ? ((bWins / (total - ties)) * 100).toFixed(1) : 0;
+            document.getElementById('aWinRate').textContent = `${aRate}%`;
+            document.getElementById('bWinRate').textContent = `${bRate}%`;
+
+            document.getElementById('modelAName').textContent = `${modelNames.A} 胜:`;
+            document.getElementById('modelBName').textContent = `${modelNames.B} 胜:`;
+        }
+
+        // 更新历史列表
+        function updateHistory() {
+            const container = document.getElementById('historyList');
+            if (comparisons.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">暂无比较数据，添加第一个比较开始吧！</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            // 倒序显示，最新的在最上面
+            [...comparisons].reverse().forEach((comp, idx) => {
+                const originalIndex = comparisons.length - 1 - idx;
+                let winnerClass = '';
+                let winnerText = '';
+                if (comp.winner === 'A') {
+                    winnerClass = 'bg-green-100 border-green-300';
+                    winnerText = `${modelNames.A} 胜出`;
+                } else if (comp.winner === 'B') {
+                    winnerClass = 'bg-red-100 border-red-300';
+                    winnerText = `${modelNames.B} 胜出`;
+                } else {
+                    winnerClass = 'bg-yellow-100 border-yellow-300';
+                    winnerText = '平局';
+                }
+
+                const item = document.createElement('div');
+                item.className = `border rounded-lg p-4 ${winnerClass}`;
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="font-semibold text-gray-800">比较 #${originalIndex + 1}</div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded text-sm font-medium ${winnerClass}">${winnerText}</span>
+                            <button onclick="deleteComparison(${originalIndex})" class="text-red-600 hover:text-red-800 text-sm">🗑️ 删除</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="text-sm font-semibold text-gray-700 mb-1">Prompt:</div>
+                            <div class="text-gray-800 bg-white bg-opacity-50 rounded p-2 whitespace-pre-wrap">${escapeHtml(comp.prompt)}</div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <div class="text-sm font-semibold text-green-700 mb-1">${modelNames.A}:</div>
+                                <div class="text-gray-800 bg-white bg-opacity-50 rounded p-2 whitespace-pre-wrap">${escapeHtml(comp.answerA)}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-red-700 mb-1">${modelNames.B}:</div>
+                                <div class="text-gray-800 bg-white bg-opacity-50 rounded p-2 whitespace-pre-wrap">${escapeHtml(comp.answerB)}</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            创建时间: ${new Date(comp.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 更新UI
+        function updateUI() {
+            document.getElementById('modelAInput').value = modelNames.A;
+            document.getElementById('modelBInput').value = modelNames.B;
+            document.getElementById('modelALabel').textContent = `${modelNames.A} 回答`;
+            document.getElementById('modelBLabel').textContent = `${modelNames.B} 回答`;
+            updateStats();
+            updateHistory();
+        }
+
+        // 更新模型名称
+        function updateModelNames() {
+            modelNames.A = document.getElementById('modelAInput').value || '模型 A';
+            modelNames.B = document.getElementById('modelBInput').value || '模型 B';
+            localStorage.setItem('llm-pairwise-names', JSON.stringify(modelNames));
+            saveData();
+            updateUI();
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 选择胜者
+        function selectWinner(winner) {
+            const prompt = document.getElementById('promptInput').value.trim();
+            const answerA = document.getElementById('answerAInput').value.trim();
+            const answerB = document.getElementById('answerBInput').value.trim();
+
+            if (!prompt) {
+                alert('请输入 Prompt！');
+                return;
+            }
+            if (!answerA) {
+                alert(`请输入 ${modelNames.A} 的回答！`);
+                return;
+            }
+            if (!answerB) {
+                alert(`请输入 ${modelNames.B} 的回答！`);
+                return;
+            }
+
+            const comparison = {
+                prompt,
+                answerA,
+                answerB,
+                winner,
+                timestamp: Date.now()
+            };
+
+            comparisons.push(comparison);
+            saveData();
+            updateUI();
+
+            // 清空输入
+            document.getElementById('promptInput').value = '';
+            document.getElementById('answerAInput').value = '';
+            document.getElementById('answerBInput').value = '';
+        }
+
+        // 删除比较
+        function deleteComparison(index) {
+            if (!confirm('确定要删除这条比较记录吗？')) return;
+            comparisons.splice(index, 1);
+            saveData();
+            updateUI();
+        }
+
+        // 导出数据
+        function exportData() {
+            if (comparisons.length === 0) {
+                alert('没有数据可以导出！');
+                return;
+            }
+
+            const data = {
+                modelNames,
+                comparisons,
+                exportTime: new Date().toISOString(),
+                totalComparisons: comparisons.length
+            };
+
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `llm-pairwise-data-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 导入数据
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.comparisons && Array.isArray(data.comparisons)) {
+                        if (data.modelNames) {
+                            modelNames = data.modelNames;
+                        }
+                        // 追加还是替换？让用户选择
+                        if (confirm('是否追加导入数据？点击确定追加，取消覆盖当前数据。')) {
+                            comparisons = comparisons.concat(data.comparisons);
+                        } else {
+                            comparisons = data.comparisons;
+                        }
+                        saveData();
+                        updateUI();
+                        alert(`导入成功！共导入 ${data.comparisons.length} 条比较数据。`);
+                    } else {
+                        throw new Error('数据格式不正确');
+                    }
+                } catch (err) {
+                    alert('导入失败：' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // 清空所有数据
+        function clearAllData() {
+            if (!confirm('⚠️ 确定要清空所有比较数据吗？此操作不可撤销！')) return;
+            comparisons = [];
+            saveData();
+            updateUI();
+        }
+
+        // 快捷键支持
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + Enter 快速提交，1 选 A，2 选平局，3 选 B
+            if (e.key === '1' && e.ctrlKey) {
+                selectWinner('A');
+            } else if (e.key === '2' && e.ctrlKey) {
+                selectWinner('tie');
+            } else if (e.key === '3' && e.ctrlKey) {
+                selectWinner('B');
+            }
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

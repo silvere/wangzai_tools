@@ -1,7 +1,7 @@
 {
   "name": "每日 Benchmark 讲堂",
   "schedule": "每天下午 2:00 (Asia/Shanghai)",
-  "current_day": 70,
+  "current_day": 74,
   "format": {
     "sections": [
       "测什么",
@@ -223,6 +223,222 @@
       "category": "代码能力",
       "name": "BigCodeBench",
       "source": "BigCode Community / ICLR 2025"
+    },
+    {
+      "day": 36,
+      "category": "推理与数学",
+      "name": "OlympiadBench",
+      "source": "PKU / Shanghai Jiao Tong University"
+    },
+    {
+      "day": 37,
+      "category": "推理与数学",
+      "name": "MMLongBench",
+      "source": "THU"
+    },
+    {
+      "day": 38,
+      "category": "工具调用",
+      "name": "ToolBench",
+      "source": "THU / Gorilla"
+    },
+    {
+      "day": 39,
+      "category": "Agent",
+      "name": "AgentBench",
+      "source": "THU"
+    },
+    {
+      "day": 40,
+      "category": "Agent",
+      "name": "SciBench",
+      "source": "UCB"
+    },
+    {
+      "day": 41,
+      "category": "知识与理解",
+      "name": "CMMLU",
+      "source": "PKU"
+    },
+    {
+      "day": 42,
+      "category": "知识与理解",
+      "name": "C-Eval",
+      "source": "Shanghai Jiao Tong University / Tsinghua"
+    },
+    {
+      "day": 43,
+      "category": "知识与理解",
+      "name": "GaokaoBench",
+      "source": "ByteDance"
+    },
+    {
+      "day": 44,
+      "category": "多模态",
+      "name": "SEED-Bench",
+      "source": "ByteDance"
+    },
+    {
+      "day": 45,
+      "category": "多模态",
+      "name": "MMBench",
+      "source": "OpenGVLab"
+    },
+    {
+      "day": 46,
+      "category": "多模态",
+      "name": "HallusionBench",
+      "source": "UMich / MIT"
+    },
+    {
+      "day": 47,
+      "category": "安全与鲁棒性",
+      "name": "AdvBench",
+      "source": "CMU"
+    },
+    {
+      "day": 48,
+      "category": "安全与鲁棒性",
+      "name": "HarmBench",
+      "source": "Stanford"
+    },
+    {
+      "day": 49,
+      "category": "指令遵循",
+      "name": "Do-Not-Answer",
+      "source": "SafetyEval Team"
+    },
+    {
+      "day": 50,
+      "category": "长上下文",
+      "name": "LongChat",
+      "source": "LMSYS"
+    },
+    {
+      "day": 51,
+      "category": "长上下文",
+      "name": "BookSum",
+      "source": "Stanford"
+    },
+    {
+      "day": 52,
+      "category": "代码能力",
+      "name": "HumanEvalX",
+      "source": "Salesforce"
+    },
+    {
+      "day": 53,
+      "category": "代码能力",
+      "name": "Codeforces",
+      "source": "Codeforces / LMSYS"
+    },
+    {
+      "day": 54,
+      "category": "代码能力",
+      "name": "DS-1000",
+      "source": "MIT"
+    },
+    {
+      "day": 55,
+      "category": "推理与数学",
+      "name": "GSM8K-Hard",
+      "source": "Stanford"
+    },
+    {
+      "day": 56,
+      "category": "推理与数学",
+      "name": "BigMath",
+      "source": "BigMath Team"
+    },
+    {
+      "day": 57,
+      "category": "知识与理解",
+      "name": "PIQA",
+      "source": "Allen AI"
+    },
+    {
+      "day": 58,
+      "category": "知识与理解",
+      "name": "Winogrande",
+      "source": "Allen AI"
+    },
+    {
+      "day": 59,
+      "category": "知识与理解",
+      "name": "OpenBookQA",
+      "source": "Allen AI"
+    },
+    {
+      "day": 60,
+      "category": "推理与数学",
+      "name": "CommonsenseQA",
+      "source": "Allen AI"
+    },
+    {
+      "day": 61,
+      "category": "代码能力",
+      "name": "RepoBench",
+      "source": "HKU"
+    },
+    {
+      "day": 62,
+      "category": "代码能力",
+      "name": "RepoCodeEval",
+      "source": "Microsoft"
+    },
+    {
+      "day": 63,
+      "category": "Agent",
+      "name": "BrowserArena",
+      "source": "Nanjing University"
+    },
+    {
+      "day": 64,
+      "category": "Agent",
+      "name": "Mind2Web",
+      "source": "UW"
+    },
+    {
+      "day": 65,
+      "category": "指令遵循",
+      "name": "Flask",
+      "source": "Google DeepMind"
+    },
+    {
+      "day": 66,
+      "category": "推理与数学",
+      "name": "StrategyQA",
+      "source": "Allen AI"
+    },
+    {
+      "day": 67,
+      "category": "多模态",
+      "name": "Flickr30k-CN",
+      "source": "THU"
+    },
+    {
+      "day": 68,
+      "category": "多模态",
+      "name": "VQAv2",
+      "source": "Georgia Tech"
+    },
+    {
+      "day": 69,
+      "category": "安全与鲁棒性",
+      "name": "RealToxicityPrompts",
+      "source": "Allen AI"
+    },
+    {
+      "day": 70,
+      "category": "安全与鲁棒性",
+      "name": "ToxiGen",
+      "source": "UW"
+    },
+    {
+      "day": 71,
+      "category": "代码能力",
+      "name": "MultiPL-E",
+      "source": "University of Copenhagen"
     }
   ]
 }
