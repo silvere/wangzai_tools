@@ -1,0 +1,94 @@
+# 本地配置和私密文件
+*.env
+*.env.*
+*.key
+*.pem
+*.p12
+*.json
+!builds/**/*.json
+!*/package.json
+
+# 本地日记和记忆文件
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+MEMORY.md
+METHODS.md
+SOUL.md
+TOOLS.md
+USER.md
+arxiv-summary.xml
+arxiv.xml
+papers.xml
+reminders.json
+morning_report_*.md
+*.log
+
+# 本地记忆目录
+memory/
+*.log
+*.tmp
+
+# 配置文件
+config/
+*.creds
+
+# 临时下载和接收文件
+*.clawdbot/media/inbound/*
+/tmp/
+*.deb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+*.bak
+
+# Canvas
+canvas/
+
+# Skills
+skills/
+
+# 本地项目目录，不推送到公共仓库
+llm-gateway/
+scripts/
+ai_*.py
+fetch_news.py
+get_news.py
+chat_summary.py
+real_ai_news.py
+simple_news.py
+
+# 证书和密钥
+gunicorn-cert.pem
+gunicorn-key.pem
