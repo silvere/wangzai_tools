@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenClaw 详情介绍</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg2: #0d1b2a;
+      --card: rgba(255,255,255,0.08);
+      --line: rgba(255,255,255,0.12);
+      --text: #eaf2ff;
+      --muted: #a8bdd8;
+      --accent: #61dafb;
+      --accent2: #8b5cf6;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(97,218,251,.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 30%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      line-height: 1.65;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 20px 72px; }
+    .hero {
+      padding: 56px 28px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .badge {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(97,218,251,.12);
+      color: var(--accent);
+      font-size: 13px;
+      border: 1px solid rgba(97,218,251,.25);
+    }
+    h1 { font-size: clamp(34px, 6vw, 64px); line-height: 1.05; margin: 18px 0 16px; }
+    .lead { max-width: 850px; color: var(--muted); font-size: clamp(16px, 2.2vw, 21px); }
+    .cta { display:flex; gap:14px; flex-wrap:wrap; margin-top:24px; }
+    .btn {
+      display:inline-block; padding: 12px 18px; border-radius: 14px; text-decoration:none; color: var(--text);
+      border:1px solid var(--line); background: rgba(255,255,255,.06);
+    }
+    .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color:#08111f; font-weight:700; border:none; }
+    .grid { display:grid; grid-template-columns: repeat(12,1fr); gap:18px; margin-top: 22px; }
+    .card {
+      grid-column: span 4;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin-top: 0; font-size: 20px; }
+    .card p, .card li { color: var(--muted); }
+    .section { margin-top: 44px; }
+    .section h2 { font-size: 30px; margin-bottom: 8px; }
+    .section > p { color: var(--muted); margin-top: 0; }
+    .timeline, .list, .channels, .usecases {
+      display:grid; gap:16px;
+    }
+    .timeline .item, .channels .item, .usecases .item, .list .item {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+    }
+    .item strong { display:block; margin-bottom:6px; }
+    .pillbox { display:flex; flex-wrap:wrap; gap:10px; margin-top: 14px; }
+    .pill {
+      padding: 8px 12px; border-radius: 999px; font-size: 14px;
+      border:1px solid var(--line); color: var(--text); background: rgba(255,255,255,.05);
+    }
+    .two { display:grid; grid-template-columns: 1.2fr .8fr; gap:18px; }
+    .footer { margin-top: 46px; color: var(--muted); font-size: 14px; }
+    .kpi { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+    .kpi .box {
+      min-width: 160px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,.05); border:1px solid var(--line);
+    }
+    .kpi .num { font-size: 28px; font-weight: 800; }
+    code { background: rgba(255,255,255,.08); padding: 2px 7px; border-radius: 8px; }
+    ul { padding-left: 20px; }
+    .ok { color: var(--good); }
+    .warn { color: var(--warn); }
+    @media (max-width: 900px) {
+      .card { grid-column: span 12; }
+      .two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">⚡ OpenClaw 详情页 · 本地生成版</span>
+      <h1>OpenClaw 是什么？<br/>一个真正能“接入现实世界”的个人 AI 助手框架。</h1>
+      <p class="lead">
+        它不是单纯网页聊天壳子，而是一个以 <strong>Gateway + 会话路由 + 多渠道接入 + 工具/节点能力</strong> 为核心的自托管系统。
+        你可以把它理解成：把 AI 接进 WhatsApp、Telegram、Discord、飞书等消息入口，再把执行能力、文件、设备、自动化和长期记忆连起来。
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="https://docs.openclaw.ai/concepts/features" target="_blank" rel="noreferrer">看官方 Features</a>
+        <a class="btn" href="https://docs.openclaw.ai" target="_blank" rel="noreferrer">官方文档</a>
+        <a class="btn" href="https://github.com/openclaw/openclaw" target="_blank" rel="noreferrer">GitHub 仓库</a>
+      </div>
+      <div class="kpi">
+        <div class="box"><div class="num">1</div><div>统一 Gateway 管多消息渠道</div></div>
+        <div class="box"><div class="num">多</div><div>渠道接入：WA / TG / Discord / iMessage / 飞书等</div></div>
+        <div class="box"><div class="num">隔离</div><div>按聊天、群组、工作区进行会话路由</div></div>
+        <div class="box"><div class="num">扩展</div><div>技能、节点、工具、自动化都能接</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>为什么很多人会觉得它不只是“另一个 Agent”</h2>
+      <p>因为它解决的是 <em>AI 真正常驻、可触达、可执行、可记忆</em> 的那一层基础设施问题。</p>
+      <div class="grid">
+        <div class="card">
+          <h3>1. 统一入口</h3>
+          <p>同一个 Gateway 可以接管多个消息渠道，让你在最自然的地方直接跟 AI 对话，而不是强迫你打开某个专门网页。</p>
+        </div>
+        <div class="card">
+          <h3>2. 会话有边界</h3>
+          <p>私聊、群聊、不同发送者、不同工作区，都能按规则隔离。不会像一坨上下文泥巴一样混成灾难现场。</p>
+        </div>
+        <div class="card">
+          <h3>3. 真能动手</h3>
+          <p>文件读写、命令执行、网页抓取、技能扩展、节点设备命令，都能挂进去。不是只会嘴炮的赛博吉祥物。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section two">
+      <div>
+        <h2>核心架构，一句话讲透</h2>
+        <div class="timeline">
+          <div class="item"><strong>Gateway（网关）</strong>长期驻留，持有各类消息渠道连接，对外暴露统一控制平面。</div>
+          <div class="item"><strong>Agent Sessions（会话）</strong>按聊天来源、群组、用户或工作区做路由与隔离，负责上下文、记忆和工具调用。</div>
+          <div class="item"><strong>Clients / UI</strong>包括 Web 控制界面、CLI、桌面端等，用来观察状态、发送命令、查看事件。</div>
+          <div class="item"><strong>Nodes（节点）</strong>iOS、Android、macOS 或其他设备通过 WebSocket 连回 Gateway，暴露摄像头、位置、录屏、通知等能力。</div>
+        </div>
+      </div>
+      <div>
+        <h2>你能得到什么</h2>
+        <div class="list">
+          <div class="item"><strong class="ok">长期在线</strong>不必每次手动开网页叫醒它。</div>
+          <div class="item"><strong class="ok">多端联动</strong>消息、设备、文件和自动化打通。</div>
+          <div class="item"><strong class="ok">可控安全边界</strong>通过 allowlist、工作区、配对、权限和本地部署控制风险。</div>
+          <div class="item"><strong class="warn">也意味着责任</strong>它权限越大，配置越要认真，别把生产环境当游乐场。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>支持的能力版图</h2>
+      <p>下面这些是官方文档里明确体现出来的重点方向。</p>
+      <div class="channels">
+        <div class="item"><strong>消息渠道</strong>WhatsApp、Telegram、Discord、iMessage，以及通过插件扩展的 Mattermost 等。</div>
+        <div class="item"><strong>媒体输入输出</strong>图片、音频、文档可入可出；还能接语音转文字、TTS 等流程。</div>
+        <div class="item"><strong>多 Agent / 路由</strong>不同聊天、不同 workspace、不同 sender 可以被路由到隔离会话。</div>
+        <div class="item"><strong>移动节点</strong>iOS / Android 节点支持配对、聊天、语音、Canvas、摄像头、位置与设备命令。</div>
+        <div class="item"><strong>控制界面</strong>WebChat、CLI、桌面/菜单栏配套，方便运维和日常使用。</div>
+      </div>
+      <div class="pillbox">
+        <span class="pill">WebSocket Gateway</span>
+        <span class="pill">Session Routing</span>
+        <span class="pill">Media Attachments</span>
+        <span class="pill">Skills / Plugins</span>
+        <span class="pill">Heartbeat</span>
+        <span class="pill">Memory Files</span>
+        <span class="pill">Device Pairing</span>
+        <span class="pill">Automation</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>典型使用场景</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>个人助理</h3>
+          <p>直接在 WhatsApp/Telegram/飞书里让它处理信息、整理文件、查资料、发摘要、盯日程。</p>
+        </div>
+        <div class="card">
+          <h3>开发协作</h3>
+          <p>把代码代理、子任务、GitHub 操作、日志查看、PR 审查接进同一套消息入口和工作流。</p>
+        </div>
+        <div class="card">
+          <h3>自动化中台</h3>
+          <p>做定时任务、心跳检查、设备联动、文件转换、网页抓取、语音处理，都是它擅长的活。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section two">
+      <div>
+        <h2>OpenClaw 的强项</h2>
+        <ul>
+          <li>把“聊天入口”与“执行能力”整合到一起。</li>
+          <li>对 <code>workspace</code>、<code>AGENTS.md</code>、<code>SOUL.md</code>、记忆文件这类长期上下文机制支持得很自然。</li>
+          <li>适合自托管、长期运行、逐步长出个性的个人 AI 助手。</li>
+          <li>支持从保守配置慢慢长到复杂自动化，而不是一上来就全家桶核爆。</li>
+        </ul>
+      </div>
+      <div>
+        <h2>你需要注意的点</h2>
+        <ul>
+          <li>配置安全边界非常重要，比如来源 allowlist、权限、远程访问方式。</li>
+          <li>权限大了以后，日志、审计、隔离和密钥管理必须跟上。</li>
+          <li>如果要公开暴露服务，优先考虑 Tailscale / VPN / 受控网关，不要乱开口子。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>一句话总结</h2>
+      <div class="item" style="background:rgba(97,218,251,.08); border:1px solid rgba(97,218,251,.24); border-radius:22px; padding:24px;">
+        <strong style="font-size:20px;">OpenClaw = 把 AI 从“聊天窗口里的模型”升级成“能在真实消息渠道里长期在线、带工具、带记忆、能联设备的个人操作系统”。</strong>
+        <p style="margin-bottom:0; color:var(--text); opacity:.88;">说人话：这玩意儿不是玩具，调好了是真能干活的。</p>
+      </div>
+    </section>
+
+    <div class="footer">
+      页面内容根据本地 OpenClaw 文档整理生成，适合演示和快速介绍，不替代完整官方文档。
+    </div>
+  </div>
+</body>
+</html>
