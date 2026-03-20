@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenClaw 微信公众号自动化工作流总结</title>
+<style>
+body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f6f8fb;color:#1f2937;line-height:1.75}
+.wrap{max-width:900px;margin:0 auto;padding:48px 20px 80px}
+.card{background:#fff;border-radius:24px;padding:40px;box-shadow:0 16px 50px rgba(15,23,42,.08)}
+h1,h2,h3{color:#0f172a;line-height:1.3}
+h1{font-size:38px;margin-top:0} h2{font-size:28px;margin-top:42px} h3{font-size:22px;margin-top:28px}
+p,li{font-size:17px;color:#334155} ul{padding-left:24px}
+pre{background:#0f172a;color:#e2e8f0;padding:18px;border-radius:14px;overflow:auto} code{background:#eef2ff;padding:2px 6px;border-radius:6px;color:#4338ca}
+.hero{margin-bottom:24px;padding:20px 22px;border-radius:18px;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff}
+.hero p{color:#eaf6ff;margin:8px 0 0}
+.muted{color:#64748b;font-size:14px;margin-top:28px}
+</style>
+</head>
+<body><div class="wrap"><div class="hero"><strong>旺仔整理版</strong><p>把微信文章浓缩成一份更适合阅读和转发的网页总结。</p></div><article class="card"><h1>OpenClaw 微信公众号自动化工作流总结</h1><ul><li>原文标题：🦞 OpenClaw*微信公众号*全自动工作流 · 完整操作指南</li><ul><li>作者：AICEO</li><ul><li>公众号：AI之火</li><ul><li>发布时间：2026-03-18 14:15:41 UTC</li><ul><li>原文链接：https://mp.weixin.qq.com/s?__biz=MzU4MDgwOTkyNg==&amp;mid=2247484301&amp;idx=1&amp;sn=1d9926c3d6448ae39cc4055ff4494f29#rd</li></ul><h2>一句话总结</h2><p>这篇文章讲的是：即使是零基础用户，也可以通过 OpenClaw + 微信公众号开发接口，实现“让 AI 自动写公众号文章并发布到草稿箱”的整套流程。</p><h2>核心流程</h2><p>全文可以压缩成 6 个步骤：</p><p>1. 注册微信公众号</p><p>2. 获取 <code>AppID<code> 和 <code>AppSecret<code></p><p>3. 给服务器配置 API IP 白名单</p><p>4. 在 OpenClaw 中完成公众号配对</p><p>5. 给 OpenClaw 下达写作与发布指令</p><p>6. 去公众号草稿箱检查并最终发表</p><p>---</p><h2>详细摘要</h2><h3>1. 前置条件</h3><p>文章假设你已经具备以下基础条件：</p><ul><li>一台电脑</li><ul><li>一个微信账号</li><ul><li>一台已经买好并部署好的服务器（文中以腾讯云轻量服务器为例，也支持本地服务器）</li><ul><li>服务器上已经安装并运行 OpenClaw</li></ul><h3>2. 注册公众号</h3><p>如果还没有公众号，需要先去微信公众平台注册一个个人公众号。</p><p>重点是：</p><ul><li>使用邮箱注册</li><ul><li>类型选择“公众号” → “个人”</li><ul><li>名称、头像、简介这些后面都还能改</li></ul><p>作者的建议很直白：先跑通流程，细节后面再优化。</p><h3>3. 获取 AppID / AppSecret</h3><p>这是整个流程里最关键的一步之一。</p><p>文章的路径是：</p><ul><li>登录公众号后台</li><ul><li>进入“设置与开发”</li><ul><li>找“开发接口管理”</li><ul><li>跳转到“微信开发者平台”</li><ul><li>在公众号模块里查看 `AppID`</li><ul><li>点击启用生成 `AppSecret`</li></ul><p>这两个值相当于连接公众号 API 的凭据。</p><p>注意：</p><ul><li>`AppSecret` 很敏感，等同于密码</li><ul><li>演示或测试结束后，最好重置一次</li></ul><h3>4. 配置服务器 IP 白名单</h3><p>微信要求接口调用来源 IP 必须被授权，所以要把服务器公网 IP 加进白名单。</p><p>文中给的是腾讯云场景：</p><ul><li>去腾讯云控制台找到轻量应用服务器</li><ul><li>复制公网 IPv4 地址</li><ul><li>回到微信开发者平台，把 IP 填到 API IP 白名单里</li></ul><p>如果是本地服务器，则需要先查询本机出口公网 IP 再填写。</p><p>这一阶段本质上是在做一件事：告诉微信“允许这台服务器调用公众号接口”。</p><h3>5. 在 OpenClaw 里完成公众号配对</h3><p>完成上面的准备后，就可以让 OpenClaw 接管配置。</p><p>文章建议的做法是：</p><ul><li>登录 OpenClaw 后台</li><ul><li>在聊天框里一次性发送完整信息</li><ul><li>包括公众号名称、`AppID`、`AppSecret`</li></ul><p>示例指令结构：</p><pre><code>你现在帮我配置我的微信公众号API，
+我的公众号是“XXX”，
+AppID是XXX，
+AppSecret是XXX
+</code></pre><p>作者特别强调：</p><ul><li>**最好一次性发完整，不要拆成多条消息**</li><ul><li>发完后耐心等，不要反复催，因为 OpenClaw 会在后台处理</li></ul><p>如果返回“配置完成、API 测试正常、可发布到草稿箱”之类的信息，就说明配对成功。</p><h3>6. 让 OpenClaw 自动写文章并发到草稿箱</h3><p>配对成功后，就进入真正的使用阶段。</p><p>你可以直接下类似这样的命令：</p><pre><code>帮我写一篇公众号文章，
+主题是【你的主题】，
+自己创建标题，自己创建封面图，自己创建正文，
+写完后直接发布到我的草稿箱。
+</code></pre><p>文中提到两种发布模式：</p><ul><li>方案 A：自动发布到草稿箱（推荐）</li><ul><li>方案 B：手动发布</li></ul><p>推荐选择 A，让 OpenClaw 全自动处理。</p><h3>7. 最后人工确认发布</h3><p>虽然文章写作和入草稿箱可以自动化，但正式发布前，还是建议去公众号后台看一眼：</p><ul><li>进入“内容管理” → “草稿箱”</li><ul><li>检查标题、正文、封面图是否满意</li><ul><li>确认没问题后，再点击发表</li></ul><p>这个流程其实很合理：AI 做重活，人做最终审核。</p><p>---</p><h2>文章强调的几个实用点</h2><h3>A. 你描述结果，OpenClaw 执行过程</h3><p>这是整篇文章最重要的理念。</p><p>作者的意思不是让你学会公众号开发，而是：</p><ul><li>你只要说清楚你想要什么结果</li><ul><li>中间的接口配置、写作、草稿发布等执行过程交给 OpenClaw</li></ul><p>说白了：你负责下命令，它负责干活。</p><h3>B. 支持更多日常写作场景</h3><p>除了原创文章，文中还提到一些进阶玩法：</p><ul><li>改写别人的文章并重新发草稿箱</li><ul><li>按指定观点、风格、字数去写</li><ul><li>让它自动配图、自动排版、自动入稿</li></ul><p>所以这不是一个“只能发一次”的 demo，而是一个持续可复用的工作流。</p><h3>C. 封面图能力取决于模型</h3><p>文章也提醒了一个现实问题：</p><ul><li>如果用的是不擅长生图的模型（例如文中提到的 DeepSeek）</li><ul><li>那么封面图效果可能一般，甚至只能搜索图，不能真正生成图</li></ul><p>因此如果你想把封面图也自动化做好，最好接入更强的图像模型。</p><p>---</p><h2>常见问题</h2><p>文章列了一些常见坑，核心可以归纳为：</p><ul><li>邮箱注册失败 → 换邮箱</li><ul><li>验证码收不到 → 看垃圾邮件</li><ul><li>OpenClaw 很久不回 → 先等，它可能在后台执行</li><ul><li>配置失败 → 检查 `AppID` / `AppSecret` 是否复制完整</li><ul><li>封面图失败 → 模型能力不足</li><ul><li>小红书自动发布不可用 → 平台限制自动化发帖</li></ul><p>---</p><h2>我的判断</h2><p>这篇文章本质上不是在讲“公众号运营”，而是在讲一个非常典型的 AI 工作流自动化案例：</p><p>&gt; 用 OpenClaw 充当你的执行型助理，把微信公众号发文这件事，拆成一次配置 + 后续自然语言调用。</p><p>它的价值主要有 3 点：</p><p>1. 把复杂配置前置一次完成</p><p>   - 前面麻烦，后面省心</p><p>2. 把“写作 + 排版 + 发草稿”串成一条龙</p><p>   - 减少手工切换多个系统</p><p>3. 适合不会写代码的人上手</p><p>   - 文章路线是明显偏“小白友好”的</p><p>但它也有明显边界：</p><ul><li>公众号接口权限和配置仍然需要人工提供</li><ul><li>敏感密钥（AppSecret）管理必须谨慎</li><ul><li>发布前最好人工复核，不要完全放飞</li><ul><li>配图效果受模型能力影响很大</li></ul><p>---</p><h2>最终结论</h2><p>如果你想把“公众号写作与入草稿箱”做成一个长期可复用的自动化流程，这篇文章给的是一套很接地气、很适合新手的落地方案。</p><p>最适合的人群：</p><ul><li>想让 AI 帮自己写公众号的人</li><ul><li>不想手动折腾后台排版与上传的人</li><ul><li>已经部署了 OpenClaw，想扩展到内容生产场景的人</li></ul><p>最值得记住的一句核心逻辑：</p><p>&gt; 一次配置，后面长期复用；你说目标，OpenClaw 去执行。</p><p class="muted">本页由 Markdown 自动转换生成。</p></article></div></body></html>
