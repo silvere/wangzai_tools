@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenClaw · 个人 AI 助手操作系统</title>
+  <meta name="description" content="OpenClaw 介绍页面：能力、Skills、安全、常用命令与使用场景。" />
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-soft: #0f1d31;
+      --card: rgba(255,255,255,.06);
+      --card-strong: rgba(255,255,255,.09);
+      --line: rgba(255,255,255,.12);
+      --text: #ecf4ff;
+      --muted: #9db3ce;
+      --accent: #6ee7ff;
+      --accent-2: #7c5cff;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --danger: #fb7185;
+      --shadow: 0 24px 70px rgba(0,0,0,.35);
+      --radius: 24px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(110,231,255,.16), transparent 28%),
+        radial-gradient(circle at 90% 0%, rgba(124,92,255,.18), transparent 26%),
+        linear-gradient(180deg, #06101d 0%, #0a1424 28%, #0d1626 100%);
+      line-height: 1.7;
+    }
+    a { color: inherit; }
+    .wrap { max-width: 1220px; margin: 0 auto; padding: 24px 20px 80px; }
+    .nav {
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(14px);
+      background: rgba(7,17,31,.55);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .nav-inner {
+      max-width: 1220px; margin: 0 auto; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand { font-weight: 800; letter-spacing: .2px; display:flex; align-items:center; gap:10px; }
+    .brand-badge {
+      width: 34px; height: 34px; border-radius: 12px;
+      display:grid; place-items:center; font-size:18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#09111a;
+      font-weight:800;
+      box-shadow: var(--shadow);
+    }
+    .nav-links { display:flex; flex-wrap:wrap; gap: 10px; }
+    .nav-links a {
+      text-decoration:none; color: var(--muted); font-size: 14px;
+      padding: 8px 12px; border-radius: 999px; border:1px solid transparent;
+    }
+    .nav-links a:hover { color: var(--text); border-color: var(--line); background: rgba(255,255,255,.05); }
+    .hero {
+      display:grid; grid-template-columns: 1.2fr .8fr; gap: 22px;
+      padding-top: 34px;
+      align-items: stretch;
+    }
+    .hero-card, .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero-main { padding: 34px; min-height: 100%; }
+    .hero-side { padding: 24px; }
+    .eyebrow {
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
+      color: var(--accent); background: rgba(110,231,255,.12); border:1px solid rgba(110,231,255,.25);
+    }
+    h1 {
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: 1.04; margin: 18px 0 16px;
+      letter-spacing: -0.03em;
+    }
+    .lead { font-size: 19px; color: var(--muted); max-width: 780px; }
+    .cta { display:flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+    .btn {
+      border: 1px solid var(--line); border-radius: 14px;
+      padding: 12px 18px; text-decoration: none; color: var(--text);
+      background: rgba(255,255,255,.05); transition: .2s ease;
+      display:inline-flex; align-items:center; gap:10px; font-weight:600;
+    }
+    .btn:hover { transform: translateY(-2px); background: rgba(255,255,255,.08); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#07111f; border:none;
+    }
+    .kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-top: 26px; }
+    .kpi {
+      background: rgba(255,255,255,.04); border:1px solid var(--line);
+      border-radius: 18px; padding: 18px;
+    }
+    .kpi strong { display:block; font-size: 28px; margin-bottom: 6px; }
+    .side-list { display:grid; gap: 14px; margin-top: 8px; }
+    .side-item {
+      border:1px solid var(--line); border-radius: 18px; padding: 16px;
+      background: rgba(255,255,255,.04);
+    }
+    .side-item strong { display:block; margin-bottom: 6px; }
+    .section { margin-top: 28px; }
+    .section-header { margin-bottom: 14px; }
+    .section h2 { font-size: 34px; margin: 0 0 8px; }
+    .section p.sub { margin:0; color: var(--muted); }
+    .grid-3 { display:grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+    .grid-2 { display:grid; grid-template-columns: repeat(2,1fr); gap: 18px; }
+    .card { padding: 24px; }
+    .card h3 { margin-top:0; margin-bottom: 10px; font-size: 22px; }
+    .card p, .card li { color: var(--muted); }
+    .pill-row { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .pill {
+      padding: 8px 12px; border-radius: 999px;
+      background: rgba(255,255,255,.05); border:1px solid var(--line); color: var(--text);
+      font-size: 14px;
+    }
+    .accordion { display:grid; gap: 12px; }
+    .acc {
+      border:1px solid var(--line); border-radius: 18px; overflow:hidden; background: rgba(255,255,255,.04);
+    }
+    .acc button {
+      width:100%; background:none; color:var(--text); border:none; cursor:pointer;
+      text-align:left; padding: 18px 20px; font-size: 16px; font-weight: 700;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .acc button span.icon { color: var(--accent); transition: transform .2s ease; }
+    .acc .body {
+      max-height: 0; overflow: hidden; transition: max-height .25s ease;
+      border-top:1px solid transparent;
+    }
+    .acc.open .body { border-top-color: var(--line); }
+    .acc.open button span.icon { transform: rotate(45deg); }
+    .acc .body-inner { padding: 0 20px 18px; color: var(--muted); }
+    .command {
+      background: #08111d; border:1px solid rgba(110,231,255,.18); border-radius: 16px;
+      padding: 16px; font-family: var(--mono); font-size: 14px; overflow:auto; color:#dffbff;
+    }
+    .tabs { margin-top: 10px; }
+    .tab-buttons { display:flex; flex-wrap:wrap; gap: 10px; margin-bottom: 14px; }
+    .tab-buttons button {
+      border:1px solid var(--line); background: rgba(255,255,255,.04); color: var(--muted);
+      padding: 10px 14px; border-radius: 999px; cursor:pointer; font-weight: 700;
+    }
+    .tab-buttons button.active { color:#07111f; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border:none; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .timeline { display:grid; gap: 12px; }
+    .timeline-item {
+      padding: 18px; border-radius: 18px; border:1px solid var(--line); background: rgba(255,255,255,.04);
+    }
+    .timeline-item strong { display:block; margin-bottom: 6px; }
+    .checklist { display:grid; gap: 10px; }
+    .check {
+      display:flex; align-items:flex-start; gap: 10px;
+      padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.04); border:1px solid var(--line);
+    }
+    .check .mark { font-weight:900; }
+    .mark.good { color: var(--good); }
+    .mark.warn { color: var(--warn); }
+    .mark.danger { color: var(--danger); }
+    .footer {
+      margin-top: 34px; padding: 24px; border-radius: 22px;
+      background: rgba(255,255,255,.04); border:1px solid var(--line); color: var(--muted);
+    }
+    .top-btn {
+      position: fixed; right: 20px; bottom: 20px; z-index: 30;
+      width: 48px; height: 48px; border-radius: 16px;
+      border:1px solid var(--line); background: rgba(10,20,36,.85); color: var(--text); cursor:pointer;
+      backdrop-filter: blur(10px); box-shadow: var(--shadow); display:none;
+    }
+    .top-btn.show { display:block; }
+    .small { font-size: 14px; color: var(--muted); }
+    @media (max-width: 1024px) {
+      .hero, .grid-3, .grid-2, .kpis { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-badge">🦞</div>
+        <div>OpenClaw 介绍页</div>
+      </div>
+      <div class="nav-links">
+        <a href="#overview">概览</a>
+        <a href="#skills">Skills</a>
+        <a href="#security">安全</a>
+        <a href="#commands">常用命令</a>
+        <a href="#workflow">工作方式</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="hero" id="overview">
+      <div class="hero-card hero-main">
+        <div class="eyebrow">⚡ Personal AI Assistant · Agent OS</div>
+        <h1>OpenClaw：<br>不是聊天玩具，<br>而是能真正替你干活的 AI 助手系统。</h1>
+        <p class="lead">
+          OpenClaw 把 AI 从“网页对话框”推进到“长期在线、能接消息渠道、能调工具、能存记忆、能做自动化、还能操作真实工作流”的层级。你可以把它理解为：<strong>一个可自托管的个人 AI 助手操作系统</strong>。
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="#commands">看常用命令</a>
+          <a class="btn" href="#skills">看 Skills 机制</a>
+          <a class="btn" href="#security">看安全边界</a>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><strong>多渠道</strong><span>接入飞书、Telegram、Discord、WhatsApp 等聊天入口</span></div>
+          <div class="kpi"><strong>多工具</strong><span>文件、网页、命令行、设备、子代理、自动化都能挂进去</span></div>
+          <div class="kpi"><strong>长期记忆</strong><span>支持 workspace、日记式记忆与长期记忆整理</span></div>
+          <div class="kpi"><strong>真执行</strong><span>不是只会回答，而是会完成任务、产出文件、调用系统</span></div>
+        </div>
+      </div>
+      <div class="hero-card hero-side">
+        <h3 style="margin-top:0">为什么最近它火得快</h3>
+        <div class="side-list">
+          <div class="side-item"><strong>1. 聊天入口自然</strong><span class="small">直接在你平常用的 IM 里找 AI，不逼你换工作习惯。</span></div>
+          <div class="side-item"><strong>2. 工作流能力强</strong><span class="small">可以读文件、写文档、跑命令、接技能、做自动化。</span></div>
+          <div class="side-item"><strong>3. 适合长期进化</strong><span class="small">persona、memory、skills、heartbeat、子代理都能一起长。</span></div>
+          <div class="side-item"><strong>4. 自托管可控</strong><span class="small">你的上下文和配置在你自己机器上，不是全扔给闭源平台。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>OpenClaw 到底是什么</h2>
+        <p class="sub">一句话说透：把模型、工具、消息渠道、记忆和自动化编成同一套系统。</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>消息网关</h3>
+          <p>OpenClaw 有自己的 Gateway，专门负责连接飞书、Telegram、Discord、WhatsApp、iMessage 等渠道。你不是在某个网页里“打开 AI”，而是在真实消息环境里长期跟它对话。</p>
+        </div>
+        <div class="card">
+          <h3>Agent 会话</h3>
+          <p>它按聊天对象、群组、工作区路由不同会话。私聊和群聊、主会话和子会话可以隔离，避免上下文搅成一锅粥。</p>
+        </div>
+        <div class="card">
+          <h3>工具执行层</h3>
+          <p>它不止回答，还能调用 shell、读写文件、抓网页、生成页面、转音频、操作设备、跑 ACP / 子代理等，属于“会动手”的 AI。</p>
+        </div>
+      </div>
+      <div class="pill-row">
+        <span class="pill">Messaging Gateway</span>
+        <span class="pill">Workspace Memory</span>
+        <span class="pill">Skills</span>
+        <span class="pill">Cron / Heartbeat</span>
+        <span class="pill">Subagents</span>
+        <span class="pill">Tool Invocation</span>
+        <span class="pill">Device Nodes</span>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="section-header">
+        <h2>它怎么工作</h2>
+        <p class="sub">不是“你问一句它答一句”，而是“接收任务 → 理解上下文 → 调工具 → 产出结果”。</p>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item"><strong>① 接收输入</strong>来自飞书消息、群聊、附件、图片、语音、网页链接、命令触发器。</div>
+        <div class="timeline-item"><strong>② 注入上下文</strong>读取 workspace 指令、persona、用户偏好、近期记忆、长期记忆、今天的事项。</div>
+        <div class="timeline-item"><strong>③ 任务拆解</strong>判断是否要直接回答、是否要读文件、是否要开技能、是否要起子代理、是否要跑系统命令。</div>
+        <div class="timeline-item"><strong>④ 调工具执行</strong>比如抓网页、转 Markdown、做页面、跑 GitHub、转语音、操作 Feishu 文档、调用本地程序。</div>
+        <div class="timeline-item"><strong>⑤ 交付结果</strong>以文本、附件、页面、音频、GitHub Pages 链接、飞书文档等形式回传。</div>
+      </div>
+    </section>
+
+    <section class="section" id="skills">
+      <div class="section-header">
+        <h2>Skills：OpenClaw 最关键的扩展机制</h2>
+        <p class="sub">Skill 不是插件市场噱头，而是把“某类任务怎么做”固化成可复用技能，让 AI 少走弯路。</p>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Skills 能做什么</h3>
+          <ul>
+            <li>定义某一类任务的标准流程</li>
+            <li>告诉 Agent 什么时候该用某个能力</li>
+            <li>约束怎么读写、怎么调用脚本、怎么处理失败</li>
+            <li>把经验变成可复用的能力，而不是每次临场发挥</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>为什么它重要</h3>
+          <ul>
+            <li>降低随机性：不是每次都瞎猜下一步</li>
+            <li>提升成功率：同类任务路径更稳定</li>
+            <li>方便扩展：新增一个 Skill，就像给系统长一个新器官</li>
+            <li>便于沉淀经验：踩过的坑能写进技能，不用重复交学费</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab-buttons" id="skill-tabs">
+          <button class="active" data-tab="tab-1">Skill 结构</button>
+          <button data-tab="tab-2">典型 Skill</button>
+          <button data-tab="tab-3">使用时机</button>
+        </div>
+        <div class="tab-panel active" id="tab-1">
+          <div class="card">
+            <h3>一个 Skill 通常包含什么</h3>
+            <ul>
+              <li><strong>SKILL.md</strong>：说明用途、触发条件、执行方式</li>
+              <li><strong>references/</strong>：补充参考资料</li>
+              <li><strong>scripts/</strong>：实际可调用的脚本</li>
+              <li><strong>EXTEND.md / 配置</strong>：用户偏好或默认参数</li>
+            </ul>
+            <div class="command">skills/
+└── some-skill/
+    ├── SKILL.md
+    ├── scripts/
+    └── references/</div>
+          </div>
+        </div>
+        <div class="tab-panel" id="tab-2">
+          <div class="card">
+            <h3>常见高价值 Skill 类型</h3>
+            <ul>
+              <li>网页抓取 / URL 转 Markdown</li>
+              <li>文章翻译 / Markdown 转 HTML</li>
+              <li>GitHub / Issues / PR 操作</li>
+              <li>本地 Whisper 转写</li>
+              <li>TTS 语音生成</li>
+              <li>图像生成 / 封面图 / 幻灯片 / 信息图</li>
+              <li>YouTube / WeChat / Feishu / Drive 系列能力</li>
+            </ul>
+          </div>
+        </div>
+        <div class="tab-panel" id="tab-3">
+          <div class="card">
+            <h3>什么时候该开 Skill</h3>
+            <ul>
+              <li>任务有明显专业流程时</li>
+              <li>有固定工具链和文件规范时</li>
+              <li>失败代价较高，需要减少随机性时</li>
+              <li>同一类事你会反复做时</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" style="margin-top:16px;">
+        <div class="acc open">
+          <button><span>Skill 的核心价值，不是“多”，而是“准”</span><span class="icon">＋</span></button>
+          <div class="body" style="max-height:220px;"><div class="body-inner">装太多没经过筛选的 Skill，只会让系统越来越乱。真正有价值的是：高频、稳定、对你工作流有帮助的那几类。Skill 选型本质上是工具治理，不是收集癖。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="security">
+      <div class="section-header">
+        <h2>安全：OpenClaw 真正的门槛，不是安装，而是边界</h2>
+        <p class="sub">能力越大，越不能拿“能跑起来”当胜利。你真正要管的是权限、凭据、外发、网络暴露、自动化范围。</p>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>核心安全原则</h3>
+          <div class="checklist">
+            <div class="check"><span class="mark good">✓</span><div><strong>最小权限</strong><br><span class="small">只开需要的工具、渠道和插件，不要一上来全开。</span></div></div>
+            <div class="check"><span class="mark good">✓</span><div><strong>凭据隔离</strong><br><span class="small">Token / Cookie / Secret 放私有目录，别塞进公开 workspace 文档里。</span></div></div>
+            <div class="check"><span class="mark warn">!</span><div><strong>外发前确认</strong><br><span class="small">邮件、社媒、共享链接、公网暴露都要把风险想清楚。</span></div></div>
+            <div class="check"><span class="mark danger">✕</span><div><strong>别把生产环境当试验田</strong><br><span class="small">不熟的技能、脚本、自动化别直接在关键机器上乱试。</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>最常见的风险点</h3>
+          <ul>
+            <li>把高敏感 token / cookies 发进聊天或写进公开文件</li>
+            <li>为了图快，把本地服务直接暴露到公网</li>
+            <li>默认允许所有联系人/群聊调用高权限工具</li>
+            <li>没审过第三方 Skill 就直接装</li>
+            <li>让 Agent 在没有审计和限制的情况下长期跑自动化</li>
+          </ul>
+        </div>
+      </div>
+      <div class="accordion" style="margin-top:16px;">
+        <div class="acc">
+          <button><span>安全建议：给新手的最小可用配置</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">
+            <ul>
+              <li>先只接一个私聊渠道</li>
+              <li>把 exec / 浏览器 / 外发能力分阶段开启</li>
+              <li>优先用本地文件、附件、GitHub Pages 等受控方式交付</li>
+              <li>高敏感凭据单独存放，权限 600</li>
+              <li>定期跑状态检查和审计</li>
+            </ul>
+          </div></div>
+        </div>
+        <div class="acc">
+          <button><span>为什么很多人会低估安全问题</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">因为 demo 看起来都很丝滑：一句话安装、几分钟接通、马上能用。但真正让你后悔的，通常不是“功能太少”，而是“权限开太大、凭据管太松、自动化跑太野”。OpenClaw 最好玩的地方，往往也是最该谨慎的地方。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="commands">
+      <div class="section-header">
+        <h2>常用命令：给新手一份真正有用的命令表</h2>
+        <p class="sub">不是把 help 全贴一遍，而是把最常用、最容易出事、最值得记的命令讲清楚。</p>
+      </div>
+      <div class="accordion">
+        <div class="acc open">
+          <button><span>状态与诊断</span><span class="icon">＋</span></button>
+          <div class="body" style="max-height:500px;"><div class="body-inner">
+            <p>先看系统是不是活着、渠道是不是通、会话有没有问题：</p>
+            <div class="command">openclaw status
+openclaw status --all
+openclaw status --deep</div>
+            <p class="small"><strong>用途：</strong>检查本地状态、渠道、会话、队列、故障线索。<br><strong>什么时候用：</strong>出故障第一反应就该跑这个。</p>
+          </div></div>
+        </div>
+        <div class="acc">
+          <button><span>Gateway 管理</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">
+            <div class="command">openclaw gateway status
+openclaw gateway start
+openclaw gateway stop
+openclaw gateway restart</div>
+            <p class="small"><strong>用途：</strong>控制消息网关服务。<br><strong>注意：</strong>改完关键配置后，通常要 restart 才会真正生效。</p>
+          </div></div>
+        </div>
+        <div class="acc">
+          <button><span>配置项修改</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">
+            <div class="command">openclaw config get channels.feishu.streaming
+openclaw config set channels.feishu.streaming true
+openclaw config set tools.profile "coding"</div>
+            <p class="small"><strong>用途：</strong>查询或修改 OpenClaw 配置。<br><strong>注意：</strong>很多配置是“写入成功 ≠ 立即生效”，要记得配合 gateway restart。</p>
+          </div></div>
+        </div>
+        <div class="acc">
+          <button><span>Channels 登录 / 配对</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">
+            <div class="command">openclaw channels login</div>
+            <p class="small"><strong>用途：</strong>登录或重新建立消息渠道连接（如 WhatsApp Web）。</p>
+          </div></div>
+        </div>
+        <div class="acc">
+          <button><span>日志与实时排障</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">
+            <div class="command">openclaw logs --follow</div>
+            <p class="small"><strong>用途：</strong>盯实时日志。<br><strong>适合：</strong>刚改完配置、刚重启、某个渠道就是不回消息的时候。</p>
+          </div></div>
+        </div>
+        <div class="acc">
+          <button><span>Gateway Reachability / Probe</span><span class="icon">＋</span></button>
+          <div class="body"><div class="body-inner">
+            <div class="command">openclaw gateway probe</div>
+            <p class="small"><strong>用途：</strong>检查 reachability 和连接层面的问题。适合“服务看着活着，但就是连不上”的情况。</p>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>适合哪些人</h2>
+        <p class="sub">如果你只是想问答，普通聊天机器人够了。OpenClaw 更适合这些人。</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>个人效率玩家</h3>
+          <p>想把 AI 变成长期在线助理，处理信息、文档、网页、日程、总结、内容生产。</p>
+        </div>
+        <div class="card">
+          <h3>开发者 / 技术团队</h3>
+          <p>想把 AI 接进 GitHub、终端、代码代理、PR、Issue、脚本、自动化工作流。</p>
+        </div>
+        <div class="card">
+          <h3>内容与运营人员</h3>
+          <p>想让 AI 接飞书、公众号、网页、图像、翻译、Markdown / HTML 产出链路。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>一句话收尾</h2>
+        <p class="sub">如果你要把它介绍给一个第一次接触的人，可以直接用这句话。</p>
+      </div>
+      <div class="card" style="background: linear-gradient(135deg, rgba(110,231,255,.12), rgba(124,92,255,.12));">
+        <h3 style="font-size:28px; margin-bottom:8px;">OpenClaw = 把 AI 从“会聊天”升级成“能长期在线、接入真实消息渠道、会调用工具并完成交付”的个人 AI 助手系统。</h3>
+        <p>不是玩具，也不是单纯的网页套壳。它更像一个会持续长出能力、能跟工作流真正打通的 Agent OS。</p>
+      </div>
+    </section>
+
+    <div class="footer">
+      <strong>说明：</strong>本页是面向介绍 / 展示 / 入门说明设计的单文件 HTML。适合发源码、部署 GitHub Pages、给朋友看、或者继续二改成产品落地页。
+    </div>
+  </div>
+
+  <button class="top-btn" id="topBtn" aria-label="Back to top">↑</button>
+
+  <script>
+    document.querySelectorAll('.acc').forEach(acc => {
+      const btn = acc.querySelector('button');
+      const body = acc.querySelector('.body');
+      const setState = (open) => {
+        acc.classList.toggle('open', open);
+        body.style.maxHeight = open ? body.scrollHeight + 'px' : '0px';
+      };
+      setState(acc.classList.contains('open'));
+      btn.addEventListener('click', () => setState(!acc.classList.contains('open')));
+      window.addEventListener('resize', () => {
+        if (acc.classList.contains('open')) body.style.maxHeight = body.scrollHeight + 'px';
+      });
+    });
+
+    const tabButtons = document.querySelectorAll('[data-tab]');
+    const panels = document.querySelectorAll('.tab-panel');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    const topBtn = document.getElementById('topBtn');
+    window.addEventListener('scroll', () => {
+      topBtn.classList.toggle('show', window.scrollY > 500);
+    });
+    topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  </script>
+</body>
+</html>
