@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFTDataset 类图解：SFT 的核心秘密就是这一行 mask</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --card2:#334155; --txt:#e2e8f0; --muted:#94a3b8;
+    --accent:#38bdf8; --green:#4ade80; --red:#f87171; --yellow:#facc15; --purple:#a78bfa;
+    --orange:#fb923c; --border:#475569;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;line-height:1.75}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 120px}
+  h1{font-size:32px;line-height:1.3;margin:0 0 8px;background:linear-gradient(90deg,#38bdf8,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:22px;margin:48px 0 16px;padding-left:12px;border-left:4px solid var(--accent)}
+  h3{font-size:18px;margin:28px 0 12px;color:var(--accent)}
+  .sub{color:var(--muted);font-size:15px;margin-bottom:32px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin:16px 0}
+  .kgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.kgrid{grid-template-columns:1fr}}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;margin-right:6px;font-weight:600}
+  .tag-ct{background:#1e3a8a;color:#93c5fd}
+  .tag-sft{background:#4c1d95;color:#c4b5fd}
+  .tag-good{background:#14532d;color:#86efac}
+  .tag-bad{background:#7f1d1d;color:#fca5a5}
+  code{background:#0b1220;border:1px solid var(--border);padding:1px 6px;border-radius:5px;font-family:JetBrains Mono,Consolas,monospace;font-size:13px;color:#fcd34d}
+  pre{background:#0b1220;border:1px solid var(--border);padding:14px 18px;border-radius:10px;overflow-x:auto;font-family:JetBrains Mono,Consolas,monospace;font-size:13px;line-height:1.7}
+  .hl{background:linear-gradient(transparent 60%,rgba(56,189,248,.25) 0%);padding:0 2px;border-radius:3px}
+  .muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:10px 14px;text-align:left}
+  th{background:var(--card2);color:var(--accent)}
+  tr:nth-child(even) td{background:rgba(30,41,59,.5)}
+
+  /* ====== 核心图解：token 序列颜色条 ====== */
+  .tokenbar{display:flex;flex-wrap:wrap;gap:2px;margin:14px 0;font-family:JetBrains Mono,Consolas,monospace;font-size:13px}
+  .tok{padding:6px 8px;border-radius:5px;min-width:28px;text-align:center;position:relative;border:1px solid transparent}
+  .tok.system{background:#1e3a8a;color:#bfdbfe;border-color:#3b82f6}
+  .tok.user{background:#14532d;color:#bbf7d0;border-color:#22c55e}
+  .tok.asst{background:#4c1d95;color:#ddd6fe;border-color:#a855f7}
+  .tok.assist{background:#4c1d95;color:#ddd6fe;border-color:#a855f7}
+  .tok.tmpl{background:#3f3f46;color:#d4d4d8;border-color:#52525b}
+  .tok.pad{background:#18181b;color:#71717a;border-color:#3f3f46}
+  .tok.mask::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(248,113,113,.35) 3px,rgba(248,113,113,.35) 6px);border-radius:5px}
+  .tok .idx{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted)}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 20px;font-size:13px}
+  .legend .chip{display:inline-flex;align-items:center;gap:6px}
+  .legend .box{width:14px;height:14px;border-radius:3px}
+
+  /* ====== 流程步骤 ====== */
+  .step{display:grid;grid-template-columns:56px 1fr;gap:16px;margin:20px 0}
+  .step .no{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#0f172a;flex-shrink:0}
+  .step .body{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+  .step .body h4{margin:0 0 6px;font-size:16px;color:var(--accent)}
+  .step .body p{margin:6px 0;font-size:14px}
+
+  /* ====== 对比卡片 ====== */
+  .vs{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin:20px 0}
+  @media(max-width:760px){.vs{grid-template-columns:1fr}}
+  .vs .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+  .vs .panel h4{margin:0 0 10px;font-size:15px}
+  .vs .vs-label{align-self:center;font-size:28px;font-weight:900;color:var(--muted);text-align:center}
+  @media(max-width:760px){.vs .vs-label{padding:4px 0}}
+  .arr{text-align:center;font-size:22px;margin:6px 0;color:var(--accent)}
+
+  /* ====== 按钮 ====== */
+  .btn{display:inline-block;padding:8px 16px;background:var(--accent);color:#0f172a;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;border:none;margin:4px 4px 4px 0;transition:all .15s}
+  .btn:hover{filter:brightness(1.1)}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+
+  /* ====== FAQ ====== */
+  details{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin:8px 0}
+  summary{cursor:pointer;font-weight:600;padding:2px 0}
+  details[open]{margin-bottom:12px}
+
+  .file-ref{display:inline-block;background:rgba(56,189,248,.12);color:#7dd3fc;border:1px solid rgba(56,189,248,.3);border-radius:6px;padding:2px 8px;font-family:JetBrains Mono,Consolas,monospace;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>SFTDataset 类全图解</h1>
+  <div class="sub">SFT（有监督微调）和 CT（继续预训练）唯一的核心差别，其实就是 <code>labels[:n_pre].fill_(-100)</code> 这一行。</div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="tag tag-sft">class SFTDataset(Dataset)</span>
+      <span class="file-ref">common/sft_data.py L28-L92</span>
+      <span class="muted">被 Lab3（全参 SFT）和 Lab4（LoRA SFT）共用，保证两者数据处理一致、对比公平</span>
+    </div>
+    <p style="margin:12px 0 0">一句话职责：<span class="hl">把一条 JSON 对话（messages 列表）编码成模型可训练的 input_ids / labels，并且「只对 assistant 的回答部分算 loss，system/user 部分全部用 -100 遮蔽掉」。</span></p>
+  </div>
+
+  <!-- ============================================================== -->
+  <h2>一、CT vs SFT：一张图看懂为什么要 mask</h2>
+
+  <div class="vs">
+    <div class="panel">
+      <h4><span class="tag tag-ct">CT（继续预训练）</span>labels = input_ids 原样</h4>
+      <p class="muted" style="font-size:13px">整条序列每一个 token 都要预测"下一个 token"，不分角色。</p>
+      <div class="legend">
+        <span class="chip"><div class="box" style="background:#1e3a8a"></div>System prompt</span>
+        <span class="chip"><div class="box" style="background:#14532d"></div>User 提问</span>
+        <span class="chip"><div class="box" style="background:#4c1d95"></div>Assistant 回答</span>
+      </div>
+      <div class="tokenbar" id="ct-bar"></div>
+      <p style="margin-top:8px">input_ids：<b>每个位置都参与 loss 计算</b>。模型甚至会被训练去「学习怎么生成用户的提问」——浪费容量。</p>
+    </div>
+    <div class="vs-label">VS</div>
+    <div class="panel">
+      <h4><span class="tag tag-sft">SFT（有监督微调）</span>prompt 部分填 -100</h4>
+      <p class="muted" style="font-size:13px">只让 assistant 段算 loss，前半段完全不参与梯度。</p>
+      <div class="legend">
+        <span class="chip"><div class="box" style="background:repeating-linear-gradient(45deg,#1e3a8a,#1e3a8a 3px,rgba(248,113,113,.45) 3px,rgba(248,113,113,.45) 6px);border:1px solid #71717a"></div>Mask (-100，不算 loss)</span>
+        <span class="chip"><div class="box" style="background:#4c1d95"></div>训练目标</span>
+      </div>
+      <div class="tokenbar" id="sft-bar"></div>
+      <p style="margin-top:8px">labels：<b>只有 assistant 回答段是真实 token id，前面全是 -100</b>。<code>F.cross_entropy</code> 遇到 -100 自动跳过。<span class="hl">模型容量 100% 花在学习「看到问题后该怎么回答」</span>。</p>
+    </div>
+  </div>
+
+  <p><span class="tag tag-good">IGNORE_INDEX = -100</span> 这是 PyTorch <code>nn.CrossEntropyLoss</code> 的默认「忽略标签」——任何 target 位置等于 -100 的，那一项的 loss 直接取 0，也不反传梯度。不用自己写 mask，框架已经帮你做了。</p>
+
+  <!-- ============================================================== -->
+  <h2>二、核心方法 <code>_encode()</code>：6 步走流程</h2>
+
+  <p class="muted">输入：一条 <code>messages</code> 列表（JSONL 一行，典型是 3 轮：system / user / assistant）。<br>输出：<code>{"input_ids": [...], "labels": [...]}</code> 或 None（如果被截断没剩下回答）。</p>
+
+  <div class="step">
+    <div class="no">1</div>
+    <div class="body">
+      <h4>拼「完整对话」→ 字符串 <code>full</code></h4>
+      <p><code>full = tok.apply_chat_template(messages, tokenize=False)</code></p>
+      <p>用 tokenizer 自带的 chat template（千问 2.5 有自己的 &lt;im_start&gt;/&lt;im_end&gt; 格式），把 messages 数组拼成一大段带角色标记的文本。<b>这一段包含了完整的 system + user + assistant 回答。</b></p>
+      <pre style="font-size:12px"><span style="color:#93c5fd">&lt;im_start&gt;system
+你是一个能干的助手&lt;im_end&gt;
+&lt;im_start&gt;user
+解释牛顿三定律&lt;im_end&gt;
+&lt;im_start&gt;assistant
+牛顿第一定律：惯性定律...&lt;im_end&gt;</span></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="no">2</div>
+    <div class="body">
+      <h4>拼「只有 prompt 前缀」→ 字符串 <code>prefix</code></h4>
+      <p><code>prefix = tok.apply_chat_template(messages[:-1], tokenize=False, add_generation_prompt=True)</code></p>
+      <p>这里有个<span class="hl">极其精妙的小技巧</span>：<code>messages[:-1]</code> 表示「去掉最后一条（assistant 回答）」，只保留 system + user。然后加 <code>add_generation_prompt=True</code> 就是在末尾再插一个 <code>&lt;im_start&gt;assistant\n</code>——<b>这正好是推理时模型开始生成之前你喂给模型的前缀，长度就是「prompt 占了多少 token」。</b></p>
+      <pre style="font-size:12px"><span style="color:#93c5fd">&lt;im_start&gt;system
+你是一个能干的助手&lt;im_end&gt;
+&lt;im_start&gt;user
+解释牛顿三定律&lt;im_end&gt;
+&lt;im_start&gt;assistant
+</span><span style="color:#f87171;font-weight:700">← 到这里为止！后面回答部分不算。</span></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="no">3</div>
+    <div class="body">
+      <h4>分别 tokenize，得到 <code>full_ids</code> 和 <code>pre_ids</code></h4>
+      <p><code>full_ids = tok(full, add_special_tokens=False)["input_ids"]</code><br>
+         <code>pre_ids  = tok(prefix, add_special_tokens=False)["input_ids"]</code></p>
+      <p>因为 full 字符串的前缀部分和 prefix 字符串<b>逐字完全相同</b>（template 一样，chat 历史一样），所以 tokenize 出来的前半段也是逐 token 相同的。于是 <code>len(pre_ids)</code> 就是「prompt 占用的 token 数」<b>n_pre</b>。</p>
+      <p>为什么不用字符串长度来算？因为 BPE tokenizer 不是按字符切的（"Apple" 可能是 1 个 token，也可能是 2 个），必须用 tokenizer 真跑一遍才知道准确的分界位置。<span class="hl">这是 99% 的 SFT 新手都会踩的坑：用字符串长度估分界，结果 mask 多/少一两个 token，训练效果悄悄变差还不自知。</span></p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="no">4</div>
+    <div class="body">
+      <h4>超长截断 &amp; 无效样本过滤</h4>
+      <p>如果 full_ids 长度超过 max_len（默认 512），就截前 512 个。然后：</p>
+      <p><code>n_pre = min(len(pre_ids), len(full_ids))</code><br>
+         <code>if n_pre &gt;= len(full_ids): return None  # 回答全被截掉了，直接丢</code></p>
+      <p>这是个防御性检查：如果截断之后剩下的全是 prompt、连一个 assistant 的 token 都没留下，那这条样本完全没信号，直接丢掉。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="no">5</div>
+    <div class="body">
+      <h4>✨ 核心：构造 labels，mask 掉前 n_pre 个位置</h4>
+      <p><code>labels = full_ids.copy()</code><br>
+         <code style="background:#7f1d1d;color:#fca5a5;padding:2px 8px">labels[:n_pre].fill_(IGNORE_INDEX)</code></p>
+      <p>这就是 SFT 的灵魂代码，也是 <a href="#" style="color:var(--accent)">你要写的 TODO 4</a>。先复制一份，然后把前 <code>n_pre</code> 个位置全部填成 -100。</p>
+
+      <div class="tokenbar" id="core-bar"></div>
+      <div class="legend">
+        <span class="chip"><div class="box" style="background:#52525b"></div>位置索引 i</span>
+        <span class="chip"><div class="box" style="background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(248,113,113,.4) 3px,rgba(248,113,113,.4) 6px);border:1px solid #71717a"></div>labels[i] = -100（不算 loss）</span>
+        <span class="chip"><div class="box" style="background:#4c1d95"></div>labels[i] = input_ids[i]（算 loss）</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="no">6</div>
+    <div class="body">
+      <h4>返回字典 <code>{"input_ids": full_ids, "labels": labels}</code></h4>
+      <p>注意 <code>input_ids</code> 全程没变过，模型推理时依然需要完整的 prompt + 回答作为输入（CausalLM 做 shift 用）。<span class="hl">改的只有 labels 数组的前半段内容</span>，input_ids 保持原样。</p>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <h2>三、配套函数：<code>collate()</code> —— batch padding 也要 mask</h2>
+
+  <p>一个 batch 里每条样本长度不一样，DataLoader 会把它们 pad 到最长那条。<b>padding 位置同样不能算 loss</b>，所以 <code>collate()</code> 里也做了对称处理：</p>
+
+  <table>
+    <tr><th>字段</th><th>真实内容部分</th><th>padding 部分</th></tr>
+    <tr><td><code>input_ids</code></td><td>原 token id</td><td><code>pad_id</code>（千问一般是 151643）</td></tr>
+    <tr><td><code>labels</code></td><td>原样（前半 -100，后半 token id）</td><td><b style="color:#f87171">-100</b> ✅ 同样忽略</td></tr>
+    <tr><td><code>attention_mask</code></td><td>1</td><td>0（让注意力不看 padding 位置）</td></tr>
+  </table>
+
+  <p>漏了 padding 的 -100 会怎样？模型会被梯度"教"去预测 pad token，表现为生成时偶尔会吐出一些奇怪的 pad id 字符。这也是新手常见坑之一。</p>
+
+  <!-- ============================================================== -->
+  <h2>四、配套函数：<code>describe_masking()</code> —— 自检查工具</h2>
+
+  <p>写对 mask 非常脆弱（差一个 token 效果就会差很多）。所以文件里给了一个「打印给人看」的调试函数：把一条样本拆成「被 mask 的前缀」和「真正训练的目标」两段文本。</p>
+
+  <p><b>运行自检（代码里提示的命令）：</b></p>
+  <pre>.venv/bin/python -c "
+import sys; sys.path.insert(0,'.')
+from transformers import AutoTokenizer
+from common.sft_data import SFTDataset, load_rows, describe_masking
+from common.paths import DATA_PROCESSED, resolve_model
+tok=AutoTokenizer.from_pretrained(str(resolve_model('base')))
+ds=SFTDataset(load_rows(DATA_PROCESSED/'sft_extract_train.jsonl',4),tok,384)
+print(describe_masking(ds,tok,0))"</pre>
+
+  <div class="card" style="border-left:4px solid var(--green)">
+    <b style="color:var(--green)">✅ 正确输出长这样：</b>
+    <pre>总 token 数      : 342
+被 mask (不算loss): 216 tokens
+参与 loss 的部分  : 126 tokens
+--- 被 mask 的前缀 ---
+&lt;im_start&gt;system
+你是一个 JSON 提取专家...&lt;im_end&gt;
+&lt;im_start&gt;user
+请从下面文本中提取结构化字段...&lt;im_end&gt;
+&lt;im_start&gt;assistant
+
+--- 真正训练的目标 ---
+{"姓名":"张三","身份证号":"1101011990xxxx...",...}
+</pre>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--red)">
+    <b style="color:var(--red)">❌ 如果 mask 少了一个 token：</b>
+    <p>「真正训练的目标」开头会多出来一个 <code>\n</code> 或 <code>&lt;im_start&gt;</code>——看起来差一个 token 没事，但模型会被训练去「先预测换行」而不是直接开始输出 JSON，久了会养成多余前缀的坏习惯。</p>
+  </div>
+
+  <!-- ============================================================== -->
+  <h2>五、一个真实例子：从 messages 到最终 labels 完整走一遍</h2>
+
+  <p class="muted">下面是一条极简的 3 条 messages，点按钮可以看到它经过 6 步处理后的 token 序列颜色条。</p>
+  <button class="btn" onclick="renderExample()">再渲染一次（随机长度）</button>
+  <button class="btn ghost" onclick="renderExampleLong()">长例子</button>
+
+  <div class="card">
+    <h4>输入 messages</h4>
+    <pre id="input-msgs"></pre>
+    <h4>① full 字符串长度</h4>
+    <p id="full-txt"></p>
+    <h4>② prefix 字符串长度</h4>
+    <p id="pre-txt"></p>
+    <h4>③ tokenize 后 n_pre = 分界位置</h4>
+    <p id="npre"></p>
+    <h4>④ 最终序列（上面是 input_ids 各 token 的角色，下面对应 labels 是否被 mask）</h4>
+    <div class="muted" style="font-size:13px">input_ids 的角色着色：</div>
+    <div class="legend" id="legend-ex1"></div>
+    <div class="tokenbar" id="ex1-role"></div>
+    <div class="muted" style="font-size:13px;margin-top:16px">labels 的 mask 状态：</div>
+    <div class="legend" id="legend-ex2"></div>
+    <div class="tokenbar" id="ex1-mask"></div>
+    <h4>⑤ 统计</h4>
+    <table id="stat-table"></table>
+  </div>
+
+  <!-- ============================================================== -->
+  <h2>六、FAQ：新手容易搞混的几个问题</h2>
+
+  <details open>
+    <summary>为什么 input_ids 不改，只改 labels？</summary>
+    <p>模型的 forward 依然要完整的 input_ids 才能做自回归 shift（HF 内部还是 <code>logits[:,:-1]</code> vs <code>labels[:,1:]</code>）。前半段 prompt 的 token 对 attention 计算依然有用——模型需要看到 user 的提问才能正确预测后面的回答，不能把 input_ids 也截掉，<span class="hl">只需要让那些位置「不产生 loss」就行，所以只动 labels。</span></p>
+  </details>
+
+  <details>
+    <summary>-100 是在哪被忽略的？我没在代码里看到判断。</summary>
+    <p>在 PyTorch 自带的 <code>F.cross_entropy</code> / <code>nn.CrossEntropyLoss</code> 里，它有个默认参数 <code>ignore_index=-100</code>。也就是说只要你不手动改这个参数，任何 target 值为 -100 的位置，那一项 loss 自动计 0，并且对应梯度也为 0。这个约定是 PyTorch 官方定的，所以几乎所有框架（HF、trl、peft）都沿用这个魔法数字。</p>
+  </details>
+
+  <details>
+    <summary>我直接用 <code>messages[:-1]</code> 做 prompt，assistant 那条的内容做 target，用 encoder-decoder 的方式训不行吗？</summary>
+    <p>理论上可以，但 decoder-only 的 GPT 类模型标准做法就是「拼一起 + labels mask」，因为 decoder-only 架构没有 encoder，它所有的上下文只能在同一个序列里通过注意力看到。而且你用 encoder-decoder 做法也需要把 prompt 喂进 decoder 做 kv cache，和拼一起的信息量其实等价，还多了跨实现兼容性的坑。统一用 decoder-only 的 CausalLM mask 方式，业界所有工具链（HF、LoRA、DPO、GRPO）都支持，这是事实标准。</p>
+  </details>
+
+  <details>
+    <summary>如果是多轮对话（system/user/asst/user/asst 共 5 条）呢？</summary>
+    <p>apply_chat_template 同样支持多轮，它会把 5 条 messages 按格式串起来成一大段。然后 <code>messages[:-1]</code> 会保留前 4 条（最后一条 asst 之前的全部），<code>add_generation_prompt</code> 再加最后一轮 &lt;im_start&gt;assistant\n—— 这个 template 技巧不管前面多少轮都能用，计算出的 n_pre 就是「除了最后一轮 assistant 回答以外所有部分的 token 数」。<b>注意：当前这个简单版本只会对「最后一轮 assistant」算 loss，前面轮次的 assistant 回答会被一起 mask 掉。</b>更进阶的做法是多轮 SFT（所有 assistant 段都算 loss），思路一样——逐段找出所有 assistant 段的起止位置，把段外全标 -100，段内保留真实 token id。</p>
+  </details>
+
+  <details>
+    <summary>为什么 <code>add_generation_prompt=True</code> 必须加？不加会怎样？</summary>
+    <p>chat template 的 <code>add_generation_prompt=True</code> 会在末尾加 <code>&lt;im_start&gt;assistant\n</code>（千问格式）或者 <code>&lt;|assistant|&gt;</code>（Llama 格式）这类「模型要开始说话了」的标记。如果不加，prefix 的长度比实际喂给模型推理时的前缀少了这一两个特殊 token，结果就是 assistant 回答开头的标记被当成训练目标——模型会在训练时学会先输出 <code>&lt;im_start&gt;</code>，推理时因为你已经手动加了它，就会出现输出重复的开始符号，表现为生成开头多了一些奇怪的字符。</p>
+  </details>
+
+  <!-- ============================================================== -->
+  <h2>七、总结：一页速查表</h2>
+
+  <table>
+    <tr><th>成员 / 函数</th><th>作用</th><th>关键行</th></tr>
+    <tr><td><code>IGNORE_INDEX = -100</code></td><td>「忽略 label」的魔法数字，PyTorch cross_entropy 原生识别</td><td>L25</td></tr>
+    <tr><td><code>__init__(rows, tok, max_len)</code></td><td>把所有 JSONL 行调 _encode() 过一遍，过滤掉无效样本</td><td>L28-L33</td></tr>
+    <tr><td><code>_encode(messages)</code> ⭐ 核心</td><td>6 步：拼 full 文本 → 拼 prefix 文本 → tokenize → 截断过滤 → 前 n_pre 填 -100 → 返回 dict</td><td>L35-L86</td></tr>
+    <tr><td><code>_encode L50</code> ⭐⭐ 最核心一行</td><td><code>labels[:n_pre].fill_(IGNORE_INDEX)</code> SFT 与 CT 的唯一差别就在这里</td><td>L50 / TODO 4</td></tr>
+    <tr><td><code>__len__() / __getitem__()</code></td><td>Dataset 标准接口，让 DataLoader 能 batch</td><td>L88-L92</td></tr>
+    <tr><td><code>collate(batch, pad_id)</code></td><td>batch 右 padding，padding 位置 label 也填 -100</td><td>L95-L108</td></tr>
+    <tr><td><code>load_rows(path, limit)</code></td><td>读 JSONL 返回数组</td><td>L111-L113</td></tr>
+    <tr><td><code>describe_masking(ds, tok, idx)</code> 🔧 调试必备</td><td>把一条样本的 mask 效果打印成人类能看懂的文本，防止多/少 mask token</td><td>L116-L127</td></tr>
+  </table>
+
+</div>
+
+<script>
+// ======== 渲染 helper ========
+function tok(cls, text, showMask, showIdx, idx){
+  const maskCls = showMask ? ' mask' : '';
+  const idxHtml = showIdx ? `<span class="idx">${idx}</span>` : '';
+  return `<div class="tok ${cls}${maskCls}">${idxHtml}${text}</div>`;
+}
+
+// 第一组对比：CT vs SFT 用同一条数据
+const demoToks = [
+  ['system','<s>S'],['system','ys'],['system','tem'],['tmpl',':'],
+  ['user','<s>U'],['user','ser'],['user','提'],['user','问'],['tmpl',':'],
+  ['asst','<s>A'],['asst','sst'],['asst','回'],['asst','答'],['asst','的'],['asst','内'],['asst','容'],['asst','。'],
+];
+(function renderVS(){
+  // CT 版：所有位置都参与
+  const ctBar = document.getElementById('ct-bar');
+  ctBar.innerHTML = demoToks.map(([c,t],i)=> tok(c,t,false,false,i)).join('');
+
+  // SFT 版：前 9 个位置（system + user 段）被 mask，后面 asst 段保留
+  const MASK_BEFORE = 9;
+  const sftBar = document.getElementById('sft-bar');
+  sftBar.innerHTML = demoToks.map(([c,t],i)=> {
+    const mask = i < MASK_BEFORE;
+    // 颜色只保留 asst 的紫色，mask 掉的部分统一用灰色加红条纹
+    const cls = mask ? 'tmpl' : 'asst';
+    return tok(cls, t, mask, false, i);
+  }).join('');
+})();
+
+// 核心图解条：直接展示 labels 数组内容
+(function renderCore(){
+  const ids = [151644, 1498, 264, 151645, 198, 151644, 872, 264, 3360, 151645, 198, 151644, 77091, 198, 98569, 102336, 6185, 151645];
+  const roles = ['system','system','system','tmpl','tmpl','user','user','user','user','tmpl','tmpl','tmpl','assist','assist','assist','assist','assist','tmpl'];
+  // n_pre = 13
+  const n_pre = 13;
+  const coreBar = document.getElementById('core-bar');
+  const legend = document.createElement('div');
+  legend.className = 'legend';
+  legend.innerHTML = `
+    <span class="chip"><div class="box" style="background:#1e3a8a"></div>System token</span>
+    <span class="chip"><div class="box" style="background:#14532d"></div>User token</span>
+    <span class="chip"><div class="box" style="background:#4c1d95"></div>Assistant token</span>
+    <span class="chip"><div class="box" style="background:#52525b"></div>Template token (&lt;im_start&gt; 等)</span>
+  `;
+  coreBar.parentNode.insertBefore(legend, coreBar);
+
+  coreBar.innerHTML = ids.map((id,i)=>{
+    const mask = i < n_pre;
+    const cls = roles[i];
+    const show = i < n_pre ? '-100' : id;
+    return `<div class="tok ${mask?'tmpl':'assist'} ${mask?'mask':''}" style="min-width:64px;font-size:12px">${show}</div>`;
+  }).join('') + `<div style="width:100%;margin-top:8px;font-size:13px;color:var(--muted)">↑ 上排文字不是 input_ids，而是 <b>labels 数组的内容</b>：前 ${n_pre} 个位置已经被填成 -100，后面才保留真实 token id。input_ids 始终是完整的 ids 数组。</div>`;
+})();
+
+// ======== 真实例子渲染 ========
+const SAMPLE_SYSTEM = [{role:'system',content:'你是一个结构化提取专家，严格按照 JSON 输出指定字段。'}];
+const SAMPLE_USER = [{role:'user',content:'请从这段话里提取姓名、手机号、邮箱：\n"我叫李明，联系电话是 13800138000，邮箱 liming@example.com 谢谢"'}];
+const SAMPLE_ASST = [{role:'assistant',content:'{\n  "姓名": "李明",\n  "手机号": "13800138000",\n  "邮箱": "liming@example.com"\n}'}];
+function makeMessages(extra=0){
+  const extras = [];
+  for (let i=0;i<extra;i++){
+    extras.push({role:'user',content:`第${i+1}轮追问：请再核对一遍。`});
+    extras.push({role:'assistant',content:`第${i+1}轮核对：已复核无误。`});
+  }
+  return [...SAMPLE_SYSTEM, ...SAMPLE_USER, ...extras, ...SAMPLE_ASST];
+}
+function renderExample(){ _render(makeMessages(0)); }
+function renderExampleLong(){ _render(makeMessages(2)); }
+function _render(messages){
+  document.getElementById('input-msgs').textContent = JSON.stringify(messages,null,2);
+
+  // 用角色数组模拟 tokenize 结果（简化版，不真调用 tokenizer）
+  // 给每个 role 生成若干个 token，再给 template 加 token
+  const tokens = []; // {role: system|user|asst|tmpl, text}
+  messages.forEach((m,idx)=>{
+    tokens.push({role:'tmpl',text:'<im_s'});
+    tokens.push({role:'tmpl',text:'tart>'});
+    tokens.push({role:'tmpl',text:m.role});
+    tokens.push({role:'tmpl',text:'\n'});
+    // 按内容切几个"假 token"
+    const fake = m.content.length > 10 ? Math.ceil(m.content.length / 6) : Math.max(1, Math.ceil(m.content.length/3));
+    for (let k=0;k<fake;k++){
+      tokens.push({role:m.role,text:`t${k+1}`});
+    }
+    tokens.push({role:'tmpl',text:'<im_e'});
+    tokens.push({role:'tmpl',text:'nd>'});
+    tokens.push({role:'tmpl',text:'\n'});
+  });
+  // 去掉最后一个换行（HF 一般不加那个）
+  tokens.pop();
+
+  // 计算 n_pre：除最后一条 assistant 外所有 messages 再 + 生成提示（4 个 token）
+  const lastMsgLen = 4 + Math.ceil(messages[messages.length-1].content.length/6) + 3;
+  const n_pre = tokens.length - lastMsgLen;
+
+  document.getElementById('full-txt').innerHTML = `full 字符串 = system + user + （可能的多轮）+ assistant 回答，共 <b>${tokens.length}</b> 个 token`;
+  document.getElementById('pre-txt').innerHTML = `prefix 字符串 = system + user + （可能的多轮 user 之前的历史）+ add_generation_prompt，共 <b>${n_pre}</b> 个 token`;
+  document.getElementById('npre').innerHTML = `n_pre = min(len(pre_ids), len(full_ids)) = <b style="color:var(--yellow);font-size:18px">${n_pre}</b>  → 前 ${n_pre} 个位置会被填成 -100`;
+
+  // 角色色条
+  const legend1 = document.getElementById('legend-ex1');
+  legend1.innerHTML = `
+    <span class="chip"><div class="box" style="background:#1e3a8a"></div>System</span>
+    <span class="chip"><div class="box" style="background:#14532d"></div>User</span>
+    <span class="chip"><div class="box" style="background:#4c1d95"></div>Assistant 回答</span>
+    <span class="chip"><div class="box" style="background:#52525b"></div>Template 标记 (&lt;im_start&gt; &lt;im_end&gt; 等)</span>`;
+  const barRole = document.getElementById('ex1-role');
+  barRole.innerHTML = tokens.map((t,i)=> tok(t.role, t.text, false, true, i)).join('');
+
+  // mask 色条：只留 assistant 的内容段（最后那条），其他全 mask
+  const legend2 = document.getElementById('legend-ex2');
+  legend2.innerHTML = `
+    <span class="chip"><div class="box" style="background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(248,113,113,.4) 3px,rgba(248,113,113,.4) 6px);border:1px solid #71717a"></div>被 mask → labels[i] = -100</span>
+    <span class="chip"><div class="box" style="background:#4c1d95;border:1px solid #a855f7"></div>参与 loss → labels[i] = input_ids[i]</span>`;
+  const barMask = document.getElementById('ex1-mask');
+  barMask.innerHTML = tokens.map((t,i)=>{
+    const mask = i < n_pre;
+    // 显示 token 值模拟：mask 显示 -100，不 mask 显示假 id
+    const label = mask ? '-100' : (10000+i);
+    return `<div class="tok ${mask?'tmpl':'assist'} ${mask?'mask':''}" style="min-width:56px;font-size:11px">${label}</div>`;
+  }).join('');
+
+  // 统计表
+  const total = tokens.length;
+  const train = total - n_pre;
+  const systemToks = tokens.filter(t=>t.role==='system').length;
+  const userToks = tokens.filter(t=>t.role==='user').length;
+  const asstToks = tokens.filter(t=>t.role==='assist'||t.role==='assistant').length;
+  const tmplToks = tokens.filter(t=>t.role==='tmpl').length;
+  document.getElementById('stat-table').innerHTML = `
+    <tr><th>项目</th><th>Token 数</th><th>占比</th><th>是否参与 loss</th></tr>
+    <tr><td>System prompt</td><td>${systemToks}</td><td>${(100*systemToks/total).toFixed(0)}%</td><td><span class="tag tag-bad">否（mask）</span></td></tr>
+    <tr><td>User 提问</td><td>${userToks}</td><td>${(100*userToks/total).toFixed(0)}%</td><td><span class="tag tag-bad">否（mask）</span></td></tr>
+    <tr><td>Template 标记</td><td>${tmplToks}</td><td>${(100*tmplToks/total).toFixed(0)}%</td><td><span class="tag tag-bad">否（mask）</span></td></tr>
+    <tr style="background:rgba(167,139,250,.12)"><td><b>Assistant 回答</b></td><td><b>${train}</b></td><td><b>${(100*train/total).toFixed(0)}%</b></td><td><span class="tag tag-good">是 ✅ 训练目标</span></td></tr>
+    <tr><td>合计</td><td>${total}</td><td>100%</td><td></td></tr>`;
+}
+renderExample();
+</script>
+</body>
+</html>
